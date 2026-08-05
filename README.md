@@ -4,9 +4,16 @@ A Web-Based KPI Probationary Employee Evaluation and Training Recommendation Pla
 
 ## Starter dashboard
 
-This workspace now includes a PHP-based employer dashboard prototype based on the provided design reference.
+This workspace now includes PHP-based dashboards for employer, employee, and probationary employee roles based on the provided design reference.
 
-Open `index.php` through PHP or a local web server to view the layout.
+Open `Employer/employer_dashboard.php` through PHP or a local web server to view the layout.
+
+Additional role dashboards:
+
+- `Employee/employee_dashboard.php`
+- `ProbationaryEmployee/probationary_employee_dashboard.php`
+
+Each role now has its own `styles.css` and `script.js` so you can edit the UI and behavior independently.
 
 ## Hostinger deployment path
 
@@ -14,7 +21,7 @@ This prototype is ready for Hostinger shared hosting as a PHP site.
 
 When you are ready to go live, upload these files to the `public_html` folder:
 
-- `index.php`
+- `Employer/employer_dashboard.php`
 - `styles.css`
 - `script.js`
 

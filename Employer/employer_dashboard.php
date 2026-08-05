@@ -1,10 +1,10 @@
 <?php
 $navItems = [
-  ['label' => 'Dashboard', 'href' => '#dashboard', 'active' => true],
-  ['label' => 'Employees', 'href' => '#employees', 'active' => false],
-  ['label' => 'KPIs', 'href' => '#kpis', 'active' => false],
-  ['label' => 'Reports', 'href' => '#reports', 'active' => false],
-  ['label' => 'Settings', 'href' => '#settings', 'active' => false],
+  ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'active' => true],
+  ['label' => 'Employees', 'href' => 'employees.php', 'active' => false],
+  ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false],
+  ['label' => 'Reports', 'href' => 'reports.php', 'active' => false],
+  ['label' => 'Settings', 'href' => 'settings.php', 'active' => false],
 ];
 
 $metrics = [
@@ -221,7 +221,8 @@ $recommendation = 'Customer Service Excellence Training Module';
             <strong id="recommendationTitle"><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
           </div>
 
-          <button class="primary-button" id="assignCourseButton" type="button">Assign Course</button>
+          <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Assigned"
+            data-confirm-text="Training assigned to Maria Clara for the next review cycle.">Assign Course</button>
           <p class="microcopy">This action will later connect to your training and employee records in the live version.
           </p>
         </aside>

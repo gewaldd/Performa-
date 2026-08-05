@@ -24,7 +24,9 @@ document.querySelectorAll(".nav-item").forEach((item) => {
   });
 });
 
-searchInput.addEventListener("input", applyFilters);
+if (searchInput) {
+  searchInput.addEventListener("input", applyFilters);
+}
 
 chips.forEach((chip) => {
   chip.addEventListener("click", () => {
@@ -34,10 +36,17 @@ chips.forEach((chip) => {
   });
 });
 
-assignButton.addEventListener("click", () => {
-  recommendationTitle.textContent = "Training assigned to Maria Clara for the next review cycle.";
-  assignButton.textContent = "Assigned";
-  assignButton.disabled = true;
-});
+if (assignButton && recommendationTitle) {
+  assignButton.addEventListener("click", () => {
+    const completedLabel = assignButton.dataset.completedLabel || "Completed";
+    const confirmationText = assignButton.dataset.confirmText || "Action completed.";
 
-applyFilters();
+    recommendationTitle.textContent = confirmationText;
+    assignButton.textContent = completedLabel;
+    assignButton.disabled = true;
+  });
+}
+
+if (searchInput && rows.length > 0) {
+  applyFilters();
+}
