@@ -4,17 +4,17 @@ A Web-Based KPI Probationary Employee Evaluation and Training Recommendation Pla
 
 ## Starter dashboard
 
-This workspace now includes a static employer dashboard prototype based on the provided design reference.
+This workspace now includes a PHP-based employer dashboard prototype based on the provided design reference.
 
-Open `index.html` in a browser to view the layout.
+Open `index.php` through PHP or a local web server to view the layout.
 
 ## Hostinger deployment path
 
-This prototype is already compatible with Hostinger shared hosting as a static site.
+This prototype is ready for Hostinger shared hosting as a PHP site.
 
 When you are ready to go live, upload these files to the `public_html` folder:
 
-- `index.html`
+- `index.php`
 - `styles.css`
 - `script.js`
 

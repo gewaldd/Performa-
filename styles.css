@@ -16,6 +16,7 @@
   --radius-xl: 24px;
   --radius-lg: 18px;
   --radius-md: 14px;
+  --radius-sm: 12px;
 }
 
 * {
@@ -69,6 +70,7 @@ body::before {
 .nav-item,
 .topbar,
 .panel-header,
+.table-toolbar,
 .table-head,
 .table-row,
 .employee-cell,
@@ -270,6 +272,14 @@ body::before {
 .insight-card {
   box-shadow: var(--shadow);
   border: 1px solid var(--panel-border);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.metric-card:hover,
+.panel:hover,
+.insight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 28px 60px rgba(23, 33, 58, 0.12);
 }
 
 .metric-card {
@@ -393,6 +403,55 @@ body::before {
   display: grid;
 }
 
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px 14px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(27, 39, 62, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #51607c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.filter-chip:hover,
+.filter-chip.active {
+  background: linear-gradient(135deg, #2f6df6, #5b90ff);
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.table-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.section-anchor {
+  display: block;
+  height: 1px;
+  margin-top: -1px;
+  opacity: 0;
+}
+
 .table-head,
 .table-row {
   display: grid;
@@ -415,6 +474,10 @@ body::before {
   padding: 12px 18px;
   border-top: 1px solid rgba(27, 39, 62, 0.06);
   background: rgba(255, 255, 255, 0.9);
+}
+
+.table-row[hidden] {
+  display: none;
 }
 
 .employee-cell {
@@ -545,6 +608,24 @@ body::before {
   box-shadow: 0 14px 30px rgba(47, 109, 246, 0.28);
 }
 
+.microcopy {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.site-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px 18px;
+  color: #8090aa;
+  font-size: 12px;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 84px minmax(0, 1fr);
@@ -616,6 +697,7 @@ body::before {
 
   .topbar,
   .panel-header,
+  .table-toolbar,
   .table-head,
   .table-row {
     grid-template-columns: 1fr;
@@ -630,6 +712,12 @@ body::before {
   .topbar-actions,
   .panel-actions {
     justify-content: flex-start;
+  }
+
+  .table-toolbar,
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .search-bar {
