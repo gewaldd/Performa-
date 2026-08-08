@@ -10,10 +10,14 @@ Open `Employer/employer_dashboard.php` through PHP or a local web server to view
 
 Additional role dashboards:
 
-- `Employee/employee_dashboard.php`
+- `ProbationaryEmployee/probationary_employee_workstream.php`
+- `ProbationaryEmployee/probationary_employee_goals.php`
+- `ProbationaryEmployee/probationary_employee_feedback.php`
+- `ProbationaryEmployee/probationary_employee_requests.php`
+- `ProbationaryEmployee/probationary_employee_profile.php`
 - `ProbationaryEmployee/probationary_employee_dashboard.php`
 
-Each role now has its own `styles.css` and `script.js` so you can edit the UI and behavior independently.
+The probationary module now contains all surface UI pages and uses `ProbationaryEmployee/styles.css` and `ProbationaryEmployee/script.js` for styling and behavior.
 
 ## Hostinger deployment path
 

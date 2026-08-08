@@ -45,4 +45,29 @@ if (assignButton && recommendationTitle) {
   });
 }
 
+const acknowledgementButtons = Array.from(document.querySelectorAll('.acknowledge-button'));
+acknowledgementButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    if (button.disabled) {
+      return;
+    }
+
+    const row = button.closest('.ack-row');
+    if (row) {
+      const status = row.querySelector('.ack-status');
+      const timestamp = row.querySelector('.ack-timestamp');
+      if (status) {
+        status.textContent = 'Acknowledged';
+      }
+      if (timestamp) {
+        const now = new Date();
+        timestamp.textContent = now.toLocaleString();
+      }
+      button.textContent = 'Acknowledged';
+      button.disabled = true;
+      button.classList.add('acknowledged');
+    }
+  });
+});
+
 applyFilters();
