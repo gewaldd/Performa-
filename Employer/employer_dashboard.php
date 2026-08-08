@@ -90,6 +90,10 @@ $recommendation = 'Customer Service Excellence Training Module';
   <title>Performa | Employer Dashboard</title>
   <meta name="description"
     content="Employer KPI dashboard for probationary employee evaluation and training recommendations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -245,7 +249,7 @@ $recommendation = 'Customer Service Excellence Training Module';
 
         <aside class="insight-card" id="settings">
           <div class="insight-top">
-            <span class="insight-icon"><?php echo $icons['sparkle']; ?></span>
+            <span class="insight-icon"></span>
             <span class="insight-label">AI INSIGHT</span>
           </div>
           <h2><?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?></h2>

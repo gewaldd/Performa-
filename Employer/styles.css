@@ -29,7 +29,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Segoe UI Variable", "Segoe UI", "Trebuchet MS", sans-serif;
+  font-family: "Space Grotesk", "Segoe UI Variable", "Segoe UI", "Trebuchet MS", sans-serif;
   background:
     radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 32%),
     radial-gradient(circle at bottom right, rgba(33, 205, 149, 0.08), transparent 26%),
@@ -88,7 +88,7 @@ body::before {
   height: 16px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
-  transform: translate(3px, -3px);
+  transform: translate(-4px, 4px);
 }
 
 .brand-name {
@@ -362,12 +362,16 @@ body::before {
 
 .positive { background: rgba(22, 167, 109, 0.12); color: var(--positive); }
 .warning { background: rgba(235, 158, 33, 0.12); color: var(--warning); }
-.neutral { background: rgba(47, 109, 246, 0.09); color: var(--primary-dark); }
+.neutral { background: rgba(100, 116, 139, 0.12); color: #475569; }
 
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr);
   gap: 16px;
+}
+
+.content-grid--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .panel,
@@ -629,18 +633,10 @@ body::before {
 }
 
 .insight-icon {
-  display: grid;
-  place-items: center;
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.insight-icon svg {
-  width: 14px;
-  height: 14px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .insight-label {
