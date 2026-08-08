@@ -3,6 +3,9 @@ $navItems = [
     ['label' => 'Dashboard', 'href' => 'supervisor_dashboard.php', 'active' => false],
     ['label' => 'My Employees', 'href' => 'employees.php', 'active' => true],
     ['label' => 'Rating Entry', 'href' => 'ratings.php', 'active' => false],
+    ['label' => 'Reports', 'href' => 'reports.php', 'active' => false],
+    ['label' => 'Settings', 'href' => 'settings.php', 'active' => false],
+    ['label' => 'Notifications', 'href' => 'notifications.php', 'active' => false],
 ];
 
 // TODO(firebase): replace with a Firestore query filtered to
@@ -92,12 +95,6 @@ $employees = [
             </section>
         </main>
     </div>
-
-    <footer class="site-footer">
-        <span>Performa supervisor dashboard prototype</span>
-        <span>View-only access · No KPI configuration rights</span>
-    </footer>
-
     <script src="script.js"></script>
 </body>
 
