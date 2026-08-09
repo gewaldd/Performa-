@@ -25,11 +25,17 @@ try {
         }
     }
 
-    if ($matchedUser && !$idToken) {
+    if ($matchedUser) {
         $_SESSION['uid'] = $matchedUser['uid'] ?? $fallbackEmail;
         $_SESSION['name'] = $matchedUser['name'] ?? $matchedUser['email'] ?? $fallbackEmail;
         $_SESSION['role'] = $matchedUser['role'] ?? ($matchedUser['roles'] ?? 'probationary_employee');
         echo json_encode(['ok' => true, 'role' => $_SESSION['role']]);
+        exit;
+    }
+
+    if (!$idToken) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing idToken and no matching email']);
         exit;
     }
 

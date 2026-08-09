@@ -24,17 +24,26 @@ if (file_exists($envFile)) {
 function firebase_credentials_path(): string
 {
     $env = getenv('GOOGLE_APPLICATION_CREDENTIALS');
-    if ($env && file_exists($env))
-        return $env;
-    $path = __DIR__ . '/firebase-service-account.json';
-    return $path;
+    if ($env) {
+        $candidates = [$env];
+        if (!preg_match('/^[A-Za-z]:[\\\/]/', $env) && substr($env, 0, 1) !== '/') {
+            $candidates[] = __DIR__ . '/' . ltrim($env, '\\/');
+        }
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+    }
+
+    return __DIR__ . '/firebase-service-account.json';
 }
 
 function load_service_account(): array
 {
     $path = firebase_credentials_path();
     if (!file_exists($path))
-        throw new RuntimeException("Service account json not found: $path");
+        throw new RuntimeException("Service account json not found: $path. Set GOOGLE_APPLICATION_CREDENTIALS to the absolute path of your Firebase service-account JSON or place firebase-service-account.json in the project root.");
     $json = json_decode(file_get_contents($path), true);
     if (!is_array($json))
         throw new RuntimeException('Invalid service account JSON');
