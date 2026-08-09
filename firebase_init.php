@@ -60,6 +60,9 @@ function base64url_encode(string $data): string
 function get_service_account_access_token(): string
 {
     $svc = load_service_account();
+    if (!function_exists('openssl_sign')) {
+        throw new RuntimeException('PHP OpenSSL extension is not enabled. Enable php_openssl in php.ini or run the app with a PHP build that includes OpenSSL.');
+    }
     $cacheFile = sys_get_temp_dir() . '/firebase_sa_token_' . md5($svc['client_email']) . '.json';
     if (file_exists($cacheFile)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
