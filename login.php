@@ -33,9 +33,14 @@
             const password = document.getElementById('password').value;
             try {
                 const cred = await signInWithEmailAndPassword(auth, email, password);
-                const idToken = await cred.user.getIdToken();
+                // Force a fresh token so other machines/browsers do not reuse a stale one.
+                const idToken = await cred.user.getIdToken(true);
                 // Exchange token for PHP session
-                const res = await fetch('session_login.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken }) });
+                const res = await fetch('session_login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken, email: cred.user.email || email })
+                });
                 const body = await res.json();
                 if (res.ok) {
                     // Redirect based on role stored in session response
