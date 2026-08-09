@@ -162,7 +162,7 @@ $kpis = [
                     </div>
 
                     <div class="form-row">
-                        <label for="weekEnding">Week Ending</label>
+                        <label for="weekEnding">Date</label>
                         <input type="date" id="weekEnding" name="weekEnding" required
                             style="border: 1px solid var(--panel-border); border-radius: var(--radius-sm); padding: 11px 14px; font-size: 14px; font-family: inherit; background: #fbfcfe; color: var(--text);" />
                     </div>
