@@ -26,7 +26,9 @@ function firebase_credentials_path(): string
     $env = getenv('GOOGLE_APPLICATION_CREDENTIALS');
     if ($env) {
         $candidates = [$env];
-        if (!preg_match('/^[A-Za-z]:[\\\/]/', $env) && substr($env, 0, 1) !== '/') {
+        $isAbsoluteWindowsPath = strlen($env) >= 2 && ctype_alpha($env[0]) && $env[1] === ':';
+        $isAbsoluteUnixPath = substr($env, 0, 1) === '/' || substr($env, 0, 2) === '\\';
+        if (!$isAbsoluteWindowsPath && !$isAbsoluteUnixPath) {
             $candidates[] = __DIR__ . '/' . ltrim($env, '\\/');
         }
         foreach ($candidates as $candidate) {
