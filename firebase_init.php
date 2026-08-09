@@ -102,15 +102,22 @@ function get_service_account_access_token(): string
     ]);
 
     $ch = curl_init('https://oauth2.googleapis.com/token');
+
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $curlErr = curl_error($ch);
+
+    if ($resp === false) {
+        throw new RuntimeException('Curl failed: ' . $curlErr);
+    }
     if ($code !== 200) {
-        throw new RuntimeException('Failed to obtain access token: ' . $resp);
+        throw new RuntimeException('Failed to obtain access token (HTTP ' . $code . '): ' . $resp);
     }
     $data = json_decode($resp, true);
     if (empty($data['access_token']))
@@ -149,13 +156,14 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
         }
 
         $ch = curl_init($url);
+
+        curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($callBody));
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         $lastResp = $resp;
         $lastCode = $code;
         if ($code >= 200 && $code < 300) {
@@ -181,13 +189,13 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
         if ($apiKey) {
             $url = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' . urlencode($apiKey);
             $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['email' => $email, 'password' => $password, 'returnSecureToken' => true]));
             $r = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
             $rdata = json_decode($r, true);
             if (!empty($rdata['localId'])) {
                 $uid = $rdata['localId'];
@@ -196,13 +204,13 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
                 if (!empty($rdata['error']['message']) && $rdata['error']['message'] === 'EMAIL_EXISTS') {
                     $lookupUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' . urlencode($apiKey);
                     $chL = curl_init($lookupUrl);
+                    curl_setopt($chL, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
                     curl_setopt($chL, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($chL, CURLOPT_POST, true);
                     curl_setopt($chL, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
                     curl_setopt($chL, CURLOPT_POSTFIELDS, json_encode(['email' => [$email]]));
                     $lr = curl_exec($chL);
                     $lcode = curl_getinfo($chL, CURLINFO_HTTP_CODE);
-                    curl_close($chL);
                     $ldata = json_decode($lr, true);
                     if ($lcode === 200 && !empty($ldata['users'][0]['localId'])) {
                         $uid = $ldata['users'][0]['localId'];
@@ -260,13 +268,13 @@ function firestore_write_document(string $collection, string $documentId, array 
 
     $token = get_service_account_access_token();
     $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     if ($code < 200 || $code >= 300) {
         throw new RuntimeException('Firestore write failed: ' . $resp);
     }
@@ -281,11 +289,11 @@ function firestore_get_document(string $collection, string $documentId): ?array
     $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/{$collection}/{$documentId}";
     $token = get_service_account_access_token();
     $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     if ($code === 200) {
         $data = json_decode($resp, true);
         // convert Firestore fields to plain array (simple string/bool/number handling)
@@ -326,11 +334,11 @@ function firestore_list_documents(string $collection): array
     $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/{$collection}";
     $token = get_service_account_access_token();
     $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     if ($code === 200) {
         $data = json_decode($resp, true);
         $out = [];
@@ -371,5 +379,3 @@ function firestore_list_documents(string $collection): array
         return [];
     throw new RuntimeException('Firestore list failed: ' . $resp);
 }
-
-?>
