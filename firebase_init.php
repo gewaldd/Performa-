@@ -24,17 +24,28 @@ if (file_exists($envFile)) {
 function firebase_credentials_path(): string
 {
     $env = getenv('GOOGLE_APPLICATION_CREDENTIALS');
-    if ($env && file_exists($env))
-        return $env;
-    $path = __DIR__ . '/firebase-service-account.json';
-    return $path;
+    if ($env) {
+        $candidates = [$env];
+        $isAbsoluteWindowsPath = strlen($env) >= 2 && ctype_alpha($env[0]) && $env[1] === ':';
+        $isAbsoluteUnixPath = substr($env, 0, 1) === '/' || substr($env, 0, 2) === '\\';
+        if (!$isAbsoluteWindowsPath && !$isAbsoluteUnixPath) {
+            $candidates[] = __DIR__ . '/' . ltrim($env, '\\/');
+        }
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+    }
+
+    return __DIR__ . '/firebase-service-account.json';
 }
 
 function load_service_account(): array
 {
     $path = firebase_credentials_path();
     if (!file_exists($path))
-        throw new RuntimeException("Service account json not found: $path");
+        throw new RuntimeException("Service account json not found: $path. Set GOOGLE_APPLICATION_CREDENTIALS to the absolute path of your Firebase service-account JSON or place firebase-service-account.json in the project root.");
     $json = json_decode(file_get_contents($path), true);
     if (!is_array($json))
         throw new RuntimeException('Invalid service account JSON');
@@ -49,6 +60,9 @@ function base64url_encode(string $data): string
 function get_service_account_access_token(): string
 {
     $svc = load_service_account();
+    if (!function_exists('openssl_sign')) {
+        throw new RuntimeException('PHP OpenSSL extension is not enabled. Enable php_openssl in php.ini or run the app with a PHP build that includes OpenSSL.');
+    }
     $cacheFile = sys_get_temp_dir() . '/firebase_sa_token_' . md5($svc['client_email']) . '.json';
     if (file_exists($cacheFile)) {
         $cached = json_decode(file_get_contents($cacheFile), true);

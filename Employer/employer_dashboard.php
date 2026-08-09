@@ -1,4 +1,11 @@
 <?php
+$rootDir = __DIR__ . '/..';
+require_once $rootDir . '/auth.php';
+require_once $rootDir . '/firebase_init.php';
+
+require_login();
+require_role('employer');
+
 $icons = [
   'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
   'users' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
@@ -38,56 +45,82 @@ $profileRole = $_SESSION['role'] ?? 'Employer';
 // Normalize role display
 $profileRoleDisplay = ucwords(str_replace('_', ' ', $profileRole));
 
+function normalize_role_key(?string $role): string
+{
+  $roleKey = strtolower(trim((string) $role));
+  if (strpos($roleKey, 'probation') !== false)
+    return 'probationary';
+  if (strpos($roleKey, 'supervis') !== false)
+    return 'supervisor';
+  if (strpos($roleKey, 'employ') !== false)
+    return 'employer';
+  if (strpos($roleKey, 'admin') !== false)
+    return 'admin';
+  return $roleKey;
+}
+
+function display_role_label(?string $role): string
+{
+  return ucwords(str_replace('_', ' ', (string) $role));
+}
+
+$liveUsers = [];
+try {
+  $docs = firestore_list_documents('Users');
+  foreach ($docs as $doc) {
+    $roleKey = normalize_role_key($doc['role'] ?? null);
+    if ($roleKey === 'admin' || $roleKey === 'employer') {
+      continue;
+    }
+    $createdAt = $doc['createdAt'] ?? '';
+    $createdTime = $createdAt ? strtotime($createdAt) : false;
+    $daysSince = $createdTime ? max(1, (int) floor((time() - $createdTime) / 86400)) : 0;
+    $daysLeft = $createdTime ? max(0, 180 - $daysSince) : 0;
+    $progress = $createdTime ? min(100, (int) round(($daysSince / 180) * 100)) : 0;
+    $statusClass = $daysLeft <= 30 ? 'status-warning' : 'status-good';
+    $status = $daysLeft <= 30 ? 'Needs Review' : 'On Track';
+    $accentColor = $daysLeft <= 30 ? '#f0a11b' : '#2f6df6';
+    $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
+    $avatar = 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160';
+    $liveUsers[] = [
+      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+      'role' => display_role_label($doc['role'] ?? null),
+      'avatar' => $avatar,
+      'day' => $daysSince ? ('Day ' . $daysSince) : 'Day 0',
+      'daysLeft' => $daysLeft . ' days left',
+      'progress' => $progress,
+      'score' => $daysLeft <= 30 ? 3.8 : 4.5,
+      'stars' => $daysLeft <= 30 ? 4 : 5,
+      'status' => $status,
+      'statusClass' => $statusClass,
+      'statusKey' => $daysLeft <= 30 ? 'needs-review' : 'on-track',
+      'accentColor' => $accentColor,
+      'email' => $doc['email'] ?? '',
+      'createdAt' => $createdAt,
+    ];
+  }
+} catch (Throwable $e) {
+  // leave $liveUsers empty so the page still renders
+}
+
+$probationaryCount = 0;
+$nearDeadlineCount = 0;
+$scoreTotal = 0.0;
+foreach ($liveUsers as $user) {
+  $probationaryCount++;
+  if (str_starts_with($user['daysLeft'], '0 ') || (int) $user['daysLeft'] <= 30) {
+    $nearDeadlineCount++;
+  }
+  $scoreTotal += (float) $user['score'];
+}
+
 $metrics = [
-  ['label' => 'Total Probationary', 'value' => '42', 'badge' => '+12%', 'tone' => 'positive', 'iconClass' => 'icon-warm', 'icon' => 'users'],
-  ['label' => 'Nearing Deadline (< 30 days)', 'value' => '8', 'badge' => 'Action Req.', 'tone' => 'warning', 'iconClass' => 'icon-gold', 'icon' => 'hourglass'],
-  ['label' => 'Overall Performance', 'value' => '4.2', 'suffix' => '/ 5.0', 'badge' => 'Avg Score', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'trend'],
+  ['label' => 'Total Probationary', 'value' => (string) $probationaryCount, 'badge' => '+Live', 'tone' => 'positive', 'iconClass' => 'icon-warm', 'icon' => 'users'],
+  ['label' => 'Nearing Deadline (< 30 days)', 'value' => (string) $nearDeadlineCount, 'badge' => 'Live Count', 'tone' => 'warning', 'iconClass' => 'icon-gold', 'icon' => 'hourglass'],
+  ['label' => 'Overall Performance', 'value' => $probationaryCount > 0 ? number_format($scoreTotal / $probationaryCount, 1) : '0.0', 'suffix' => '/ 5.0', 'badge' => 'Avg Score', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'trend'],
 ];
 
-$evaluations = [
-  [
-    'name' => 'Maria Clara',
-    'role' => 'Customer Support Spec.',
-    'avatar' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
-    'day' => 'Day 135',
-    'daysLeft' => '45 days left',
-    'progress' => 72,
-    'score' => 3.8,
-    'stars' => 4,
-    'status' => 'Needs Review',
-    'statusClass' => 'status-warning',
-    'statusKey' => 'needs-review',
-    'accentColor' => '#f0a11b',
-  ],
-  [
-    'name' => 'Jose Rizal',
-    'role' => 'Software Engineer',
-    'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80',
-    'day' => 'Day 90',
-    'daysLeft' => '90 days left',
-    'progress' => 54,
-    'score' => 4.5,
-    'stars' => 5,
-    'status' => 'On Track',
-    'statusClass' => 'status-good',
-    'statusKey' => 'on-track',
-    'accentColor' => '#2f6df6',
-  ],
-  [
-    'name' => 'Gabriela Silang',
-    'role' => 'Marketing Associate',
-    'avatar' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=160&q=80',
-    'day' => 'Day 178',
-    'daysLeft' => '2 days left',
-    'progress' => 94,
-    'score' => 4.8,
-    'stars' => 5,
-    'status' => 'Ready for Reg.',
-    'statusClass' => 'status-ready',
-    'statusKey' => 'ready-for-reg',
-    'accentColor' => '#ed5b57',
-  ],
-];
+$evaluations = $liveUsers;
 
 $insightTitle = 'Intervention Suggested';
 $insightName = 'Maria Clara';
