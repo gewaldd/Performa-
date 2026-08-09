@@ -25,6 +25,19 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
+// session: show signed-in user's name/role if present
+session_start();
+if (empty($_SESSION['uid'])) {
+  // not logged in — redirect to project-relative login
+  header('Location: ../login.php');
+  exit;
+}
+
+$profileName = $_SESSION['name'] ?? 'Unknown User';
+$profileRole = $_SESSION['role'] ?? 'Employer';
+// Normalize role display
+$profileRoleDisplay = ucwords(str_replace('_', ' ', $profileRole));
+
 $metrics = [
   ['label' => 'Total Probationary', 'value' => '42', 'badge' => '+12%', 'tone' => 'positive', 'iconClass' => 'icon-warm', 'icon' => 'users'],
   ['label' => 'Nearing Deadline (< 30 days)', 'value' => '8', 'badge' => 'Action Req.', 'tone' => 'warning', 'iconClass' => 'icon-gold', 'icon' => 'hourglass'],
@@ -120,11 +133,11 @@ $recommendation = 'Customer Service Excellence Training Module';
       </div>
 
       <div class="sidebar-footer">
-        <div class="profile-avatar"
-          style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');"></div>
+        <div class="profile-avatar" style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');">
+        </div>
         <div>
-          <div class="profile-name">Juan Dela Cruz</div>
-          <div class="profile-role">HR Director</div>
+          <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
+          <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
         </div>
       </div>
     </aside>
@@ -142,11 +155,15 @@ $recommendation = 'Customer Service Excellence Training Module';
             2 days until regularization deadline
           </div>
           <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
+          <a class="ghost-button" href="../logout.php" style="margin-left:8px;" aria-label="Sign out">Sign out</a>
         </div>
       </header>
 
       <section class="hero">
-        <h1>Probationary Overview</h1>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <h1 style="margin:0;">Probationary Overview</h1>
+          <a class="primary-button" href="add_employee.php" style="margin-left:12px;">Add Employee</a>
+        </div>
         <p>Track and evaluate employees approaching regularization.</p>
       </section>
 
@@ -178,7 +195,8 @@ $recommendation = 'Customer Service Excellence Training Module';
             </div>
             <div class="panel-actions">
               <button class="ghost-button" type="button"><?php echo $icons['filter']; ?> Filter</button>
-              <button class="ghost-button icon-only" type="button" aria-label="Export"><?php echo $icons['download']; ?></button>
+              <button class="ghost-button icon-only" type="button"
+                aria-label="Export"><?php echo $icons['download']; ?></button>
             </div>
           </div>
 
@@ -255,10 +273,10 @@ $recommendation = 'Customer Service Excellence Training Module';
           <h2><?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?></h2>
           <p id="insightText">
             <?php
-              $parts = explode('%s', $insightText);
-              echo htmlspecialchars($parts[0], ENT_QUOTES);
-              echo '<strong>' . htmlspecialchars($insightName, ENT_QUOTES) . '</strong>';
-              echo htmlspecialchars($parts[1], ENT_QUOTES);
+            $parts = explode('%s', $insightText);
+            echo htmlspecialchars($parts[0], ENT_QUOTES);
+            echo '<strong>' . htmlspecialchars($insightName, ENT_QUOTES) . '</strong>';
+            echo htmlspecialchars($parts[1], ENT_QUOTES);
             ?>
           </p>
 

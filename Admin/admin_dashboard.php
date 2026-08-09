@@ -64,6 +64,16 @@ $recentActivity = [
     </aside>
 
     <main class="main" id="dashboard">
+      <div class="topbar">
+        <div class="search-bar" aria-hidden="true">&nbsp;</div>
+        <div class="topbar-actions">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="profile-name" style="font-weight:700;">System Admin</div>
+            <a class="ghost-button" href="../logout.php"
+              style="text-decoration:none;padding:8px 10px;border-radius:10px;">Sign out</a>
+          </div>
+        </div>
+      </div>
       <section class="hero">
         <p class="eyebrow">Admin Overview</p>
         <h1>Manage user accounts and system-wide settings.</h1>

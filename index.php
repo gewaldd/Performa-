@@ -1,5 +1,5 @@
 <?php
 // Root entrypoint for the local PHP server.
-// Redirects to the probationary employee dashboard page.
-header('Location: ProbationaryEmployee/probationary_employee_dashboard.php');
+// Redirect to a login page so users can authenticate.
+header('Location: login.php');
 exit;

@@ -7,7 +7,7 @@ const recommendationTitle = document.getElementById("recommendationTitle");
 let activeFilter = "all";
 
 function applyFilters() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
   rows.forEach((row) => {
     const rowText = row.dataset.search || "";
@@ -25,14 +25,16 @@ document.querySelectorAll(".nav-item").forEach((item) => {
 });
 
 if (searchInput) {
-  searchInput.addEventListener("input", applyFilters);
+  if (searchInput) {
+    searchInput.addEventListener("input", applyFilters);
+  }
 }
 
 chips.forEach((chip) => {
   chip.addEventListener("click", () => {
     activeFilter = chip.dataset.filter;
     chips.forEach((item) => item.classList.toggle("active", item === chip));
-    applyFilters();
+    if (rows.length > 0) applyFilters();
   });
 });
 

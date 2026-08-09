@@ -1,49 +1,44 @@
-// ── Role filter chips ──────────────────────────────────────────────
-const chips = Array.from(document.querySelectorAll(".filter-chip"));
-const rows = Array.from(document.querySelectorAll(".table-row"));
+// accounts-script.js: only add table-specific behavior (sorting).
+// Filtering/search is handled by Admin/script.js; avoid redeclaring globals.
 
-chips.forEach((chip) => {
-  chip.addEventListener("click", () => {
-    chips.forEach((c) => c.classList.toggle("active", c === chip));
-    const filter = chip.dataset.filter;
-    rows.forEach((row) => {
-      row.hidden = filter !== "all" && row.dataset.filter !== filter;
+// The create account form is posted server-side to create_user.php
+// so no client-side demo handler is required. Leave form submission
+// to the server (Admin/create_user.php handles creation and messages).
+
+// ── Table sorting (click column headers) ────────────────────────────
+const tableHead = document.querySelector('.table-head');
+if (tableHead) {
+  const headers = Array.from(tableHead.children);
+  headers.forEach((h, idx) => {
+    h.style.cursor = 'pointer';
+    h.addEventListener('click', () => {
+      const dir = h.dataset.order === 'asc' ? 'desc' : 'asc';
+      headers.forEach(x => delete x.dataset.order);
+      h.dataset.order = dir;
+
+      const container = document.querySelector('.table-wrap');
+      if (!container) return;
+
+      // collect current visible rows
+      const currentRows = Array.from(container.querySelectorAll('.table-row')).filter(r => !r.hidden);
+
+      currentRows.sort((a, b) => {
+        const aCell = (a.children[idx] && a.children[idx].innerText) ? a.children[idx].innerText.trim() : '';
+        const bCell = (b.children[idx] && b.children[idx].innerText) ? b.children[idx].innerText.trim() : '';
+        const aNum = parseFloat(aCell.replace(/[^0-9.-]+/g, ''));
+        const bNum = parseFloat(bCell.replace(/[^0-9.-]+/g, ''));
+        let cmp = 0;
+        if (!isNaN(aNum) && !isNaN(bNum) && aCell !== '' && bCell !== '') {
+          cmp = aNum - bNum;
+        } else {
+          cmp = aCell.localeCompare(bCell, undefined, { sensitivity: 'base' });
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+
+      // remove existing rows and append in sorted order
+      Array.from(container.querySelectorAll('.table-row')).forEach(r => r.remove());
+      currentRows.forEach(r => container.appendChild(r));
     });
-  });
-});
-
-// ── Create account form ──────────────────────────────────────────────
-const createAccountForm = document.getElementById("createAccountForm");
-
-if (createAccountForm) {
-  createAccountForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const name = document.getElementById("accName").value.trim();
-    const email = document.getElementById("accEmail").value.trim();
-    const role = document.getElementById("accRole").value;
-    const tempPassword = document.getElementById("accTempPassword").value;
-
-    if (!name || !email || !role || !tempPassword) {
-      alert("Please fill out every field before creating the account.");
-      return;
-    }
-
-    // ── TODO(firebase): replace with a real account creation flow ──
-    //
-    // Typical pattern: an Admin-only Cloud Function that calls
-    // admin.auth().createUser({ email, password: tempPassword }),
-    // then writes a matching profile doc to Firestore:
-    //
-    // await setDoc(doc(db, "Users", newUser.uid), {
-    //   name, email, role, status: "active", createdAt: serverTimestamp(),
-    // });
-    //
-    // Client-side createUserWithEmailAndPassword() is NOT used here
-    // because it would sign the Admin OUT and sign the new user IN —
-    // account creation by an Admin must happen server-side.
-
-    alert(`(Demo) Account created for ${name} (${role}). Firebase not yet connected.`);
-    createAccountForm.reset();
   });
 }

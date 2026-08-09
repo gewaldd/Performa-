@@ -5,14 +5,43 @@ $navItems = [
   ['label' => 'System Settings', 'href' => 'settings.php', 'active' => false],
 ];
 
-// TODO(firebase): replace with a Firestore query on the Users collection,
-// selecting { name, email, role, status } for every account.
-$accounts = [
-  ['name' => 'Juan Dela Cruz', 'email' => 'juan@smallsteps.ph', 'role' => 'Employer', 'status' => 'Active', 'statusClass' => 'status-good'],
-  ['name' => 'Sofia Panganiban', 'email' => 'sofia@smallsteps.ph', 'role' => 'Supervisor', 'status' => 'Active', 'statusClass' => 'status-good'],
-  ['name' => 'Maria Clara', 'email' => 'maria@smallsteps.ph', 'role' => 'Probationary Employee', 'status' => 'Active', 'statusClass' => 'status-good'],
-  ['name' => 'Jose Rizal', 'email' => 'jose@smallsteps.ph', 'role' => 'Probationary Employee', 'status' => 'Active', 'statusClass' => 'status-good'],
-];
+require_once __DIR__ . '/../firebase_init.php';
+
+// Load users from Firestore; fall back to an empty list on error.
+$accounts = [];
+try {
+  $docs = firestore_list_documents('Users');
+  foreach ($docs as $d) {
+    $roleRaw = $d['role'] ?? ($d['roles'] ?? 'probationary_employee');
+    // Normalize role for display
+    $roleDisplay = str_replace('_', ' ', $roleRaw);
+    $roleDisplay = ucwords($roleDisplay);
+    // Compute a short normalized role key for client-side filtering
+    $roleKey = strtolower($roleRaw);
+    if (strpos($roleKey, 'probation') !== false) {
+      $roleKey = 'probationary';
+    } elseif (strpos($roleKey, 'employ') !== false) {
+      $roleKey = 'employer';
+    } elseif (strpos($roleKey, 'supervis') !== false) {
+      $roleKey = 'supervisor';
+    } elseif (strpos($roleKey, 'admin') !== false) {
+      $roleKey = 'admin';
+    }
+    $status = $d['status'] ?? 'Active';
+    $statusClass = strtolower($status) === 'active' ? 'status-good' : 'status-bad';
+    $accounts[] = [
+      'name' => $d['name'] ?? $d['email'] ?? 'Unknown',
+      'email' => $d['email'] ?? '',
+      'role' => $roleDisplay,
+      'roleKey' => $roleKey,
+      'status' => $status,
+      'statusClass' => $statusClass,
+      'uid' => $d['uid'] ?? null,
+    ];
+  }
+} catch (Throwable $e) {
+  // keep $accounts empty and allow the static demo UI to show nothing
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,6 +148,7 @@ $accounts = [
             <button class="filter-chip active" type="button" data-filter="all">All</button>
             <button class="filter-chip" type="button" data-filter="employer">Employer</button>
             <button class="filter-chip" type="button" data-filter="supervisor">Supervisor</button>
+            <button class="filter-chip" type="button" data-filter="admin">Admin</button>
             <button class="filter-chip" type="button" data-filter="probationary">Probationary</button>
           </div>
           <p class="table-note">Search by name, email, or role.</p>
@@ -130,7 +160,8 @@ $accounts = [
           </div>
           <?php foreach ($accounts as $account): ?>
             <div class="table-row" style="grid-template-columns: 1.4fr 1fr 0.7fr 0.9fr;"
-              data-filter="<?php echo htmlspecialchars(strtolower(str_replace(' ', '', explode(' ', $account['role'])[0])), ENT_QUOTES); ?>">
+              data-role="<?php echo htmlspecialchars($account['roleKey'] ?? '', ENT_QUOTES); ?>"
+              data-filter="<?php echo htmlspecialchars($account['roleKey'] ?? '', ENT_QUOTES); ?>">
               <div class="employee-cell">
                 <div class="avatar"></div>
                 <div>
@@ -159,32 +190,10 @@ $accounts = [
             <p>Admin creates the login for a new Employer, Supervisor, or Probationary Employee.</p>
           </div>
         </div>
-        <form class="account-form" id="createAccountForm" style="padding: 0 18px 18px;">
-          <div class="form-row">
-            <label for="accName">Full Name</label>
-            <input type="text" id="accName" name="name" required />
-          </div>
-          <div class="form-row">
-            <label for="accEmail">Email</label>
-            <input type="email" id="accEmail" name="email" required />
-          </div>
-          <div class="form-row">
-            <label for="accRole">Role</label>
-            <select id="accRole" name="role" required>
-              <option value="" disabled selected>Select a role</option>
-              <option value="employer">Employer</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="probationary">Probationary Employee</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label for="accTempPassword">Temporary Password</label>
-            <input type="text" id="accTempPassword" name="tempPassword" required />
-          </div>
-          <div class="full-width">
-            <button class="primary-button" type="submit">Create Account</button>
-          </div>
-        </form>
+        <div style="padding: 18px;">
+          <a href="create_user.php" class="primary-button"
+            style="display:inline-block;padding:12px 18px;border-radius:12px;text-decoration:none;">Create Account</a>
+        </div>
       </section>
     </main>
   </div>

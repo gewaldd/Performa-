@@ -7,12 +7,16 @@ const recommendationTitle = document.getElementById("recommendationTitle");
 let activeFilter = "all";
 
 function applyFilters() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
-  rows.forEach((row) => {
-    const rowText = row.dataset.search || "";
+  // Re-query rows live in case the table has been reordered or changed
+  const liveRows = Array.from(document.querySelectorAll('.table-row'));
+  liveRows.forEach((row) => {
+    const rowText = row.dataset.search || '';
     const matchesSearch = !query || rowText.includes(query);
-    const matchesFilter = activeFilter === "all" || row.dataset.filter === activeFilter;
+    // Prefer an explicit data-role attribute (set server-side), fall back to data-filter
+    const roleKey = (row.dataset.role || row.dataset.filter || '').toLowerCase();
+    const matchesFilter = activeFilter === 'all' || roleKey === activeFilter;
     row.hidden = !(matchesSearch && matchesFilter);
   });
 }

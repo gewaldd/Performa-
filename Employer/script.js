@@ -7,7 +7,7 @@ const recommendationTitle = document.getElementById("recommendationTitle");
 let activeFilter = "all";
 
 function applyFilters() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
   rows.forEach((row) => {
     const rowText = row.dataset.search || "";
@@ -47,6 +47,4 @@ if (assignButton && recommendationTitle) {
   });
 }
 
-if (searchInput && rows.length > 0) {
-  applyFilters();
-}
+if (rows.length > 0) applyFilters();

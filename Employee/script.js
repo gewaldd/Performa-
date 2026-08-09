@@ -7,7 +7,7 @@ const recommendationTitle = document.getElementById("recommendationTitle");
 let activeFilter = "all";
 
 function applyFilters() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
   rows.forEach((row) => {
     const rowText = row.dataset.search || "";
@@ -24,7 +24,9 @@ document.querySelectorAll(".nav-item").forEach((item) => {
   });
 });
 
-searchInput.addEventListener("input", applyFilters);
+if (searchInput) {
+  searchInput.addEventListener("input", applyFilters);
+}
 
 chips.forEach((chip) => {
   chip.addEventListener("click", () => {
@@ -45,4 +47,4 @@ if (assignButton && recommendationTitle) {
   });
 }
 
-applyFilters();
+if (rows.length > 0) applyFilters();
