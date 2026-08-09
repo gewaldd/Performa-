@@ -7,10 +7,18 @@ $icons = [
   'settings' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  'calendar' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  'edit' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  'code' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  'clock' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  'video' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
+  'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  'star' => '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  'dot' => '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>',
+  'alert' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
   'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
-  'hourglass' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M5 22v-4a7 7 0 0 1 5-6.7A7 7 0 0 1 5 4.7V2M19 22v-4a7 7 0 0 0-5-6.7A7 7 0 0 0 19 4.7V2"/></svg>',
-  'trend' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-  'check' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
 ];
 
 $navItems = [
@@ -21,17 +29,62 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
-$metrics = [
-  ['label' => 'Average KPI', 'value' => '4.2', 'badge' => '+0.3', 'tone' => 'positive', 'iconClass' => 'icon-warm', 'icon' => 'trend'],
-  ['label' => 'At Risk', 'value' => '8', 'badge' => 'Needs follow-up', 'tone' => 'warning', 'iconClass' => 'icon-gold', 'icon' => 'hourglass'],
-  ['label' => 'Review Ready', 'value' => '11', 'badge' => 'Stable', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'check'],
+$employeeKpis = [
+  [
+    'name' => 'Technical Proficiency',
+    'sub' => 'Software development core skills',
+    'target' => 4.5,
+    'current' => 4.7,
+    'stars' => 5,
+    'trend' => 'up',
+    'status' => 'Exceeding',
+    'statusClass' => 'status-good',
+  ],
+  [
+    'name' => 'Customer Satisfaction',
+    'sub' => 'Client feedback ratings',
+    'target' => 4.0,
+    'current' => 3.2,
+    'stars' => 3,
+    'trend' => 'flat',
+    'status' => 'Warning',
+    'statusClass' => 'status-warning',
+  ],
+  [
+    'name' => 'Team Collaboration',
+    'sub' => 'Peer review participation',
+    'target' => 4.2,
+    'current' => 2.8,
+    'stars' => 2,
+    'trend' => 'down',
+    'status' => 'Below Target',
+    'statusClass' => 'status-danger',
+  ],
 ];
 
-$kpiBreakdown = [
-  ['label' => 'Customer Support Spec.', 'metric' => 'Response Time & CSAT', 'score' => 3.8, 'accentColor' => '#f0a11b', 'progress' => 76],
-  ['label' => 'Software Engineer', 'metric' => 'Sprint Velocity & Code Quality', 'score' => 4.5, 'accentColor' => '#2f6df6', 'progress' => 90],
-  ['label' => 'Marketing Associate', 'metric' => 'Campaign Output & Engagement', 'score' => 4.8, 'accentColor' => '#ed5b57', 'progress' => 96],
+$categoryCards = [
+  [
+    'badge' => 'Operational', 'badgeClass' => 'blue', 'icon' => 'clock',
+    'title' => 'Attendance Rate', 'target' => '4.8', 'current' => '4.2 / 5.0',
+    'progress' => 84, 'accentColor' => '#16a76d',
+    'status' => 'Exceeding', 'statusIcon' => 'star', 'statusClass' => 'status-good',
+  ],
+  [
+    'badge' => 'Technical', 'badgeClass' => 'purple', 'icon' => 'code',
+    'title' => 'Code Quality', 'target' => '4.5', 'current' => '3.9 / 5.0',
+    'progress' => 78, 'accentColor' => '#2f6df6',
+    'status' => 'On Track', 'statusIcon' => 'dot', 'statusClass' => 'status-ready',
+  ],
+  [
+    'badge' => 'Soft Skills', 'badgeClass' => 'orange', 'icon' => 'video',
+    'title' => 'Team Collaboration', 'target' => '4.2', 'current' => '3.1 / 5.0',
+    'progress' => 62, 'accentColor' => '#eb9e21',
+    'status' => 'Below Target', 'statusIcon' => 'alert', 'statusClass' => 'status-warning',
+  ],
 ];
+
+$trendGlyph = ['up' => '↑↑', 'flat' => '↔', 'down' => '↓↓'];
+$trendClass = ['up' => 'trend-up', 'flat' => 'trend-flat', 'down' => 'trend-down'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +93,7 @@ $kpiBreakdown = [
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performa | KPIs</title>
-  <meta name="description" content="Monitor performance trends, deadlines, and conversion readiness." />
+  <meta name="description" content="Define and track organization-wide performance metrics." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -81,75 +134,107 @@ $kpiBreakdown = [
     </aside>
 
     <main class="main">
-      <header class="topbar">
-        <label class="search-bar" aria-label="Search KPIs">
-          <span class="search-icon"><?php echo $icons['search']; ?></span>
-          <input id="kpiSearch" type="search" placeholder="Search employees, reports..." />
-        </label>
-
-        <div class="topbar-actions">
-          <div class="deadline-pill">
-            <span class="deadline-icon"><?php echo $icons['bell']; ?></span>
-            2 days until regularization deadline
-          </div>
-          <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
+      <div class="page-header">
+        <div>
+          <h1>Key Performance Indicators</h1>
+          <p>Define and track organization-wide performance metrics.</p>
         </div>
-      </header>
+        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Create KPI</button>
+      </div>
 
-      <section class="hero">
-        <h1>KPIs</h1>
-        <p>Monitor performance trends, deadlines, and conversion readiness.</p>
-      </section>
+      <div class="toolbar">
+        <label class="search-bar" aria-label="Search KPIs, categories">
+          <span class="search-icon"><?php echo $icons['search']; ?></span>
+          <input type="search" placeholder="Search KPIs, categories..." />
+        </label>
+        <div class="toolbar-pill"><?php echo $icons['calendar']; ?> Next Review: Oct 15</div>
+        <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
+      </div>
 
-      <section class="metrics" aria-label="KPI summary">
-        <?php foreach ($metrics as $metric): ?>
-          <article class="metric-card">
-            <div class="metric-card-top">
-              <div class="metric-icon <?php echo htmlspecialchars($metric['iconClass'], ENT_QUOTES); ?>">
-                <?php echo $icons[$metric['icon']]; ?>
-              </div>
-              <div class="metric-badge <?php echo htmlspecialchars($metric['tone'], ENT_QUOTES); ?>">
-                <?php echo htmlspecialchars($metric['badge'], ENT_QUOTES); ?>
-              </div>
+      <div class="section-header">
+        <div>
+          <h2>Individual Employee KPI</h2>
+          <p>Manage specific performance targets and scores for individual team members.</p>
+        </div>
+        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Export Report</button>
+      </div>
+
+      <div class="employee-select-wrap">
+        <span class="employee-select-label">Select Employee:</span>
+        <div class="employee-select">
+          <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+          <span>Maria Clara</span>
+          <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
+        </div>
+      </div>
+
+      <div class="metrics-panel">
+        <div class="metrics-panel-header">
+          <h3>Performance Metrics</h3>
+        </div>
+
+        <div class="kpi-table-head">
+          <span>KPI Name</span>
+          <span>Target Score</span>
+          <span>Current Score</span>
+          <span>Trend</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+
+        <?php foreach ($employeeKpis as $kpi): ?>
+          <div class="kpi-row">
+            <div>
+              <div class="kpi-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></div>
+              <div class="kpi-sub"><?php echo htmlspecialchars($kpi['sub'], ENT_QUOTES); ?></div>
             </div>
-            <div class="metric-meta">
-              <span><?php echo htmlspecialchars($metric['label'], ENT_QUOTES); ?></span>
-              <strong><?php echo htmlspecialchars($metric['value'], ENT_QUOTES); ?></strong>
+            <div class="kpi-target"><?php echo number_format($kpi['target'], 1); ?></div>
+            <div class="kpi-current">
+              <div class="stars" aria-hidden="true">
+                <?php echo str_repeat('★', (int) $kpi['stars']) . str_repeat('☆', 5 - (int) $kpi['stars']); ?>
+              </div>
+              <strong><?php echo number_format($kpi['current'], 1); ?></strong>
             </div>
+            <div class="trend <?php echo $trendClass[$kpi['trend']]; ?>"><?php echo $trendGlyph[$kpi['trend']]; ?></div>
+            <div>
+              <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>">
+                <?php echo htmlspecialchars($kpi['status'], ENT_QUOTES); ?>
+              </span>
+            </div>
+            <div>
+              <button class="edit-button" type="button" aria-label="Edit KPI"><?php echo $icons['edit']; ?></button>
+            </div>
+          </div>
+        <?php endforeach; ?>
+
+        <button class="add-kpi-button" type="button"><?php echo $icons['plus']; ?> Add New KPI for this Employee</button>
+      </div>
+
+      <div class="category-cards">
+        <?php foreach ($categoryCards as $card): ?>
+          <article class="category-card">
+            <div class="category-card-top">
+              <span class="category-badge <?php echo htmlspecialchars($card['badgeClass'], ENT_QUOTES); ?>">
+                <?php echo htmlspecialchars(strtoupper($card['badge']), ENT_QUOTES); ?>
+              </span>
+              <span class="category-icon"><?php echo $icons[$card['icon']]; ?></span>
+            </div>
+            <h4 class="category-title"><?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?></h4>
+            <div class="category-target-row">
+              <span>Target: <?php echo htmlspecialchars($card['target'], ENT_QUOTES); ?></span>
+              <strong><?php echo htmlspecialchars($card['current'], ENT_QUOTES); ?></strong>
+            </div>
+            <div class="category-bar">
+              <span
+                style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"></span>
+            </div>
+            <span class="category-status <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
+              <?php echo $icons[$card['statusIcon']]; ?>
+              <?php echo htmlspecialchars(strtoupper($card['status']), ENT_QUOTES); ?>
+            </span>
           </article>
         <?php endforeach; ?>
-      </section>
-
-      <section class="content-grid content-grid--single">
-        <div class="panel evaluations">
-          <div class="panel-header">
-            <div>
-              <h2>KPI Breakdown by Role</h2>
-              <p>Current scoring trend for each probationary employee's core metric.</p>
-            </div>
-          </div>
-
-          <div id="kpiRows">
-            <?php foreach ($kpiBreakdown as $row): ?>
-              <div class="table-row" style="grid-template-columns: 1.4fr 1fr 0.6fr;" role="row">
-                <div>
-                  <div class="employee-name"><?php echo htmlspecialchars($row['label'], ENT_QUOTES); ?></div>
-                  <div class="employee-role"><?php echo htmlspecialchars($row['metric'], ENT_QUOTES); ?></div>
-                </div>
-                <div class="timeline-cell" role="cell">
-                  <div class="timeline-bar">
-                    <span
-                      style="width: <?php echo (int) $row['progress']; ?>%; background: <?php echo htmlspecialchars($row['accentColor'], ENT_QUOTES); ?>;"></span>
-                  </div>
-                </div>
-                <div class="score-cell" role="cell">
-                  <strong class="score-value"><?php echo number_format((float) $row['score'], 1); ?></strong>
-                </div>
-              </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      </section>
+      </div>
     </main>
   </div>
 

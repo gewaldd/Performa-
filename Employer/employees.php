@@ -8,8 +8,10 @@ $icons = [
   'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
   'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
-  'filter' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  'more-vertical' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>',
 ];
 
 $navItems = [
@@ -20,45 +22,34 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
-$employees = [
+$directory = [
   [
-    'name' => 'Maria Clara',
-    'role' => 'Customer Support Spec.',
+    'name' => 'Maria Clara', 'email' => 'maria.clara@performa.ph',
     'avatar' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
-    'timeline' => '45 days left',
-    'progress' => 72,
-    'score' => 3.8,
-    'stars' => 4,
-    'status' => 'Needs Review',
-    'statusClass' => 'status-warning',
-    'statusKey' => 'needs-review',
-    'accentColor' => '#f0a11b',
+    'role' => 'Customer Support Spec.', 'dept' => 'Customer Success', 'deptClass' => 'dept-blue',
+    'type' => 'Probationary', 'status' => 'Active', 'statusClass' => 'status-good',
   ],
   [
-    'name' => 'Jose Rizal',
-    'role' => 'Software Engineer',
+    'name' => 'Jose Rizal', 'email' => 'jose.rizal@performa.ph',
     'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80',
-    'timeline' => '90 days left',
-    'progress' => 54,
-    'score' => 4.5,
-    'stars' => 5,
-    'status' => 'On Track',
-    'statusClass' => 'status-good',
-    'statusKey' => 'on-track',
-    'accentColor' => '#2f6df6',
+    'role' => 'Software Engineer', 'dept' => 'Engineering', 'deptClass' => 'dept-gray',
+    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
   ],
   [
-    'name' => 'Gabriela Silang',
-    'role' => 'Marketing Associate',
+    'name' => 'Gabriela Silang', 'email' => 'gabriela.s@performa.ph',
     'avatar' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=160&q=80',
-    'timeline' => '2 days left',
-    'progress' => 94,
-    'score' => 4.8,
-    'stars' => 5,
-    'status' => 'Ready for Reg.',
-    'statusClass' => 'status-ready',
-    'statusKey' => 'ready-for-reg',
-    'accentColor' => '#ed5b57',
+    'role' => 'Marketing Associate', 'dept' => 'Marketing', 'deptClass' => 'dept-orange',
+    'type' => 'Regular', 'status' => 'On Leave', 'statusClass' => 'status-warning',
+  ],
+  [
+    'name' => 'Andres Bonifacio', 'email' => 'andres.b@performa.ph', 'avatar' => null,
+    'role' => 'Sales Director', 'dept' => 'Sales', 'deptClass' => 'dept-green',
+    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
+  ],
+  [
+    'name' => 'Melchora Aquino', 'email' => 'm.aquino@performa.ph', 'avatar' => null,
+    'role' => 'Operations Lead', 'dept' => 'Operations', 'deptClass' => 'dept-purple',
+    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
   ],
 ];
 ?>
@@ -69,7 +60,7 @@ $employees = [
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performa | Employees</title>
-  <meta name="description" content="Review probationary employees, their roles, and current status." />
+  <meta name="description" content="Manage and organize your workforce directory." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -111,99 +102,73 @@ $employees = [
 
     <main class="main">
       <header class="topbar">
-        <label class="search-bar" aria-label="Search employees">
+        <label class="search-bar" aria-label="Search employees, departments">
           <span class="search-icon"><?php echo $icons['search']; ?></span>
-          <input id="employeeSearch" type="search" placeholder="Search employees, reports..." />
+          <input type="search" placeholder="Search employees, departments..." />
         </label>
-
         <div class="topbar-actions">
-          <div class="deadline-pill">
-            <span class="deadline-icon"><?php echo $icons['bell']; ?></span>
-            2 days until regularization deadline
-          </div>
+          <div class="pending-pill"><?php echo $icons['bell']; ?> 2 pending approvals</div>
           <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
         </div>
       </header>
 
-      <section class="hero">
-        <h1>Employees</h1>
-        <p>Review probationary employees, their roles, and current status.</p>
-      </section>
+      <div class="page-header">
+        <div>
+          <h1>Employees</h1>
+          <p>Manage and organize your workforce directory.</p>
+        </div>
+        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Add Employee</button>
+      </div>
 
-      <section class="content-grid content-grid--single">
-        <div class="panel evaluations">
-          <div class="panel-header">
-            <div>
-              <h2>Employee List</h2>
-              <p>Track who is on track, who needs review, and who is ready for regularization.</p>
+      <div class="filter-bar">
+        <div class="filter-group">
+          <div class="filter-select"><span>Department:</span> All Departments <?php echo $icons['chevron-down']; ?></div>
+          <div class="filter-select"><span>Status:</span> Active <?php echo $icons['chevron-down']; ?></div>
+          <div class="filter-select"><span>Type:</span> All Types <?php echo $icons['chevron-down']; ?></div>
+        </div>
+        <div class="filter-actions">
+          <button class="reset-button" type="button">Reset</button>
+          <button class="icon-button-square" type="button" aria-label="Export"><?php echo $icons['download']; ?></button>
+        </div>
+      </div>
+
+      <div class="directory-panel">
+        <div class="directory-head">
+          <span>Employee</span>
+          <span>Role</span>
+          <span>Department</span>
+          <span>Employment Type</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+
+        <?php foreach ($directory as $person): ?>
+          <div class="directory-row">
+            <div class="employee-cell">
+              <div class="avatar<?php echo $person['avatar'] ? '' : ' avatar-empty'; ?>"
+                <?php if ($person['avatar']): ?>style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');"<?php endif; ?>>
+              </div>
+              <div>
+                <div class="employee-name"><?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?></div>
+                <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
+              </div>
             </div>
-            <div class="panel-actions">
-              <button class="ghost-button" type="button"><?php echo $icons['filter']; ?> Filter</button>
-              <button class="ghost-button icon-only" type="button" aria-label="Export"><?php echo $icons['download']; ?></button>
-            </div>
+            <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
+            <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
+            <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
+            <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
+            <div><button class="edit-button" type="button" aria-label="More actions"><?php echo $icons['more-vertical']; ?></button></div>
           </div>
+        <?php endforeach; ?>
 
-          <div class="table-toolbar">
-            <div class="chip-group" role="tablist" aria-label="Employee filters">
-              <button class="filter-chip active" type="button" data-filter="all">All</button>
-              <button class="filter-chip" type="button" data-filter="needs-review">Needs Review</button>
-              <button class="filter-chip" type="button" data-filter="on-track">On Track</button>
-              <button class="filter-chip" type="button" data-filter="ready-for-reg">Ready</button>
-            </div>
-          </div>
-
-          <div class="table-wrap" role="table" aria-label="Employee list">
-            <div class="table-head" role="row">
-              <span role="columnheader">Employee</span>
-              <span role="columnheader">Timeline</span>
-              <span role="columnheader">KPI Score</span>
-              <span role="columnheader">Status</span>
-            </div>
-
-            <div id="employeeRows">
-              <?php foreach ($employees as $employee): ?>
-                <div class="table-row" role="row"
-                  data-search="<?php echo htmlspecialchars(strtolower($employee['name'] . ' ' . $employee['role'] . ' ' . $employee['status']), ENT_QUOTES); ?>"
-                  data-filter="<?php echo htmlspecialchars($employee['statusKey'], ENT_QUOTES); ?>">
-                  <div class="employee-cell" role="cell">
-                    <div class="avatar"
-                      style="background-image: url('<?php echo htmlspecialchars($employee['avatar'], ENT_QUOTES); ?>');">
-                    </div>
-                    <div>
-                      <div class="employee-name"><?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?></div>
-                      <div class="employee-role"><?php echo htmlspecialchars($employee['role'], ENT_QUOTES); ?></div>
-                    </div>
-                  </div>
-
-                  <div class="timeline-cell" role="cell">
-                    <div class="timeline-text">
-                      <span class="timeline-left"
-                        style="color: <?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;"><?php echo htmlspecialchars($employee['timeline'], ENT_QUOTES); ?></span>
-                    </div>
-                    <div class="timeline-bar">
-                      <span
-                        style="width: <?php echo (int) $employee['progress']; ?>%; background: <?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;"></span>
-                    </div>
-                  </div>
-
-                  <div class="score-cell" role="cell">
-                    <strong class="score-value"><?php echo number_format((float) $employee['score'], 1); ?></strong>
-                    <div class="stars" aria-hidden="true">
-                      <?php echo str_repeat('★', (int) $employee['stars']); ?>
-                      <?php echo str_repeat('☆', 5 - (int) $employee['stars']); ?>
-                    </div>
-                  </div>
-
-                  <div class="status-cell" role="cell">
-                    <span
-                      class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($employee['status'], ENT_QUOTES); ?></span>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
+        <div class="pagination-bar">
+          <span>Showing <strong>5</strong> of <strong>124</strong> employees</span>
+          <div class="page-buttons">
+            <button class="page-btn" type="button">Previous</button>
+            <button class="page-btn active" type="button">Next</button>
           </div>
         </div>
-      </section>
+      </div>
     </main>
   </div>
 
