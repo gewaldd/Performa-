@@ -263,6 +263,22 @@ body::before {
   text-align: center;
 }
 
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  text-align: left;
+}
+
+.hero-top h1 {
+  margin: 0 0 6px;
+}
+
+.hero-top p {
+  margin: 0;
+}
+
 .hero h1 {
   margin: 0 0 8px;
   font-size: clamp(1.6rem, 2.4vw, 2rem);
@@ -1804,6 +1820,19 @@ body::before {
   }
 }
 
+@media (max-width: 960px) {
+  .metrics,
+  .category-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-card-row,
+  .form-grid,
+  .report-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1870,5 +1899,115 @@ body::before {
   .employee-cell,
   .status-cell {
     grid-column: 1;
+  }
+
+  /* Newer components: stack into single-column rows on phones */
+  .page-header,
+  .hero-top,
+  .toolbar,
+  .filter-bar,
+  .directory-head,
+  .directory-row,
+  .kpi-table-head,
+  .kpi-row,
+  .report-form-row,
+  .profile-photo-row,
+  .settings-card-row,
+  .form-grid,
+  .pagination-bar,
+  .contributors-row,
+  .section-header {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header,
+  .hero-top,
+  .toolbar,
+  .filter-bar,
+  .directory-row,
+  .kpi-row,
+  .profile-photo-row,
+  .pagination-bar,
+  .contributors-row,
+  .section-header {
+    display: grid;
+    gap: 12px;
+  }
+
+  .directory-head,
+  .kpi-table-head {
+    display: none;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .filter-select {
+    justify-content: space-between;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .toolbar-pill,
+  .pending-pill,
+  .btn-primary,
+  .btn-dark,
+  .select-field,
+  .employee-select {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .report-item {
+    flex-wrap: wrap;
+  }
+
+  .report-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .btn-outline {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .settings-card {
+    flex-wrap: wrap;
+  }
+
+  .settings-card-action {
+    width: 100%;
+    text-align: center;
+  }
+
+  .contributors-label {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .page-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .hero h1 {
+    font-size: 1.4rem;
+  }
+
+  .metric-meta strong {
+    font-size: 1.6rem;
+  }
+
+  .brand-name {
+    font-size: 15px;
   }
 }

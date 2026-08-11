@@ -15,6 +15,7 @@ $icons = [
   'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
   'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
+  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   'hourglass' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M5 22v-4a7 7 0 0 1 5-6.7A7 7 0 0 1 5 4.7V2M19 22v-4a7 7 0 0 0-5-6.7A7 7 0 0 0 19 4.7V2"/></svg>',
   'trend' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
   'filter' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
@@ -33,7 +34,9 @@ $navItems = [
 ];
 
 // session: show signed-in user's name/role if present
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 if (empty($_SESSION['uid'])) {
   // not logged in — redirect to project-relative login
   header('Location: ../login.php');
@@ -188,16 +191,18 @@ $recommendation = 'Customer Service Excellence Training Module';
             2 days until regularization deadline
           </div>
           <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
-          <a class="ghost-button" href="../logout.php" style="margin-left:8px;" aria-label="Sign out">Sign out</a>
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
       </header>
 
       <section class="hero">
-        <div style="display:flex;gap:12px;align-items:center;">
-          <h1 style="margin:0;">Probationary Overview</h1>
-          <a class="primary-button" href="add_employee.php" style="margin-left:12px;">Add Employee</a>
+        <div class="hero-top">
+          <div>
+            <h1>Probationary Overview</h1>
+            <p>Track and evaluate employees approaching regularization.</p>
+          </div>
+          <a class="btn-primary" href="add_employee.php"><?php echo $icons['plus']; ?> Add Employee</a>
         </div>
-        <p>Track and evaluate employees approaching regularization.</p>
       </section>
 
       <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
