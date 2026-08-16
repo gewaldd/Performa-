@@ -17,6 +17,76 @@ if (empty($_SESSION['uid'])) {
 $profileName = $_SESSION['name'] ?? 'Unknown User';
 $profileRole = $_SESSION['role'] ?? 'Employer';
 $profileRoleDisplay = ucwords(str_replace('_', ' ', $profileRole));
+$profileEmail = $_SESSION['email'] ?? '';
+$profileDepartment = $_SESSION['department'] ?? '';
+
+$message = '';
+$messageTone = 'info';
+$action = $_POST['action'] ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_profile') {
+  $newName = trim($_POST['fullName'] ?? '');
+  $newEmail = trim($_POST['email'] ?? '');
+  $newDepartment = trim($_POST['department'] ?? '');
+
+  if (!$newName || !$newEmail) {
+    $message = 'Full name and email are required.';
+    $messageTone = 'error';
+  } else {
+    try {
+      $existing = firestore_get_document('Users', $_SESSION['uid']) ?? [];
+      $existing['name'] = $newName;
+      $existing['email'] = $newEmail;
+      $existing['role'] = $profileRole;
+      $existing['department'] = $newDepartment;
+      firestore_write_document('Users', $_SESSION['uid'], $existing);
+      $_SESSION['name'] = $newName;
+      $_SESSION['email'] = $newEmail;
+      $_SESSION['department'] = $newDepartment;
+      $profileName = $newName;
+      $profileEmail = $newEmail;
+      $profileDepartment = $newDepartment;
+      $message = 'Profile updated.';
+      $messageTone = 'success';
+    } catch (\Throwable $e) {
+      $message = 'Failed to save: ' . $e->getMessage();
+      $messageTone = 'error';
+    }
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
+  $newPassword = $_POST['newPassword'] ?? '';
+  $confirmPassword = $_POST['confirmPassword'] ?? '';
+  if (strlen($newPassword) < 8) {
+    $message = 'Password must be at least 8 characters.';
+    $messageTone = 'error';
+  } elseif ($newPassword !== $confirmPassword) {
+    $message = 'Passwords do not match.';
+    $messageTone = 'error';
+  } else {
+    try {
+      identitytoolkit_update_password($_SESSION['uid'], $newPassword);
+      $message = 'Password updated.';
+      $messageTone = 'success';
+    } catch (\Throwable $e) {
+      $message = 'Failed to update password: ' . $e->getMessage();
+      $messageTone = 'error';
+    }
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'deactivate_account') {
+  try {
+    identitytoolkit_disable_user($_SESSION['uid'], true);
+    logout();
+    header('Location: ../login.php?deactivated=1');
+    exit;
+  } catch (\Throwable $e) {
+    $message = 'Failed to deactivate account: ' . $e->getMessage();
+    $messageTone = 'error';
+  }
+}
 
 $icons = [
   'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
@@ -37,14 +107,6 @@ $navItems = [
   ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false, 'icon' => 'target'],
   ['label' => 'Reports', 'href' => 'reports.php', 'active' => false, 'icon' => 'bar-chart'],
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => true, 'icon' => 'settings'],
-];
-
-$tabs = ['Profile', 'Company', 'Notifications', 'Security'];
-
-$contributors = [
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=80',
 ];
 ?>
 <!DOCTYPE html>
@@ -86,7 +148,7 @@ $contributors = [
 
       <div class="sidebar-footer">
         <div class="profile-avatar"
-          style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');"></div>
+          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
         <div>
           <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
           <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
@@ -99,11 +161,6 @@ $contributors = [
         <div></div>
         <div class="topbar-actions">
           <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
-          <div class="avatar-stack">
-            <?php foreach ($contributors as $avatar): ?>
-              <div class="avatar" style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"></div>
-            <?php endforeach; ?>
-          </div>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
       </header>
@@ -115,86 +172,91 @@ $contributors = [
         </div>
       </div>
 
-      <div class="tabs-bar">
-        <?php foreach ($tabs as $i => $tab): ?>
-          <a class="tab-item<?php echo $i === 0 ? ' active' : ''; ?>" href="#"><?php echo htmlspecialchars($tab, ENT_QUOTES); ?></a>
-        <?php endforeach; ?>
-      </div>
+      <?php if ($message): ?>
+        <div style="margin-bottom:16px;padding:12px;border-radius:8px;
+          background:<?php echo $messageTone === 'error' ? 'rgba(237,91,87,0.1)' : ($messageTone === 'success' ? 'rgba(22,167,109,0.1)' : 'rgba(47,109,246,0.08)'); ?>;
+          color:var(--text);"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+      <?php endif; ?>
 
       <div class="settings-panel">
         <div class="profile-photo-row">
           <div class="profile-photo-frame">
-            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
+            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($profileName); ?>&background=2f6df6&color=fff&size=200"
               alt="Profile photo" />
-            <button class="photo-upload-btn" type="button" aria-label="Change photo"><?php echo $icons['camera']; ?></button>
           </div>
           <div class="profile-photo-info">
             <h3>Profile Photo</h3>
-            <p>This will be displayed on your profile and internal reports. Recommended size: 400×400px.</p>
-            <div class="photo-links">
-              <a class="link-blue">Upload New</a>
-              <a class="link-red">Remove</a>
-            </div>
+            <p>Generated automatically from your name. Custom photo uploads aren't wired up yet.</p>
           </div>
         </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="fullName">Full Name</label>
-            <input id="fullName" type="text" value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" />
+        <form method="post">
+          <input type="hidden" name="action" value="save_profile" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="fullName">Full Name</label>
+              <input id="fullName" name="fullName" type="text" value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" required />
+            </div>
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input id="email" name="email" type="email" value="<?php echo htmlspecialchars($profileEmail, ENT_QUOTES); ?>" required />
+            </div>
+            <div class="form-group locked">
+              <label for="role">Role</label>
+              <input id="role" type="text" value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>" disabled />
+              <span class="lock-icon"><?php echo $icons['lock']; ?></span>
+            </div>
+            <div class="form-group">
+              <label for="department">Department</label>
+              <input id="department" name="department" type="text" value="<?php echo htmlspecialchars($profileDepartment, ENT_QUOTES); ?>" placeholder="e.g. Human Resources" />
+            </div>
           </div>
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input id="email" type="email" value="<?php echo htmlspecialchars($_SESSION['email'] ?? '', ENT_QUOTES); ?>" />
+          <div class="form-actions">
+            <button class="btn-primary" type="submit">Save Changes</button>
           </div>
-          <div class="form-group locked">
-            <label for="role">Role</label>
-            <input id="role" type="text" value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>" disabled />
-            <span class="lock-icon"><?php echo $icons['lock']; ?></span>
-          </div>
-          <div class="form-group">
-            <label for="department">Department</label>
-            <input id="department" type="text" value="Human Resources" />
-          </div>
-        </div>
+        </form>
 
         <hr class="section-divider" />
 
         <h4 class="settings-subhead">Security & Password</h4>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="newPassword">New Password</label>
-            <input id="newPassword" type="password" value="" placeholder="••••••••••••" />
+        <form method="post">
+          <input type="hidden" name="action" value="change_password" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <input id="newPassword" name="newPassword" type="password" placeholder="At least 8 characters" minlength="8" required />
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm New Password</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Repeat password" minlength="8" required />
+            </div>
           </div>
-          <div class="form-group">
-            <label for="confirmPassword">Confirm New Password</label>
-            <input id="confirmPassword" type="password" value="" placeholder="••••••••••••" />
+          <div class="form-actions">
+            <button class="btn-primary" type="submit">Update Password</button>
           </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-cancel" type="button">Cancel</button>
-          <button class="btn-primary" type="button">Save Changes</button>
-        </div>
+        </form>
       </div>
 
       <div class="settings-card-row">
-        <div class="settings-card tone-blue">
+        <div class="settings-card tone-blue" style="opacity:0.6;">
           <span class="settings-card-icon"><?php echo $icons['shield']; ?></span>
           <div class="settings-card-text">
             <strong>Two-Factor Authentication</strong>
-            <span>Add an extra layer of security to your account.</span>
+            <span>Coming soon, not yet available.</span>
           </div>
-          <button class="settings-card-action" type="button">Enable</button>
+          <button class="settings-card-action" type="button" disabled>Enable</button>
         </div>
         <div class="settings-card tone-red">
           <span class="settings-card-icon"><?php echo $icons['trash']; ?></span>
           <div class="settings-card-text">
             <strong>Deactivate Account</strong>
-            <span>Permanently remove your profile and data.</span>
+            <span>Disables your login. An admin can reactivate it later.</span>
           </div>
-          <button class="settings-card-action" type="button">Delete</button>
+          <form method="post" onsubmit="return confirm('Deactivate your account? You will be signed out immediately.');">
+            <input type="hidden" name="action" value="deactivate_account" />
+            <button class="settings-card-action" type="submit">Deactivate</button>
+          </form>
         </div>
       </div>
     </main>

@@ -622,6 +622,7 @@ body::before {
 .status-good { background: rgba(22, 167, 109, 0.12); border-color: rgba(22, 167, 109, 0.2); color: var(--positive); }
 .status-ready { background: rgba(47, 109, 246, 0.12); border-color: rgba(47, 109, 246, 0.2); color: var(--primary); }
 .status-danger { background: rgba(237, 91, 87, 0.12); border-color: rgba(237, 91, 87, 0.2); color: #ed5b57; }
+.status-neutral { background: rgba(100, 116, 139, 0.12); border-color: rgba(100, 116, 139, 0.2); color: #64748b; }
 
 /* KPIs page */
 .page-header {
@@ -1282,6 +1283,13 @@ body::before {
   border-top: 1px solid rgba(27, 39, 62, 0.06);
   font-size: 13px;
   color: var(--muted);
+}
+
+.empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .pagination-bar strong {

@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once $rootDir . '/kpi_templates.php';
 
 require_login();
 require_role('employer');
@@ -48,62 +49,107 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
-$employeeKpis = [
-  [
-    'name' => 'Technical Proficiency',
-    'sub' => 'Software development core skills',
-    'target' => 4.5,
-    'current' => 4.7,
-    'stars' => 5,
-    'trend' => 'up',
-    'status' => 'Exceeding',
-    'statusClass' => 'status-good',
-  ],
-  [
-    'name' => 'Customer Satisfaction',
-    'sub' => 'Client feedback ratings',
-    'target' => 4.0,
-    'current' => 3.2,
-    'stars' => 3,
-    'trend' => 'flat',
-    'status' => 'Warning',
-    'statusClass' => 'status-warning',
-  ],
-  [
-    'name' => 'Team Collaboration',
-    'sub' => 'Peer review participation',
-    'target' => 4.2,
-    'current' => 2.8,
-    'stars' => 2,
-    'trend' => 'down',
-    'status' => 'Below Target',
-    'statusClass' => 'status-danger',
-  ],
-];
-
-$categoryCards = [
-  [
-    'badge' => 'Operational', 'badgeClass' => 'blue', 'icon' => 'clock',
-    'title' => 'Attendance Rate', 'target' => '4.8', 'current' => '4.2 / 5.0',
-    'progress' => 84, 'accentColor' => '#16a76d',
-    'status' => 'Exceeding', 'statusIcon' => 'star', 'statusClass' => 'status-good',
-  ],
-  [
-    'badge' => 'Technical', 'badgeClass' => 'purple', 'icon' => 'code',
-    'title' => 'Code Quality', 'target' => '4.5', 'current' => '3.9 / 5.0',
-    'progress' => 78, 'accentColor' => '#2f6df6',
-    'status' => 'On Track', 'statusIcon' => 'dot', 'statusClass' => 'status-ready',
-  ],
-  [
-    'badge' => 'Soft Skills', 'badgeClass' => 'orange', 'icon' => 'video',
-    'title' => 'Team Collaboration', 'target' => '4.2', 'current' => '3.1 / 5.0',
-    'progress' => 62, 'accentColor' => '#eb9e21',
-    'status' => 'Below Target', 'statusIcon' => 'alert', 'statusClass' => 'status-warning',
-  ],
-];
-
 $trendGlyph = ['up' => '↑↑', 'flat' => '↔', 'down' => '↓↓'];
 $trendClass = ['up' => 'trend-up', 'flat' => 'trend-flat', 'down' => 'trend-down'];
+$badgeCycle = ['blue', 'purple', 'orange', 'green'];
+$accentCycle = ['#16a76d', '#2f6df6', '#eb9e21', '#8b5cf6'];
+
+// Load probationary employees for the picker, with industry for template lookup
+$probationaryEmployees = [];
+try {
+  $docs = firestore_list_documents('Users');
+  foreach ($docs as $doc) {
+    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+    if (strpos($roleKey, 'probation') !== false) {
+      $probationaryEmployees[] = [
+        'uid' => $doc['uid'] ?? '',
+        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+        'industry' => $doc['industry'] ?? 'retail',
+      ];
+    }
+  }
+} catch (Throwable $e) {
+  // leave $probationaryEmployees empty so the page still renders
+}
+
+$selectedEmployeeId = $_GET['employee'] ?? '';
+$selectedEmployee = null;
+if ($probationaryEmployees) {
+  foreach ($probationaryEmployees as $emp) {
+    if ($emp['uid'] === $selectedEmployeeId) {
+      $selectedEmployee = $emp;
+      break;
+    }
+  }
+  if (!$selectedEmployee) {
+    $selectedEmployee = $probationaryEmployees[0];
+  }
+}
+$selectedEmployeeName = $selectedEmployee ? $selectedEmployee['name'] : 'No employees yet';
+
+$template = kpi_template_for($selectedEmployee['industry'] ?? 'retail');
+
+// Load this employee's ratings, newest first, to get current + previous scores for trend
+$latestScores = [];
+$previousScores = [];
+if ($selectedEmployee) {
+  try {
+    $allRatings = firestore_list_documents('Ratings');
+    $mine = array_filter($allRatings, fn($r) => ($r['employeeUid'] ?? '') === $selectedEmployee['uid']);
+    usort($mine, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
+    $mine = array_values($mine);
+    if (isset($mine[0]['scores'])) {
+      $latestScores = $mine[0]['scores'];
+    }
+    if (isset($mine[1]['scores'])) {
+      $previousScores = $mine[1]['scores'];
+    }
+  } catch (Throwable $e) {
+    // leave scores empty, page still renders with "no ratings yet"
+  }
+}
+
+$employeeKpis = [];
+foreach ($template['kpis'] as $kpi) {
+  $current = isset($latestScores[$kpi['key']]) ? (float) $latestScores[$kpi['key']] : null;
+  $previous = isset($previousScores[$kpi['key']]) ? (float) $previousScores[$kpi['key']] : null;
+
+  $trend = 'flat';
+  if ($current !== null && $previous !== null) {
+    if ($current > $previous)
+      $trend = 'up';
+    elseif ($current < $previous)
+      $trend = 'down';
+  }
+
+  $statusInfo = $current !== null ? kpi_status_for_score($current, $kpi['target']) : ['status' => 'No Data', 'statusClass' => 'status-neutral'];
+
+  $employeeKpis[] = [
+    'name' => $kpi['name'],
+    'sub' => 'Target ' . number_format($kpi['target'], 1) . ' / 5.0',
+    'target' => $kpi['target'],
+    'current' => $current ?? 0.0,
+    'hasData' => $current !== null,
+    'stars' => $current !== null ? (int) round($current) : 0,
+    'trend' => $trend,
+    'status' => $statusInfo['status'],
+    'statusClass' => $statusInfo['statusClass'],
+  ];
+}
+
+$categoryCards = [];
+foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
+  $current = isset($latestScores[$kpi['key']]) ? (float) $latestScores[$kpi['key']] : null;
+  $statusInfo = $current !== null ? kpi_status_for_score($current, $kpi['target']) : ['status' => 'No Data', 'statusClass' => 'status-neutral'];
+  $categoryCards[] = [
+    'badge' => $template['label'], 'badgeClass' => $badgeCycle[$i % count($badgeCycle)], 'icon' => 'clock',
+    'title' => $kpi['name'], 'target' => number_format($kpi['target'], 1),
+    'current' => ($current !== null ? number_format($current, 1) : '—') . ' / 5.0',
+    'progress' => $current !== null ? min(100, (int) round(($current / 5.0) * 100)) : 0,
+    'accentColor' => $accentCycle[$i % count($accentCycle)],
+    'status' => $statusInfo['status'], 'statusIcon' => 'dot', 'statusClass' => $statusInfo['statusClass'],
+  ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -144,7 +190,7 @@ $trendClass = ['up' => 'trend-up', 'flat' => 'trend-flat', 'down' => 'trend-down
 
       <div class="sidebar-footer">
         <div class="profile-avatar"
-          style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');"></div>
+          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
         <div>
           <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
           <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
@@ -181,11 +227,27 @@ $trendClass = ['up' => 'trend-up', 'flat' => 'trend-flat', 'down' => 'trend-down
 
       <div class="employee-select-wrap">
         <span class="employee-select-label">Select Employee:</span>
-        <div class="employee-select">
-          <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-          <span>Maria Clara</span>
-          <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
-        </div>
+        <?php if ($probationaryEmployees): ?>
+          <form method="get" class="employee-select" style="padding:0;">
+            <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+            <select name="employee" onchange="this.form.submit()"
+              style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;">
+              <?php foreach ($probationaryEmployees as $emp): ?>
+                <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
+                  <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
+          </form>
+          <a class="ghost-button" href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">Rate this employee</a>
+        <?php else: ?>
+          <div class="employee-select">
+            <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+            <span>No probationary employees yet</span>
+          </div>
+        <?php endif; ?>
       </div>
 
       <div class="metrics-panel">

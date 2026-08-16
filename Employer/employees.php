@@ -41,36 +41,52 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
-$directory = [
-  [
-    'name' => 'Maria Clara', 'email' => 'maria.clara@performa.ph',
-    'avatar' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
-    'role' => 'Customer Support Spec.', 'dept' => 'Customer Success', 'deptClass' => 'dept-blue',
-    'type' => 'Probationary', 'status' => 'Active', 'statusClass' => 'status-good',
-  ],
-  [
-    'name' => 'Jose Rizal', 'email' => 'jose.rizal@performa.ph',
-    'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80',
-    'role' => 'Software Engineer', 'dept' => 'Engineering', 'deptClass' => 'dept-gray',
-    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
-  ],
-  [
-    'name' => 'Gabriela Silang', 'email' => 'gabriela.s@performa.ph',
-    'avatar' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=160&q=80',
-    'role' => 'Marketing Associate', 'dept' => 'Marketing', 'deptClass' => 'dept-orange',
-    'type' => 'Regular', 'status' => 'On Leave', 'statusClass' => 'status-warning',
-  ],
-  [
-    'name' => 'Andres Bonifacio', 'email' => 'andres.b@performa.ph', 'avatar' => null,
-    'role' => 'Sales Director', 'dept' => 'Sales', 'deptClass' => 'dept-green',
-    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
-  ],
-  [
-    'name' => 'Melchora Aquino', 'email' => 'm.aquino@performa.ph', 'avatar' => null,
-    'role' => 'Operations Lead', 'dept' => 'Operations', 'deptClass' => 'dept-purple',
-    'type' => 'Regular', 'status' => 'Active', 'statusClass' => 'status-good',
-  ],
-];
+function normalize_role_key(?string $role): string
+{
+  $roleKey = strtolower(trim((string) $role));
+  if (strpos($roleKey, 'probation') !== false)
+    return 'probationary';
+  if (strpos($roleKey, 'supervis') !== false)
+    return 'supervisor';
+  if (strpos($roleKey, 'employ') !== false)
+    return 'employer';
+  if (strpos($roleKey, 'admin') !== false)
+    return 'admin';
+  return $roleKey;
+}
+
+function display_role_label(?string $role): string
+{
+  return ucwords(str_replace('_', ' ', (string) $role));
+}
+
+$deptClassCycle = ['dept-blue', 'dept-gray', 'dept-orange', 'dept-green', 'dept-purple'];
+$directory = [];
+try {
+  $docs = firestore_list_documents('Users');
+  $i = 0;
+  foreach ($docs as $doc) {
+    $roleKey = normalize_role_key($doc['role'] ?? null);
+    if ($roleKey === 'admin' || $roleKey === 'employer') {
+      continue;
+    }
+    $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
+    $directory[] = [
+      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+      'email' => $doc['email'] ?? '',
+      'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
+      'role' => display_role_label($doc['role'] ?? null),
+      'dept' => $doc['department'] ?? display_role_label($doc['role'] ?? null),
+      'deptClass' => $deptClassCycle[$i % count($deptClassCycle)],
+      'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
+      'status' => $doc['status'] ?? 'Active',
+      'statusClass' => 'status-good',
+    ];
+    $i++;
+  }
+} catch (Throwable $e) {
+  // leave $directory empty so the page still renders
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -111,7 +127,7 @@ $directory = [
 
       <div class="sidebar-footer">
         <div class="profile-avatar"
-          style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');"></div>
+          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
         <div>
           <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
           <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
@@ -137,7 +153,7 @@ $directory = [
           <h1>Employees</h1>
           <p>Manage and organize your workforce directory.</p>
         </div>
-        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Add Employee</button>
+        <a class="btn-primary" href="add_employee.php"><?php echo $icons['plus']; ?> Add Employee</a>
       </div>
 
       <div class="filter-bar">
@@ -162,27 +178,32 @@ $directory = [
           <span>Actions</span>
         </div>
 
-        <?php foreach ($directory as $person): ?>
-          <div class="directory-row">
-            <div class="employee-cell">
-              <div class="avatar<?php echo $person['avatar'] ? '' : ' avatar-empty'; ?>"
-                <?php if ($person['avatar']): ?>style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');"<?php endif; ?>>
-              </div>
-              <div>
-                <div class="employee-name"><?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?></div>
-                <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
-              </div>
-            </div>
-            <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
-            <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
-            <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
-            <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
-            <div><button class="edit-button" type="button" aria-label="More actions"><?php echo $icons['more-vertical']; ?></button></div>
+        <?php if (empty($directory)): ?>
+          <div class="empty-state">
+            <p>No employees yet. Click "Add Employee" to create the first profile.</p>
           </div>
-        <?php endforeach; ?>
+        <?php else: ?>
+          <?php foreach ($directory as $person): ?>
+            <div class="directory-row">
+              <div class="employee-cell">
+                <div class="avatar" style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');">
+                </div>
+                <div>
+                  <div class="employee-name"><?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?></div>
+                  <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
+                </div>
+              </div>
+              <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
+              <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
+              <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
+              <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
+              <div><button class="edit-button" type="button" aria-label="More actions"><?php echo $icons['more-vertical']; ?></button></div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
 
         <div class="pagination-bar">
-          <span>Showing <strong>5</strong> of <strong>124</strong> employees</span>
+          <span>Showing <strong><?php echo count($directory); ?></strong> of <strong><?php echo count($directory); ?></strong> employees</span>
           <div class="page-buttons">
             <button class="page-btn" type="button">Previous</button>
             <button class="page-btn active" type="button">Next</button>

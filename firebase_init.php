@@ -228,6 +228,40 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
     return $uid;
 }
 
+function identitytoolkit_update_password(string $uid, string $newPassword): void
+{
+    $token = get_service_account_access_token();
+    $url = 'https://identitytoolkit.googleapis.com/v1/accounts:update';
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['localId' => $uid, 'password' => $newPassword]));
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($code < 200 || $code >= 300) {
+        throw new RuntimeException('Password update failed: ' . $resp);
+    }
+}
+
+function identitytoolkit_disable_user(string $uid, bool $disabled = true): void
+{
+    $token = get_service_account_access_token();
+    $url = 'https://identitytoolkit.googleapis.com/v1/accounts:update';
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['localId' => $uid, 'disableUser' => $disabled]));
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($code < 200 || $code >= 300) {
+        throw new RuntimeException('Account disable failed: ' . $resp);
+    }
+}
+
 function php_to_firestore_fields($value)
 {
     if (is_array($value)) {
@@ -236,7 +270,10 @@ function php_to_firestore_fields($value)
         foreach ($value as $k => $v) {
             $fields[$k] = php_to_firestore_fields($v);
         }
-        return ['mapValue' => ['fields' => $fields]];
+        // PHP's json_encode turns an empty [] into JSON [] instead of {}.
+        // Firestore's mapValue.fields must always be a JSON object, even when empty,
+        // or the write is rejected as a list where a map is expected.
+        return ['mapValue' => ['fields' => empty($fields) ? new stdClass() : $fields]];
     }
     if (is_string($value))
         return ['stringValue' => $value];
@@ -264,7 +301,7 @@ function firestore_write_document(string $collection, string $documentId, array 
     foreach ($data as $k => $v) {
         $fields[$k] = php_to_firestore_fields($v);
     }
-    $body = ['fields' => $fields];
+    $body = ['fields' => empty($fields) ? new stdClass() : $fields];
 
     $token = get_service_account_access_token();
     $ch = curl_init($url);
@@ -296,33 +333,48 @@ function firestore_get_document(string $collection, string $documentId): ?array
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($code === 200) {
         $data = json_decode($resp, true);
-        // convert Firestore fields to plain array (simple string/bool/number handling)
+        // convert Firestore fields to plain array
         $out = [];
         $fields = $data['fields'] ?? [];
         foreach ($fields as $k => $v) {
-            if (isset($v['stringValue']))
-                $out[$k] = $v['stringValue'];
-            elseif (isset($v['integerValue']))
-                $out[$k] = (int) $v['integerValue'];
-            elseif (isset($v['doubleValue']))
-                $out[$k] = (float) $v['doubleValue'];
-            elseif (isset($v['booleanValue']))
-                $out[$k] = (bool) $v['booleanValue'];
-            elseif (isset($v['mapValue'])) {
-                $sub = $v['mapValue']['fields'] ?? [];
-                $out[$k] = [];
-                foreach ($sub as $sk => $sv) {
-                    $out[$k][$sk] = $sv['stringValue'] ?? ($sv['integerValue'] ?? null);
-                }
-            } else {
-                $out[$k] = null;
-            }
+            $out[$k] = firestore_decode_value($v);
         }
         return $out;
     }
     if ($code === 404)
         return null;
     throw new RuntimeException('Firestore get failed: ' . $resp);
+}
+
+function firestore_decode_value($v)
+{
+    if (isset($v['stringValue']))
+        return $v['stringValue'];
+    if (isset($v['integerValue']))
+        return (int) $v['integerValue'];
+    if (isset($v['doubleValue']))
+        return (float) $v['doubleValue'];
+    if (isset($v['booleanValue']))
+        return (bool) $v['booleanValue'];
+    if (isset($v['nullValue']))
+        return null;
+    if (isset($v['mapValue'])) {
+        $sub = $v['mapValue']['fields'] ?? [];
+        $out = [];
+        foreach ($sub as $sk => $sv) {
+            $out[$sk] = firestore_decode_value($sv);
+        }
+        return $out;
+    }
+    if (isset($v['arrayValue'])) {
+        $items = $v['arrayValue']['values'] ?? [];
+        $out = [];
+        foreach ($items as $iv) {
+            $out[] = firestore_decode_value($iv);
+        }
+        return $out;
+    }
+    return null;
 }
 
 function firestore_list_documents(string $collection): array
@@ -347,23 +399,7 @@ function firestore_list_documents(string $collection): array
             $fields = $doc['fields'] ?? [];
             $item = [];
             foreach ($fields as $k => $v) {
-                if (isset($v['stringValue']))
-                    $item[$k] = $v['stringValue'];
-                elseif (isset($v['integerValue']))
-                    $item[$k] = (int) $v['integerValue'];
-                elseif (isset($v['doubleValue']))
-                    $item[$k] = (float) $v['doubleValue'];
-                elseif (isset($v['booleanValue']))
-                    $item[$k] = (bool) $v['booleanValue'];
-                elseif (isset($v['mapValue'])) {
-                    $sub = $v['mapValue']['fields'] ?? [];
-                    $item[$k] = [];
-                    foreach ($sub as $sk => $sv) {
-                        $item[$k][$sk] = $sv['stringValue'] ?? ($sv['integerValue'] ?? null);
-                    }
-                } else {
-                    $item[$k] = null;
-                }
+                $item[$k] = firestore_decode_value($v);
             }
             // include document name/uid if present
             if (!empty($doc['name'])) {

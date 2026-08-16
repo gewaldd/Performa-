@@ -169,7 +169,7 @@ $recommendation = 'Customer Service Excellence Training Module';
       </div>
 
       <div class="sidebar-footer">
-        <div class="profile-avatar" style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');">
+        <div class="profile-avatar" style="background-image: url('<?php echo 'https://ui-avatars.com/api/?name=' . urlencode($profileName) . '&background=2f6df6&color=fff&size=160'; ?>');">
         </div>
         <div>
           <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>

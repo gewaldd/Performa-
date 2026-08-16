@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once $rootDir . '/kpi_templates.php';
 
 require_login();
 require_role('employer');
@@ -40,19 +41,90 @@ $navItems = [
   ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
-$reports = [
-  ['title' => 'Maria Clara – Monthly Performance Summary', 'meta' => 'Generated on Sep 1, 2024 • 2.4 MB', 'iconClass' => 'blue'],
-  ['title' => 'Jose Rizal – Learning & Development Audit', 'meta' => 'Generated on Aug 25, 2024 • 3.1 MB', 'iconClass' => 'orange'],
-  ['title' => 'Gabriela Silang – Probationary Status Report', 'meta' => 'Generated on Aug 18, 2024 • 1.8 MB', 'iconClass' => 'green'],
-  ['title' => 'Andres Bonifacio – Underperformance Risk Analysis', 'meta' => 'Generated on Aug 10, 2024 • 0.9 MB', 'iconClass' => 'red'],
-  ['title' => 'Maria Clara – Learning & Development Audit', 'meta' => 'Generated on Aug 05, 2024 • 2.7 MB', 'iconClass' => 'blue'],
+$reportTypes = [
+  'monthly_summary' => 'Monthly Performance Summary',
+  'training_audit' => 'Learning & Development Audit',
+  'probationary_status' => 'Probationary Status Report',
+  'risk_analysis' => 'Underperformance Risk Analysis',
 ];
 
-$contributors = [
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=80',
-];
+// Probationary employees, for the Generate Report picker
+$employeesList = [];
+try {
+  $docs = firestore_list_documents('Users');
+  foreach ($docs as $doc) {
+    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+    if (strpos($roleKey, 'probation') !== false) {
+      $employeesList[] = [
+        'uid' => $doc['uid'] ?? '',
+        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+        'industry' => $doc['industry'] ?? 'retail',
+      ];
+    }
+  }
+} catch (Throwable $e) {
+  // leave $employeesList empty
+}
+
+$genMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'generate_report') {
+  $empUid = $_POST['employee'] ?? '';
+  $reportTypeKey = $_POST['report_type'] ?? 'monthly_summary';
+  $emp = null;
+  foreach ($employeesList as $e) {
+    if ($e['uid'] === $empUid) {
+      $emp = $e;
+      break;
+    }
+  }
+  if (!$emp) {
+    $genMessage = 'Select an employee first.';
+  } else {
+    try {
+      $template = kpi_template_for($emp['industry']);
+      $allRatings = firestore_list_documents('Ratings');
+      $mine = array_filter($allRatings, fn($r) => ($r['employeeUid'] ?? '') === $emp['uid']);
+      usort($mine, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
+      $mine = array_values($mine);
+      $scores = $mine[0]['scores'] ?? [];
+
+      $reportId = uniqid('report_');
+      firestore_write_document('Reports', $reportId, [
+        'employeeUid' => $emp['uid'],
+        'employeeName' => $emp['name'],
+        'reportType' => $reportTypeKey,
+        'reportTypeLabel' => $reportTypes[$reportTypeKey] ?? 'Performance Report',
+        'industry' => $emp['industry'],
+        'templateLabel' => $template['label'],
+        'scores' => $scores,
+        'generatedAt' => date('c'),
+        'generatedBy' => $_SESSION['name'] ?? '',
+      ]);
+      $genMessage = 'Report generated for ' . htmlspecialchars($emp['name']) . '.';
+    } catch (\Throwable $e) {
+      $genMessage = 'Failed to generate report: ' . $e->getMessage();
+    }
+  }
+}
+
+// Load real generated reports
+$reports = [];
+try {
+  $reportDocs = firestore_list_documents('Reports');
+  usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
+  $iconCycle = ['blue', 'orange', 'green', 'red'];
+  foreach ($reportDocs as $i => $r) {
+    $genDate = !empty($r['generatedAt']) ? date('M j, Y', strtotime($r['generatedAt'])) : '';
+    $reports[] = [
+      'id' => $r['uid'] ?? '',
+      'title' => ($r['employeeName'] ?? 'Unknown') . ' – ' . ($r['reportTypeLabel'] ?? 'Performance Report'),
+      'meta' => 'Generated on ' . $genDate,
+      'iconClass' => $iconCycle[$i % count($iconCycle)],
+    ];
+  }
+} catch (Throwable $e) {
+  // leave $reports empty
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,7 +165,7 @@ $contributors = [
 
       <div class="sidebar-footer">
         <div class="profile-avatar"
-          style="background-image: url('https://randomuser.me/api/portraits/men/32.jpg');"></div>
+          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
         <div>
           <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
           <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
@@ -105,7 +177,6 @@ $contributors = [
       <header class="topbar">
         <div></div>
         <div class="topbar-actions">
-          <div class="toolbar-pill"><?php echo $icons['calendar']; ?> Review Period: Q3 2024</div>
           <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
@@ -118,21 +189,38 @@ $contributors = [
         </div>
       </div>
 
+      <?php if ($genMessage): ?>
+        <div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(47,109,246,0.08);color:var(--text);"><?php echo htmlspecialchars($genMessage, ENT_QUOTES); ?></div>
+      <?php endif; ?>
+
       <div class="report-panel">
         <h3>Generate New Report</h3>
-        <p>Select an employee and the type of report you wish to generate.</p>
+        <p>Select an employee and the type of report you wish to generate. Pulls their latest saved KPI ratings.</p>
 
-        <div class="report-form-row">
-          <div>
-            <span class="field-label">Select Employee</span>
-            <div class="select-field">Maria Clara <?php echo $icons['chevron-down']; ?></div>
-          </div>
-          <div>
-            <span class="field-label">Report Type</span>
-            <div class="select-field">Monthly Performance Summary <?php echo $icons['chevron-down']; ?></div>
-          </div>
-          <button class="btn-dark" type="button"><?php echo $icons['plus']; ?> Generate Report</button>
-        </div>
+        <?php if (!$employeesList): ?>
+          <p>No probationary employees yet. Add one first from the Employees page.</p>
+        <?php else: ?>
+          <form method="post" class="report-form-row">
+            <div>
+              <span class="field-label">Select Employee</span>
+              <select name="employee" class="select-field" style="border:none;background:transparent;font:inherit;width:100%;">
+                <?php foreach ($employeesList as $emp): ?>
+                  <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <span class="field-label">Report Type</span>
+              <select name="report_type" class="select-field" style="border:none;background:transparent;font:inherit;width:100%;">
+                <?php foreach ($reportTypes as $key => $label): ?>
+                  <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <input type="hidden" name="action" value="generate_report" />
+            <button class="btn-dark" type="submit"><?php echo $icons['plus']; ?> Generate Report</button>
+          </form>
+        <?php endif; ?>
       </div>
 
       <div class="reports-section-header">
@@ -141,6 +229,11 @@ $contributors = [
       </div>
 
       <div class="report-list">
+        <?php if (!$reports): ?>
+          <div class="empty-state">
+            <p>No reports generated yet. Use the form above to create one.</p>
+          </div>
+        <?php endif; ?>
         <?php foreach ($reports as $report): ?>
           <div class="report-item">
             <div class="file-icon <?php echo htmlspecialchars($report['iconClass'], ENT_QUOTES); ?>"><?php echo $icons['file']; ?></div>
@@ -149,21 +242,10 @@ $contributors = [
               <div class="report-meta"><?php echo htmlspecialchars($report['meta'], ENT_QUOTES); ?></div>
             </div>
             <div class="report-actions">
-              <button class="btn-outline" type="button"><?php echo $icons['download']; ?> Download PDF</button>
-              <button class="btn-outline" type="button">View</button>
+              <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>"><?php echo $icons['file']; ?> View</a>
             </div>
           </div>
         <?php endforeach; ?>
-      </div>
-
-      <div class="contributors-row">
-        <span class="contributors-label">Top Contributors This Period</span>
-        <div class="avatar-stack">
-          <?php foreach ($contributors as $avatar): ?>
-            <div class="avatar" style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"></div>
-          <?php endforeach; ?>
-        </div>
-        <span class="contributors-text">Analytics Team Lead & 12 others</span>
       </div>
     </main>
   </div>
