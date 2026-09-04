@@ -9,6 +9,7 @@ try {
 
     $url = "https://identitytoolkit.googleapis.com/v1/projects/{$project}/config";
     $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/../cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
     $resp = curl_exec($ch);

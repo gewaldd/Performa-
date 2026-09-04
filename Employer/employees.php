@@ -71,22 +71,27 @@ try {
       continue;
     }
     $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
+    $status = $doc['status'] ?? 'Active';
     $directory[] = [
+      'uid' => $doc['uid'] ?? '',
       'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
       'email' => $doc['email'] ?? '',
       'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
       'role' => display_role_label($doc['role'] ?? null),
-      'dept' => $doc['department'] ?? display_role_label($doc['role'] ?? null),
+      'dept' => $doc['department'] ?: display_role_label($doc['role'] ?? null),
       'deptClass' => $deptClassCycle[$i % count($deptClassCycle)],
       'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
-      'status' => $doc['status'] ?? 'Active',
-      'statusClass' => 'status-good',
+      'status' => $status,
+      'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
     ];
     $i++;
   }
 } catch (Throwable $e) {
   // leave $directory empty so the page still renders
 }
+
+$departments = array_values(array_unique(array_column($directory, 'dept')));
+sort($departments);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,10 +144,9 @@ try {
       <header class="topbar">
         <label class="search-bar" aria-label="Search employees, departments">
           <span class="search-icon"><?php echo $icons['search']; ?></span>
-          <input type="search" placeholder="Search employees, departments..." />
+          <input type="search" id="employeeSearch" placeholder="Search employees, departments..." />
         </label>
         <div class="topbar-actions">
-          <div class="pending-pill"><?php echo $icons['bell']; ?> 2 pending approvals</div>
           <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
@@ -158,13 +162,32 @@ try {
 
       <div class="filter-bar">
         <div class="filter-group">
-          <div class="filter-select"><span>Department:</span> All Departments <?php echo $icons['chevron-down']; ?></div>
-          <div class="filter-select"><span>Status:</span> Active <?php echo $icons['chevron-down']; ?></div>
-          <div class="filter-select"><span>Type:</span> All Types <?php echo $icons['chevron-down']; ?></div>
+          <label class="filter-select"><span>Department:</span>
+            <select id="deptFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+              <option value="">All Departments</option>
+              <?php foreach ($departments as $dept): ?>
+                <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>"><?php echo htmlspecialchars($dept, ENT_QUOTES); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+          <label class="filter-select"><span>Status:</span>
+            <select id="statusFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Disabled">Disabled</option>
+            </select>
+          </label>
+          <label class="filter-select"><span>Type:</span>
+            <select id="typeFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+              <option value="">All Types</option>
+              <option value="Probationary">Probationary</option>
+              <option value="Regular">Regular</option>
+            </select>
+          </label>
         </div>
         <div class="filter-actions">
-          <button class="reset-button" type="button">Reset</button>
-          <button class="icon-button-square" type="button" aria-label="Export"><?php echo $icons['download']; ?></button>
+          <button class="reset-button" type="button" id="resetFiltersBtn">Reset</button>
+          <button class="icon-button-square" type="button" id="exportDirectoryBtn" aria-label="Export"><?php echo $icons['download']; ?></button>
         </div>
       </div>
 
@@ -183,30 +206,37 @@ try {
             <p>No employees yet. Click "Add Employee" to create the first profile.</p>
           </div>
         <?php else: ?>
-          <?php foreach ($directory as $person): ?>
-            <div class="directory-row">
-              <div class="employee-cell">
-                <div class="avatar" style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');">
+          <div id="directoryRows">
+            <?php foreach ($directory as $person): ?>
+              <div class="directory-row"
+                data-search="<?php echo htmlspecialchars(strtolower($person['name'] . ' ' . $person['email'] . ' ' . $person['dept']), ENT_QUOTES); ?>"
+                data-dept="<?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?>"
+                data-status="<?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?>"
+                data-type="<?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?>">
+                <div class="employee-cell">
+                  <div class="avatar" style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');">
+                  </div>
+                  <div>
+                    <div class="employee-name"><?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?></div>
+                    <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
+                  </div>
                 </div>
-                <div>
-                  <div class="employee-name"><?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?></div>
-                  <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
-                </div>
+                <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
+                <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
+                <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
+                <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
+                <div><a class="edit-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage employee" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">Manage</a></div>
               </div>
-              <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
-              <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
-              <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
-              <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
-              <div><button class="edit-button" type="button" aria-label="More actions"><?php echo $icons['more-vertical']; ?></button></div>
-            </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
+          </div>
         <?php endif; ?>
 
         <div class="pagination-bar">
-          <span>Showing <strong><?php echo count($directory); ?></strong> of <strong><?php echo count($directory); ?></strong> employees</span>
+          <span id="paginationSummary">Showing <strong><?php echo count($directory); ?></strong> of <strong><?php echo count($directory); ?></strong> employees</span>
           <div class="page-buttons">
-            <button class="page-btn" type="button">Previous</button>
-            <button class="page-btn active" type="button">Next</button>
+            <button class="page-btn" type="button" id="prevPageBtn">Previous</button>
+            <span id="pageIndicator" style="align-self:center;font-size:13px;color:var(--muted);"></span>
+            <button class="page-btn active" type="button" id="nextPageBtn">Next</button>
           </div>
         </div>
       </div>
@@ -218,7 +248,7 @@ try {
     <span>Powered by PHP &amp; Firebase</span>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="employees.js"></script>
 </body>
 
 </html>

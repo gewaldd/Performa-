@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once $rootDir . '/kpi_templates.php';
 
 require_login();
 require_role('employer');
@@ -68,6 +69,13 @@ function display_role_label(?string $role): string
 }
 
 $liveUsers = [];
+$allRatings = [];
+try {
+  $allRatings = firestore_list_documents('Ratings');
+} catch (Throwable $e) {
+  // leave $allRatings empty so scores fall back to "no data"
+}
+
 try {
   $docs = firestore_list_documents('Users');
   foreach ($docs as $doc) {
@@ -80,26 +88,63 @@ try {
     $daysSince = $createdTime ? max(1, (int) floor((time() - $createdTime) / 86400)) : 0;
     $daysLeft = $createdTime ? max(0, 180 - $daysSince) : 0;
     $progress = $createdTime ? min(100, (int) round(($daysSince / 180) * 100)) : 0;
-    $statusClass = $daysLeft <= 30 ? 'status-warning' : 'status-good';
-    $status = $daysLeft <= 30 ? 'Needs Review' : 'On Track';
-    $accentColor = $daysLeft <= 30 ? '#f0a11b' : '#2f6df6';
     $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
     $avatar = 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160';
+
+    $uid = $doc['uid'] ?? '';
+    $industry = $doc['industry'] ?? 'retail';
+    $summary = $roleKey === 'probationary' ? employee_kpi_summary($allRatings, $uid, $industry) : ['hasData' => false, 'score' => null, 'targetAvg' => 4.2];
+
+    if ($summary['hasData']) {
+      $score = $summary['score'];
+      $stars = (int) round($score);
+      $meetsTarget = $score >= $summary['targetAvg'];
+      $status = $meetsTarget ? 'On Track' : 'Needs Review';
+      $statusClass = $meetsTarget ? 'status-good' : 'status-warning';
+      $statusKey = $meetsTarget ? 'on-track' : 'needs-review';
+      $accentColor = $meetsTarget ? '#2f6df6' : '#f0a11b';
+    } else {
+      $score = 0.0;
+      $stars = 0;
+      $status = 'No Ratings Yet';
+      $statusClass = 'status-neutral';
+      $statusKey = 'no-data';
+      $accentColor = '#8892a6';
+    }
+    if ($daysLeft <= 30 && $daysLeft > 0 && $roleKey === 'probationary') {
+      // Deadline pressure overrides a plain "On Track" label, but real underperformance still wins
+      if ($statusKey === 'on-track') {
+        $status = 'Needs Review';
+        $statusClass = 'status-warning';
+        $statusKey = 'needs-review';
+        $accentColor = '#f0a11b';
+      }
+    }
+    if ($roleKey === 'probationary' && $daysSince >= 150 && $summary['hasData'] && $summary['score'] >= $summary['targetAvg']) {
+      $status = 'Ready for Reg.';
+      $statusClass = 'status-ready';
+      $statusKey = 'ready-for-reg';
+      $accentColor = '#2f6df6';
+    }
+
     $liveUsers[] = [
+      'uid' => $uid,
       'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
       'role' => display_role_label($doc['role'] ?? null),
       'avatar' => $avatar,
       'day' => $daysSince ? ('Day ' . $daysSince) : 'Day 0',
       'daysLeft' => $daysLeft . ' days left',
       'progress' => $progress,
-      'score' => $daysLeft <= 30 ? 3.8 : 4.5,
-      'stars' => $daysLeft <= 30 ? 4 : 5,
+      'score' => $score,
+      'hasScore' => $summary['hasData'],
+      'stars' => $stars,
       'status' => $status,
       'statusClass' => $statusClass,
-      'statusKey' => $daysLeft <= 30 ? 'needs-review' : 'on-track',
+      'statusKey' => $statusKey,
       'accentColor' => $accentColor,
       'email' => $doc['email'] ?? '',
       'createdAt' => $createdAt,
+      'assignedTraining' => $doc['assignedTraining'] ?? null,
     ];
   }
 } catch (Throwable $e) {
@@ -109,26 +154,61 @@ try {
 $probationaryCount = 0;
 $nearDeadlineCount = 0;
 $scoreTotal = 0.0;
+$scoredCount = 0;
 foreach ($liveUsers as $user) {
   $probationaryCount++;
-  if (str_starts_with($user['daysLeft'], '0 ') || (int) $user['daysLeft'] <= 30) {
+  if ((int) $user['daysLeft'] <= 30) {
     $nearDeadlineCount++;
   }
-  $scoreTotal += (float) $user['score'];
+  if ($user['hasScore']) {
+    $scoreTotal += (float) $user['score'];
+    $scoredCount++;
+  }
 }
 
 $metrics = [
   ['label' => 'Total Probationary', 'value' => (string) $probationaryCount, 'badge' => '+Live', 'tone' => 'positive', 'iconClass' => 'icon-warm', 'icon' => 'users'],
   ['label' => 'Nearing Deadline (< 30 days)', 'value' => (string) $nearDeadlineCount, 'badge' => 'Live Count', 'tone' => 'warning', 'iconClass' => 'icon-gold', 'icon' => 'hourglass'],
-  ['label' => 'Overall Performance', 'value' => $probationaryCount > 0 ? number_format($scoreTotal / $probationaryCount, 1) : '0.0', 'suffix' => '/ 5.0', 'badge' => 'Avg Score', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'trend'],
+  ['label' => 'Overall Performance', 'value' => $scoredCount > 0 ? number_format($scoreTotal / $scoredCount, 1) : '—', 'suffix' => $scoredCount > 0 ? '/ 5.0' : '', 'badge' => $scoredCount > 0 ? 'Avg Score' : 'No Ratings Yet', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'trend'],
 ];
 
 $evaluations = $liveUsers;
 
-$insightTitle = 'Intervention Suggested';
-$insightName = 'Maria Clara';
-$insightText = 'Based on recent KPI trends for %s, targeted upskilling is recommended before day 150.';
-$recommendation = 'Customer Service Excellence Training Module';
+// Real AI Insight: the rated probationary employee furthest below their
+// industry target. No rule-based fallback pretending to be AI, this is a
+// plain "lowest score vs target" pick over real Ratings data.
+$insightEmployee = null;
+$worstGap = -999;
+foreach ($liveUsers as $u) {
+  if (!$u['hasScore'])
+    continue;
+  $gap = 4.2 - (float) $u['score']; // generic target reference for ranking
+  if ($gap > $worstGap) {
+    $worstGap = $gap;
+    $insightEmployee = $u;
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'assign_course' && !empty($_POST['uid'])) {
+  try {
+    $existing = firestore_get_document('Users', $_POST['uid']) ?? [];
+    $existing['assignedTraining'] = $_POST['course'] ?? 'Performance Improvement Training';
+    $existing['assignedTrainingAt'] = date('c');
+    firestore_write_document('Users', $_POST['uid'], $existing);
+    header('Location: employer_dashboard.php?assigned=1');
+    exit;
+  } catch (Throwable $e) {
+    // fall through, page still renders
+  }
+}
+$justAssigned = isset($_GET['assigned']);
+
+$insightTitle = $insightEmployee ? 'Intervention Suggested' : 'No Data Yet';
+$insightName = $insightEmployee ? $insightEmployee['name'] : null;
+$insightText = $insightEmployee
+  ? 'Based on their latest KPI ratings, %s is scoring below the general target average and may benefit from targeted upskilling.'
+  : 'No employee has been rated yet. Insights will appear here once KPI ratings exist.';
+$recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -232,9 +312,7 @@ $recommendation = 'Customer Service Excellence Training Module';
               <h2>Active Evaluations</h2>
             </div>
             <div class="panel-actions">
-              <button class="ghost-button" type="button"><?php echo $icons['filter']; ?> Filter</button>
-              <button class="ghost-button icon-only" type="button"
-                aria-label="Export"><?php echo $icons['download']; ?></button>
+              <button class="ghost-button" type="button" id="exportEvaluationsBtn"><?php echo $icons['download']; ?> Export CSV</button>
             </div>
           </div>
 
@@ -283,11 +361,16 @@ $recommendation = 'Customer Service Excellence Training Module';
                   </div>
 
                   <div class="score-cell" role="cell">
-                    <strong class="score-value"><?php echo number_format((float) $employee['score'], 1); ?></strong>
-                    <div class="stars" aria-hidden="true">
-                      <?php echo str_repeat('★', (int) $employee['stars']); ?>
-                      <?php echo str_repeat('☆', 5 - (int) $employee['stars']); ?>
-                    </div>
+                    <?php if ($employee['hasScore']): ?>
+                      <strong class="score-value"><?php echo number_format((float) $employee['score'], 1); ?></strong>
+                      <div class="stars" aria-hidden="true">
+                        <?php echo str_repeat('★', (int) $employee['stars']); ?>
+                        <?php echo str_repeat('☆', 5 - (int) $employee['stars']); ?>
+                      </div>
+                    <?php else: ?>
+                      <strong class="score-value" style="color:var(--muted);">—</strong>
+                      <div class="stars" style="color:var(--muted);" aria-hidden="true">Not rated yet</div>
+                    <?php endif; ?>
                   </div>
 
                   <div class="status-cell" role="cell">
@@ -299,38 +382,50 @@ $recommendation = 'Customer Service Excellence Training Module';
             </div>
           </div>
 
-          <span id="reports" class="section-anchor" aria-hidden="true"></span>
-          <a class="view-more" href="#reports">View All Probationary Staff →</a>
+          <a class="view-more" href="employees.php">View All Probationary Staff →</a>
         </div>
 
         <aside class="insight-card" id="settings">
           <div class="insight-top">
             <span class="insight-icon"></span>
-            <span class="insight-label">AI INSIGHT</span>
+            <span class="insight-label">INSIGHT</span>
           </div>
           <h2><?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?></h2>
           <p id="insightText">
-            <?php
-            $parts = explode('%s', $insightText);
-            echo htmlspecialchars($parts[0], ENT_QUOTES);
-            echo '<strong>' . htmlspecialchars($insightName, ENT_QUOTES) . '</strong>';
-            echo htmlspecialchars($parts[1], ENT_QUOTES);
-            ?>
+            <?php if ($insightEmployee): ?>
+              <?php
+              $parts = explode('%s', $insightText);
+              echo htmlspecialchars($parts[0], ENT_QUOTES);
+              echo '<strong>' . htmlspecialchars($insightName, ENT_QUOTES) . '</strong>';
+              echo htmlspecialchars($parts[1], ENT_QUOTES);
+              ?>
+            <?php else: ?>
+              <?php echo htmlspecialchars($insightText, ENT_QUOTES); ?>
+            <?php endif; ?>
           </p>
 
-          <div class="recommendation-box">
-            <span class="recommendation-icon"><?php echo $icons['cap']; ?></span>
-            <div>
-              <div class="recommendation-label">Recommended Action:</div>
-              <strong id="recommendationTitle"><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
+          <?php if ($insightEmployee): ?>
+            <div class="recommendation-box">
+              <span class="recommendation-icon"><?php echo $icons['cap']; ?></span>
+              <div>
+                <div class="recommendation-label">Recommended Action:</div>
+                <strong id="recommendationTitle"><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
+              </div>
             </div>
-          </div>
 
-          <div class="insight-actions">
-            <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Assigned"
-              data-confirm-text="Training assigned to Maria Clara for the next review cycle.">Assign Course</button>
-            <button class="more-button" type="button" aria-label="More options"><?php echo $icons['more']; ?></button>
-          </div>
+            <div class="insight-actions">
+              <?php if (($insightEmployee['assignedTraining'] ?? null) || $justAssigned): ?>
+                <button class="primary-button" type="button" disabled>Assigned</button>
+              <?php else: ?>
+                <form method="post">
+                  <input type="hidden" name="action" value="assign_course" />
+                  <input type="hidden" name="uid" value="<?php echo htmlspecialchars($insightEmployee['uid'], ENT_QUOTES); ?>" />
+                  <input type="hidden" name="course" value="<?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?>" />
+                  <button class="primary-button" type="submit">Assign Course</button>
+                </form>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
         </aside>
       </section>
     </main>
@@ -338,7 +433,7 @@ $recommendation = 'Customer Service Excellence Training Module';
 
   <footer class="site-footer">
     <span>Performa employer dashboard prototype</span>
-    <span>PHP-ready for Hostinger deployment</span>
+    <span>Powered by PHP &amp; Firebase</span>
   </footer>
 
   <script src="script.js"></script>

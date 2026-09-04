@@ -64,6 +64,7 @@ try {
             return;
         }
         $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/../cacert.pem');
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);

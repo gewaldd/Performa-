@@ -39,6 +39,7 @@ $icons = [
   'dot' => '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>',
   'alert' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
   'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
+  'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
 ];
 
 $navItems = [
@@ -86,8 +87,37 @@ if ($probationaryEmployees) {
   }
 }
 $selectedEmployeeName = $selectedEmployee ? $selectedEmployee['name'] : 'No employees yet';
+$currentIndustry = $selectedEmployee['industry'] ?? 'retail';
 
-$template = kpi_template_for($selectedEmployee['industry'] ?? 'retail');
+$kpiMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_kpi') {
+  $newName = trim($_POST['kpi_name'] ?? '');
+  $newTarget = (float) ($_POST['kpi_target'] ?? 4.0);
+  $industryForKpi = $_POST['industry'] ?? $currentIndustry;
+  if ($newName) {
+    try {
+      add_custom_kpi($industryForKpi, $newName, max(1.0, min(5.0, $newTarget)));
+      $kpiMessage = 'KPI added.';
+    } catch (\Throwable $e) {
+      $kpiMessage = 'Failed to add KPI: ' . $e->getMessage();
+    }
+  }
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_kpi_target') {
+  $kpiKey = $_POST['kpi_key'] ?? '';
+  $newTarget = (float) ($_POST['kpi_target'] ?? 4.0);
+  $industryForKpi = $_POST['industry'] ?? $currentIndustry;
+  if ($kpiKey) {
+    try {
+      set_kpi_target_override($industryForKpi, $kpiKey, max(1.0, min(5.0, $newTarget)));
+      $kpiMessage = 'KPI target updated.';
+    } catch (\Throwable $e) {
+      $kpiMessage = 'Failed to update KPI: ' . $e->getMessage();
+    }
+  }
+}
+
+$template = kpi_template_for($currentIndustry);
 
 // Load this employee's ratings, newest first, to get current + previous scores for trend
 $latestScores = [];
@@ -125,6 +155,7 @@ foreach ($template['kpis'] as $kpi) {
   $statusInfo = $current !== null ? kpi_status_for_score($current, $kpi['target']) : ['status' => 'No Data', 'statusClass' => 'status-neutral'];
 
   $employeeKpis[] = [
+    'key' => $kpi['key'],
     'name' => $kpi['name'],
     'sub' => 'Target ' . number_format($kpi['target'], 1) . ' / 5.0',
     'target' => $kpi['target'],
@@ -204,15 +235,18 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
           <h1>Key Performance Indicators</h1>
           <p>Define and track organization-wide performance metrics.</p>
         </div>
-        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Create KPI</button>
+        <a class="btn-primary" href="#addKpiForm"><?php echo $icons['plus']; ?> Create KPI</a>
       </div>
+
+      <?php if ($kpiMessage): ?>
+        <div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(47,109,246,0.08);color:var(--text);"><?php echo htmlspecialchars($kpiMessage, ENT_QUOTES); ?></div>
+      <?php endif; ?>
 
       <div class="toolbar">
         <label class="search-bar" aria-label="Search KPIs, categories">
           <span class="search-icon"><?php echo $icons['search']; ?></span>
-          <input type="search" placeholder="Search KPIs, categories..." />
+          <input type="search" id="kpiSearch" placeholder="Search KPIs, categories..." />
         </label>
-        <div class="toolbar-pill"><?php echo $icons['calendar']; ?> Next Review: Oct 15</div>
         <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
         <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
       </div>
@@ -222,7 +256,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
           <h2>Individual Employee KPI</h2>
           <p>Manage specific performance targets and scores for individual team members.</p>
         </div>
-        <button class="btn-primary" type="button"><?php echo $icons['plus']; ?> Export Report</button>
+        <button class="btn-primary" type="button" id="exportKpiBtn"><?php echo $icons['download']; ?> Export Report</button>
       </div>
 
       <div class="employee-select-wrap">
@@ -265,7 +299,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
         </div>
 
         <?php foreach ($employeeKpis as $kpi): ?>
-          <div class="kpi-row">
+          <div class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>">
             <div>
               <div class="kpi-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></div>
               <div class="kpi-sub"><?php echo htmlspecialchars($kpi['sub'], ENT_QUOTES); ?></div>
@@ -284,12 +318,46 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
               </span>
             </div>
             <div>
-              <button class="edit-button" type="button" aria-label="Edit KPI"><?php echo $icons['edit']; ?></button>
+              <button class="edit-button" type="button" aria-label="Edit KPI target"
+                onclick="document.getElementById('editKpiRow_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>').style.display='flex'; this.style.display='none';">
+                <?php echo $icons['edit']; ?>
+              </button>
+              <form method="post" id="editKpiRow_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" style="display:none;align-items:center;gap:6px;">
+                <input type="hidden" name="action" value="edit_kpi_target" />
+                <input type="hidden" name="kpi_key" value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" />
+                <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
+                <input type="number" name="kpi_target" min="1" max="5" step="0.1" value="<?php echo number_format($kpi['target'], 1); ?>" style="width:60px;padding:4px;" />
+                <button class="btn-primary" type="submit" style="padding:4px 10px;">Save</button>
+              </form>
             </div>
           </div>
         <?php endforeach; ?>
 
-        <button class="add-kpi-button" type="button"><?php echo $icons['plus']; ?> Add New KPI for this Employee</button>
+        <a class="add-kpi-button" href="#addKpiForm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><?php echo $icons['plus']; ?> Add New KPI for this Employee</a>
+      </div>
+
+      <div class="metrics-panel" id="addKpiForm" style="margin-top:16px;">
+        <div class="metrics-panel-header">
+          <h3>Add a KPI to the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> Template</h3>
+        </div>
+        <form method="post" class="form-grid" style="padding:16px;">
+          <input type="hidden" name="action" value="add_kpi" />
+          <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
+          <div class="form-group">
+            <label for="kpi_name">KPI Name</label>
+            <input id="kpi_name" name="kpi_name" type="text" required placeholder="e.g. Documentation Quality" />
+          </div>
+          <div class="form-group">
+            <label for="kpi_target">Target Score (1-5)</label>
+            <input id="kpi_target" name="kpi_target" type="number" min="1" max="5" step="0.1" value="4.0" required />
+          </div>
+          <div class="form-actions" style="grid-column:1/-1;">
+            <button class="btn-primary" type="submit">Add KPI</button>
+          </div>
+        </form>
+        <p style="padding:0 16px 16px;color:var(--muted);font-size:13px;">
+          Applies to every employee on the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> industry template, not just <?php echo htmlspecialchars($selectedEmployeeName, ENT_QUOTES); ?>.
+        </p>
       </div>
 
       <div class="category-cards">
@@ -326,6 +394,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
   </footer>
 
   <script src="script.js"></script>
+  <script src="kpis.js"></script>
 </body>
 
 </html>
