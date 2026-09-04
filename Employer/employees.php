@@ -78,7 +78,7 @@ try {
       'email' => $doc['email'] ?? '',
       'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
       'role' => display_role_label($doc['role'] ?? null),
-      'dept' => $doc['department'] ?: display_role_label($doc['role'] ?? null),
+      'dept' => ($doc['department'] ?? '') ?: display_role_label($doc['role'] ?? null),
       'deptClass' => $deptClassCycle[$i % count($deptClassCycle)],
       'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
       'status' => $status,
@@ -160,6 +160,15 @@ sort($departments);
         <a class="btn-primary" href="add_employee.php"><?php echo $icons['plus']; ?> Add Employee</a>
       </div>
 
+      <?php if (isset($_GET['created'])): ?>
+        <div class="alert-banner alert-success">
+          Account created for <strong><?php echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES); ?></strong>.
+          <?php if (!empty($_GET['temp_password'])): ?>
+            Temporary password: <code><?php echo htmlspecialchars($_GET['temp_password'], ENT_QUOTES); ?></code>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
       <div class="filter-bar">
         <div class="filter-group">
           <label class="filter-select"><span>Department:</span>
@@ -236,7 +245,7 @@ sort($departments);
           <div class="page-buttons">
             <button class="page-btn" type="button" id="prevPageBtn">Previous</button>
             <span id="pageIndicator" style="align-self:center;font-size:13px;color:var(--muted);"></span>
-            <button class="page-btn active" type="button" id="nextPageBtn">Next</button>
+            <button class="page-btn" type="button" id="nextPageBtn">Next</button>
           </div>
         </div>
       </div>
