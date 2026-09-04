@@ -1,4 +1,23 @@
 <?php
+// Never let a stray PHP warning/notice get printed into what must be a
+// pure JSON response — that's what breaks the frontend's res.json() call.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+ob_start();
+
+function send_json(array $payload, int $code = 200): void
+{
+    // Discard anything already buffered (stray warnings/notices) so the
+    // response body is guaranteed to be pure JSON.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload);
+    exit;
+}
+
 require_once __DIR__ . '/firebase_init.php';
 session_start();
 
@@ -8,9 +27,7 @@ $idToken = $data['idToken'] ?? '';
 $fallbackEmail = strtolower(trim($data['email'] ?? ''));
 
 if (!$idToken && $fallbackEmail === '') {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing idToken and email']);
-    exit;
+    send_json(['error' => 'Missing idToken and email'], 400);
 }
 
 try {
@@ -29,21 +46,20 @@ try {
         $_SESSION['uid'] = $matchedUser['uid'] ?? $fallbackEmail;
         $_SESSION['name'] = $matchedUser['name'] ?? $matchedUser['email'] ?? $fallbackEmail;
         $_SESSION['role'] = $matchedUser['role'] ?? ($matchedUser['roles'] ?? 'probationary_employee');
-        echo json_encode(['ok' => true, 'role' => $_SESSION['role']]);
-        exit;
+        send_json(['ok' => true, 'role' => $_SESSION['role']]);
     }
 
     if (!$idToken) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Missing idToken and no matching email']);
-        exit;
+        send_json(['error' => 'Missing idToken and no matching email'], 400);
     }
 
     // Verify token via Google's tokeninfo endpoint (REST fallback) using curl
     $ch = curl_init('https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($idToken));
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
     curl_close($ch);
 
     if ($resp === false || $code !== 200) {
@@ -52,6 +68,7 @@ try {
         if ($apiKey) {
             $lookupUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' . urlencode($apiKey);
             $ch2 = curl_init($lookupUrl);
+            curl_setopt($ch2, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
             curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch2, CURLOPT_POST, true);
             curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -69,7 +86,7 @@ try {
                         'aud' => $apiKey,
                     ];
                 } else {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: $r2));
+                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
                 }
             } else {
                 // As a last resort, fall back to the authenticated email provided by the client.
@@ -87,10 +104,10 @@ try {
                         }
                     }
                     if (empty($t['sub'])) {
-                        throw new RuntimeException('Failed to verify token: ' . ($resp ?: $r2));
+                        throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
                     }
                 } else {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: $r2));
+                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
                 }
             }
         } else {
@@ -108,10 +125,10 @@ try {
                     }
                 }
                 if (empty($t['sub'])) {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: 'no response'));
+                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($curlErr ?: 'no response')));
                 }
             } else {
-                throw new RuntimeException('Failed to verify token: ' . ($resp ?: 'no response'));
+                throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($curlErr ?: 'no response')));
             }
         }
     } else {
@@ -161,8 +178,7 @@ try {
     $_SESSION['name'] = $name;
     $_SESSION['role'] = $role ?? 'user';
 
-    echo json_encode(['ok' => true, 'role' => $_SESSION['role']]);
+    send_json(['ok' => true, 'role' => $_SESSION['role']]);
 } catch (\Throwable $e) {
-    http_response_code(401);
-    echo json_encode(['error' => $e->getMessage()]);
+    send_json(['error' => $e->getMessage()], 401);
 }
