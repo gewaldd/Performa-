@@ -230,6 +230,14 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
     </aside>
 
     <main class="main">
+      <header class="topbar">
+        <div></div>
+        <div class="topbar-actions">
+          <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
+        </div>
+      </header>
+
       <div class="page-header">
         <div>
           <h1>Key Performance Indicators</h1>
@@ -247,41 +255,43 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
           <span class="search-icon"><?php echo $icons['search']; ?></span>
           <input type="search" id="kpiSearch" placeholder="Search KPIs, categories..." />
         </label>
-        <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
-        <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
       </div>
 
-      <div class="section-header">
-        <div>
-          <h2>Individual Employee KPI</h2>
-          <p>Manage specific performance targets and scores for individual team members.</p>
-        </div>
-        <button class="btn-primary" type="button" id="exportKpiBtn"><?php echo $icons['download']; ?> Export Report</button>
-      </div>
-
-      <div class="employee-select-wrap">
-        <span class="employee-select-label">Select Employee:</span>
-        <?php if ($probationaryEmployees): ?>
-          <form method="get" class="employee-select" style="padding:0;">
-            <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-            <select name="employee" onchange="this.form.submit()"
-              style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;">
-              <?php foreach ($probationaryEmployees as $emp): ?>
-                <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
-                  <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
-                  <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
-          </form>
-          <a class="ghost-button" href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">Rate this employee</a>
-        <?php else: ?>
-          <div class="employee-select">
-            <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-            <span>No probationary employees yet</span>
+      <div class="report-panel">
+        <div class="section-header" style="padding:0 0 16px;">
+          <div>
+            <h2>Individual Employee KPI</h2>
+            <p>Manage specific performance targets and scores for individual team members.</p>
           </div>
-        <?php endif; ?>
+          <button class="btn-primary" type="button" id="exportKpiBtn"><?php echo $icons['download']; ?> Export Report</button>
+        </div>
+
+        <div class="employee-select-wrap" style="margin:0;">
+          <span class="employee-select-label">Select Employee:</span>
+          <?php if ($probationaryEmployees): ?>
+            <div class="employee-select-row">
+              <form method="get" class="employee-select" style="padding:0;">
+                <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+                <select name="employee" onchange="this.form.submit()"
+                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;">
+                  <?php foreach ($probationaryEmployees as $emp): ?>
+                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
+                      <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
+                      <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+                <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
+              </form>
+              <a class="ghost-button" href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">Rate this employee</a>
+            </div>
+          <?php else: ?>
+            <div class="employee-select">
+              <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+              <span>No probationary employees yet</span>
+            </div>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="metrics-panel">
@@ -336,11 +346,11 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
         <a class="add-kpi-button" href="#addKpiForm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><?php echo $icons['plus']; ?> Add New KPI for this Employee</a>
       </div>
 
-      <div class="metrics-panel" id="addKpiForm" style="margin-top:16px;">
-        <div class="metrics-panel-header">
-          <h3>Add a KPI to the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> Template</h3>
-        </div>
-        <form method="post" class="form-grid" style="padding:16px;">
+      <div class="report-panel" id="addKpiForm">
+        <h3>Add a KPI to the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> Template</h3>
+        <p>Applies to every employee on the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> industry template, not just <?php echo htmlspecialchars($selectedEmployeeName, ENT_QUOTES); ?>.</p>
+
+        <form method="post" class="report-form-row">
           <input type="hidden" name="action" value="add_kpi" />
           <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
           <div class="form-group">
@@ -351,13 +361,8 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
             <label for="kpi_target">Target Score (1-5)</label>
             <input id="kpi_target" name="kpi_target" type="number" min="1" max="5" step="0.1" value="4.0" required />
           </div>
-          <div class="form-actions" style="grid-column:1/-1;">
-            <button class="btn-primary" type="submit">Add KPI</button>
-          </div>
+          <button class="btn-primary" type="submit"><?php echo $icons['plus']; ?> Add KPI</button>
         </form>
-        <p style="padding:0 16px 16px;color:var(--muted);font-size:13px;">
-          Applies to every employee on the <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> industry template, not just <?php echo htmlspecialchars($selectedEmployeeName, ENT_QUOTES); ?>.
-        </p>
       </div>
 
       <div class="category-cards">

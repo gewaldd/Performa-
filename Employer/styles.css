@@ -729,6 +729,17 @@ body::before {
   margin: 0 0 18px;
 }
 
+.employee-select-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.employee-select-row .ghost-button {
+  min-height: 44px;
+}
+
 .employee-select-label {
   display: block;
   margin-bottom: 8px;
@@ -1671,10 +1682,22 @@ select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
 a:focus-visible,
-.filter-select select:focus,
-.employee-select select:focus {
+.filter-select select:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Pill-shaped selects (employee picker) get the outline on the rounded
+   container itself instead of the raw <select>, so it doesn't render as a
+   mismatched sharp rectangle inside a rounded pill. */
+.employee-select select:focus {
+  outline: none;
+}
+
+.employee-select:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 .form-group input:focus,
@@ -1700,11 +1723,11 @@ a:focus-visible,
 
 .form-group input {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 10px;
   border: 1px solid var(--panel-border);
-  background: rgba(244, 247, 252, 0.7);
+  background: rgba(244, 247, 252, 0.9);
   font: inherit;
   font-size: 14px;
   color: var(--text);

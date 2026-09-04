@@ -31,6 +31,7 @@ $icons = [
   'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   'file' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
 ];
 
 $navItems = [
@@ -201,24 +202,34 @@ try {
           <p>No probationary employees yet. Add one first from the Employees page.</p>
         <?php else: ?>
           <form method="post" class="report-form-row">
-            <div>
-              <span class="field-label">Select Employee</span>
-              <select name="employee" class="select-field" style="border:none;background:transparent;font:inherit;width:100%;">
-                <?php foreach ($employeesList as $emp): ?>
-                  <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
-                <?php endforeach; ?>
-              </select>
+            <div class="form-group">
+              <label for="employee">Select Employee</label>
+              <div class="employee-select" style="width:100%;">
+                <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
+                <select id="employee" name="employee"
+                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;width:100%;">
+                  <?php foreach ($employeesList as $emp): ?>
+                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
+              </div>
             </div>
-            <div>
-              <span class="field-label">Report Type</span>
-              <select name="report_type" class="select-field" style="border:none;background:transparent;font:inherit;width:100%;">
-                <?php foreach ($reportTypes as $key => $label): ?>
-                  <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
-                <?php endforeach; ?>
-              </select>
+            <div class="form-group">
+              <label for="report_type">Report Type</label>
+              <div class="employee-select" style="width:100%;">
+                <span class="employee-select-icon"><?php echo $icons['file']; ?></span>
+                <select id="report_type" name="report_type"
+                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;width:100%;">
+                  <?php foreach ($reportTypes as $key => $label): ?>
+                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <span class="employee-select-chevron"><?php echo $icons['chevron-down']; ?></span>
+              </div>
             </div>
             <input type="hidden" name="action" value="generate_report" />
-            <button class="btn-dark" type="submit"><?php echo $icons['plus']; ?> Generate Report</button>
+            <button class="btn-primary" type="submit"><?php echo $icons['plus']; ?> Generate Report</button>
           </form>
         <?php endif; ?>
       </div>
