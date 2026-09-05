@@ -94,10 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <div class="app-shell">
-        <main class="main" style="max-width:640px;margin:0 auto;">
+        <main class="main content-narrow">
             <div class="page-header">
                 <div>
-                    <a href="employees.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to Employees</a>
+                    <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
                     <h1>Add Employee</h1>
                     <p>Create an account for a new probationary employee or supervisor.</p>
                 </div>
@@ -105,9 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="settings-panel">
                 <?php if ($message): ?>
-                    <div style="margin-bottom:16px;padding:12px;border-radius:8px;
-                        background:<?php echo $messageTone === 'error' ? 'rgba(237,91,87,0.1)' : 'rgba(47,109,246,0.08)'; ?>;
-                        color:<?php echo $messageTone === 'error' ? '#ed5b57' : 'var(--text)'; ?>;"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
                 <?php endif; ?>
 
                 <form method="post" novalidate>
@@ -132,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <option value="supervisor" <?php echo ($_POST['role'] ?? '') === 'supervisor' ? 'selected' : ''; ?>>Supervisor</option>
                             </select>
                         </div>
-                        <div class="form-group" id="industryField">
+                        <div class="form-group" id="industryField" aria-hidden="false">
                             <label for="industry">Industry (for KPI template)</label>
                             <select id="industry" name="industry">
                                 <?php foreach (kpi_templates() as $key => $tpl): ?>
@@ -160,7 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const roleSelect = document.getElementById('role');
         const industryField = document.getElementById('industryField');
         function syncIndustryVisibility() {
-            industryField.style.display = roleSelect.value === 'probationary' ? '' : 'none';
+            const hidden = roleSelect.value !== 'probationary';
+            industryField.hidden = hidden;
+            industryField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
         }
         roleSelect.addEventListener('change', syncIndustryVisibility);
         syncIndustryVisibility();

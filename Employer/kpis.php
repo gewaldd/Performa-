@@ -309,24 +309,24 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
 
         <?php foreach ($employeeKpis as $kpi): ?>
           <div class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>">
-            <div>
+            <div data-label="KPI Name">
               <div class="kpi-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></div>
               <div class="kpi-sub"><?php echo htmlspecialchars($kpi['sub'], ENT_QUOTES); ?></div>
             </div>
-            <div class="kpi-target"><?php echo number_format($kpi['target'], 1); ?></div>
-            <div class="kpi-current">
+            <div class="kpi-target" data-label="Target Score"><?php echo number_format($kpi['target'], 1); ?></div>
+            <div class="kpi-current" data-label="Current Score">
               <div class="stars" aria-hidden="true">
                 <?php echo str_repeat('★', (int) $kpi['stars']) . str_repeat('☆', 5 - (int) $kpi['stars']); ?>
               </div>
               <strong><?php echo number_format($kpi['current'], 1); ?></strong>
             </div>
-            <div class="trend <?php echo $trendClass[$kpi['trend']]; ?>"><?php echo $trendGlyph[$kpi['trend']]; ?></div>
-            <div>
+            <div class="trend <?php echo $trendClass[$kpi['trend']]; ?>" data-label="Trend"><?php echo $trendGlyph[$kpi['trend']]; ?></div>
+            <div data-label="Status">
               <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>">
                 <?php echo htmlspecialchars($kpi['status'], ENT_QUOTES); ?>
               </span>
             </div>
-            <div>
+            <div data-label="Actions">
               <button class="edit-button" type="button" aria-label="Edit KPI target"
                 onclick="document.getElementById('editKpiRow_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>').style.display='flex'; this.style.display='none';">
                 <?php echo $icons['edit']; ?>

@@ -204,7 +204,7 @@ try {
           <form method="post" class="report-form-row">
             <div class="form-group">
               <label for="employee">Select Employee</label>
-              <div class="employee-select" style="width:100%;">
+              <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
                 <select id="employee" class="employee-select-control" name="employee">
                   <?php foreach ($employeesList as $emp): ?>
@@ -216,7 +216,7 @@ try {
             </div>
             <div class="form-group">
               <label for="report_type">Report Type</label>
-              <div class="employee-select" style="width:100%;">
+              <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['file']; ?></span>
                 <select id="report_type" class="employee-select-control" name="report_type">
                   <?php foreach ($reportTypes as $key => $label): ?>

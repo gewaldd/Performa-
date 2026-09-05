@@ -348,7 +348,7 @@ $recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
                     </div>
                   </div>
 
-                  <div class="timeline-cell" role="cell">
+                  <div class="timeline-cell" role="cell" data-label="Timeline">
                     <div class="timeline-text">
                       <span class="timeline-day"><?php echo htmlspecialchars($employee['day'], ENT_QUOTES); ?></span>
                       <span class="timeline-left"
@@ -360,7 +360,7 @@ $recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
                     </div>
                   </div>
 
-                  <div class="score-cell" role="cell">
+                  <div class="score-cell" role="cell" data-label="KPI Score">
                     <?php if ($employee['hasScore']): ?>
                       <strong class="score-value"><?php echo number_format((float) $employee['score'], 1); ?></strong>
                       <div class="stars" aria-hidden="true">
@@ -373,7 +373,7 @@ $recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
                     <?php endif; ?>
                   </div>
 
-                  <div class="status-cell" role="cell">
+                  <div class="status-cell" role="cell" data-label="Status">
                     <span
                       class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($employee['status'], ENT_QUOTES); ?></span>
                   </div>

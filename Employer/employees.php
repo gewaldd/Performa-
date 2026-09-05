@@ -230,11 +230,11 @@ sort($departments);
                     <div class="employee-email"><?php echo htmlspecialchars($person['email'], ENT_QUOTES); ?></div>
                   </div>
                 </div>
-                <div><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
-                <div><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
-                <div><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
-                <div><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
-                <div><a class="edit-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage employee" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">Manage</a></div>
+                <div data-label="Role"><?php echo htmlspecialchars($person['role'], ENT_QUOTES); ?></div>
+                <div data-label="Department"><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
+                <div data-label="Employment Type"><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
+                <div data-label="Status"><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
+                <div data-label="Actions"><a class="edit-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage employee" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">Manage</a></div>
               </div>
             <?php endforeach; ?>
           </div>
