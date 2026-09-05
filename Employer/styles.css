@@ -749,6 +749,7 @@ body::before {
 }
 
 .employee-select {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -763,22 +764,60 @@ body::before {
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.employee-select:hover {
+  border-color: rgba(47, 109, 246, 0.35);
+}
+
+/* When this wraps a real <select>, the select covers the entire pill
+   (including the chevron area) so clicking anywhere on the pill — not just
+   the visible text — opens the dropdown. Icon/chevron sit on top as
+   non-interactive decoration via pointer-events:none. Left padding is
+   tuned to sit snugly right after the icon rather than leaving a gap. */
+.employee-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 34px 0 34px;
+  margin: 0;
+  z-index: 1;
 }
 
 .employee-select svg {
   width: 16px;
   height: 16px;
+  display: block;
 }
 
 .employee-select-icon {
   display: grid;
   place-items: center;
+  width: 16px;
   color: var(--primary);
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .employee-select-chevron {
   margin-left: auto;
   color: #94a3bd;
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  transition: transform 0.18s ease;
+}
+
+/* Rotate the chevron while the select has focus, the closest we can get to
+   an "open" animation — the native option list itself is rendered by the
+   browser/OS and can't be styled or animated from CSS or JS. */
+.employee-select:focus-within .employee-select-chevron {
+  transform: rotate(180deg);
 }
 
 .metrics-panel {
