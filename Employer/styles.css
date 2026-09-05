@@ -189,8 +189,9 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 0 6px 12px;
+  gap: 20px;
+  min-height: 42px;
+  padding: 0 0 14px;
 }
 
 .search-bar {
@@ -230,7 +231,13 @@ body::before {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.topbar-actions .deadline-pill {
+  margin-right: 2px;
 }
 
 .deadline-pill {
@@ -3355,6 +3362,15 @@ select.perform-select option:checked {
     padding: 0 24px;
     border-bottom: 1px solid rgba(27, 39, 62, 0.06);
     background: rgba(255, 255, 255, 0.72);
+  }
+
+  .topbar-actions {
+    gap: 10px;
+  }
+
+  .topbar-actions .ghost-button {
+    min-width: 76px;
+    justify-content: center;
   }
 
   .topbar .search-bar {
