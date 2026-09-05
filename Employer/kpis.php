@@ -270,10 +270,9 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
           <span class="employee-select-label">Select Employee:</span>
           <?php if ($probationaryEmployees): ?>
             <div class="employee-select-row">
-              <form method="get" class="employee-select" style="padding:0;">
+              <form method="get" class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-                <select name="employee" onchange="this.form.submit()"
-                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;">
+                <select class="employee-select-control" name="employee" onchange="this.form.submit()">
                   <?php foreach ($probationaryEmployees as $emp): ?>
                     <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
                       <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>

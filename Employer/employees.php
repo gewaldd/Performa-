@@ -172,7 +172,7 @@ sort($departments);
       <div class="filter-bar">
         <div class="filter-group">
           <label class="filter-select"><span>Department:</span>
-            <select id="deptFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+            <select id="deptFilter">
               <option value="">All Departments</option>
               <?php foreach ($departments as $dept): ?>
                 <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>"><?php echo htmlspecialchars($dept, ENT_QUOTES); ?></option>
@@ -180,14 +180,14 @@ sort($departments);
             </select>
           </label>
           <label class="filter-select"><span>Status:</span>
-            <select id="statusFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+            <select id="statusFilter">
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Disabled">Disabled</option>
             </select>
           </label>
           <label class="filter-select"><span>Type:</span>
-            <select id="typeFilter" style="border:none;background:transparent;font:inherit;color:inherit;">
+            <select id="typeFilter">
               <option value="">All Types</option>
               <option value="Probationary">Probationary</option>
               <option value="Regular">Regular</option>

@@ -206,8 +206,7 @@ try {
               <label for="employee">Select Employee</label>
               <div class="employee-select" style="width:100%;">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-                <select id="employee" name="employee"
-                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;width:100%;">
+                <select id="employee" class="employee-select-control" name="employee">
                   <?php foreach ($employeesList as $emp): ?>
                     <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
                   <?php endforeach; ?>
@@ -219,8 +218,7 @@ try {
               <label for="report_type">Report Type</label>
               <div class="employee-select" style="width:100%;">
                 <span class="employee-select-icon"><?php echo $icons['file']; ?></span>
-                <select id="report_type" name="report_type"
-                  style="border:none;background:transparent;font:inherit;color:inherit;appearance:none;cursor:pointer;width:100%;">
+                <select id="report_type" class="employee-select-control" name="report_type">
                   <?php foreach ($reportTypes as $key => $label): ?>
                     <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
                   <?php endforeach; ?>

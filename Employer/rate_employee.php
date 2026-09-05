@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         <?php if (!$employees): ?>
           <p>No probationary employees yet. Add one first from the Employees page.</p>
         <?php else: ?>
-          <form method="get" class="form-grid" style="margin-bottom:8px;">
+          <form method="get" class="form-grid single-field-grid" style="margin-bottom:8px;">
             <div class="form-group">
               <label for="employee">Employee</label>
               <select id="employee" name="employee" onchange="this.form.submit()">
