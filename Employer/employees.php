@@ -172,7 +172,7 @@ sort($departments);
       <div class="filter-bar">
         <div class="filter-group">
           <label class="filter-select"><span>Department:</span>
-            <select id="deptFilter">
+            <select id="deptFilter" class="perform-select perform-select--filter">
               <option value="">All Departments</option>
               <?php foreach ($departments as $dept): ?>
                 <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>"><?php echo htmlspecialchars($dept, ENT_QUOTES); ?></option>
@@ -180,14 +180,14 @@ sort($departments);
             </select>
           </label>
           <label class="filter-select"><span>Status:</span>
-            <select id="statusFilter">
+            <select id="statusFilter" class="perform-select perform-select--filter">
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Disabled">Disabled</option>
             </select>
           </label>
           <label class="filter-select"><span>Type:</span>
-            <select id="typeFilter">
+            <select id="typeFilter" class="perform-select perform-select--filter">
               <option value="">All Types</option>
               <option value="Probationary">Probationary</option>
               <option value="Regular">Regular</option>
@@ -257,6 +257,7 @@ sort($departments);
     <span>Powered by PHP &amp; Firebase</span>
   </footer>
 
+  <script src="dropdowns.js"></script>
   <script src="employees.js"></script>
 </body>
 

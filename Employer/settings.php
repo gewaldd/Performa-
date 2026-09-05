@@ -253,7 +253,7 @@ $navItems = [
             <strong>Deactivate Account</strong>
             <span>Disables your login. An admin can reactivate it later.</span>
           </div>
-          <form method="post" onsubmit="return confirm('Deactivate your account? You will be signed out immediately.');">
+          <form method="post" data-confirm="Deactivate your account? You will be signed out immediately.">
             <input type="hidden" name="action" value="deactivate_account" />
             <button class="settings-card-action" type="submit">Deactivate</button>
           </form>

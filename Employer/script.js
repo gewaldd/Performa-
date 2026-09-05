@@ -62,3 +62,54 @@ if (exportBtn) {
 }
 
 if (rows.length > 0) applyFilters();
+
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener("submit", (event) => {
+    if (form.dataset.confirmed === "true") return;
+
+    event.preventDefault();
+    const submitButton = form.querySelector("[type='submit']");
+    const backdrop = document.createElement("div");
+    const dialog = document.createElement("div");
+    const heading = document.createElement("h2");
+    const message = document.createElement("p");
+    const actions = document.createElement("div");
+    const cancelButton = document.createElement("button");
+    const confirmButton = document.createElement("button");
+
+    backdrop.className = "modal-backdrop";
+    dialog.className = "confirm-dialog";
+    heading.textContent = "Please confirm";
+    message.textContent = form.dataset.confirm;
+    actions.className = "confirm-dialog-actions";
+    cancelButton.type = "button";
+    cancelButton.className = "ghost-button";
+    cancelButton.textContent = "Cancel";
+    confirmButton.type = "button";
+    confirmButton.className = "btn-cancel";
+    confirmButton.textContent = "Continue";
+
+    actions.append(cancelButton, confirmButton);
+    dialog.append(heading, message, actions);
+    backdrop.append(dialog);
+    document.body.append(backdrop);
+
+    const closeDialog = () => {
+      backdrop.remove();
+      submitButton?.focus();
+      document.removeEventListener("keydown", handleKeydown);
+    };
+    const handleKeydown = (keyEvent) => {
+      if (keyEvent.key === "Escape") closeDialog();
+    };
+
+    cancelButton.addEventListener("click", closeDialog);
+    confirmButton.addEventListener("click", () => {
+      form.dataset.confirmed = "true";
+      closeDialog();
+      HTMLFormElement.prototype.submit.call(form);
+    });
+    document.addEventListener("keydown", handleKeydown);
+    confirmButton.focus();
+  });
+});

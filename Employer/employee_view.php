@@ -172,7 +172,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <?php if ($isProbationary): ?>
               <div class="form-group">
                 <label for="industry">Industry (KPI template)</label>
-                <select id="industry" name="industry">
+                <select id="industry" class="perform-select" name="industry">
                   <?php foreach (kpi_templates() as $key => $tpl): ?>
                     <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>" <?php echo ($profile['industry'] ?? 'retail') === $key ? 'selected' : ''; ?>>
                       <?php echo htmlspecialchars($tpl['label'], ENT_QUOTES); ?>
@@ -193,7 +193,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         <p style="color:var(--muted);">
           <?php echo $statusLabel === 'Disabled' ? 'This account is disabled and cannot sign in.' : 'This account can sign in normally.'; ?>
         </p>
-        <form method="post" onsubmit="return confirm('<?php echo $statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate this account? They will be signed out and unable to log in.'; ?>');">
+        <form method="post" data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate this account? They will be signed out and unable to log in.', ENT_QUOTES); ?>">
           <input type="hidden" name="action" value="toggle_status" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
           <button class="btn-cancel" type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
@@ -233,7 +233,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <div class="form-grid">
               <div class="form-group">
                 <label for="recommendation">Decision</label>
-                <select id="recommendation" name="recommendation" required>
+                <select id="recommendation" class="perform-select" name="recommendation" required>
                   <option value="">Select decision</option>
                   <option value="recommended" <?php echo ($profile['regularizationRecommendation'] ?? '') === 'recommended' ? 'selected' : ''; ?>>Recommend for Regularization</option>
                   <option value="not_recommended" <?php echo ($profile['regularizationRecommendation'] ?? '') === 'not_recommended' ? 'selected' : ''; ?>>Not Yet Recommended</option>
@@ -252,6 +252,8 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       <?php endif; ?>
     </main>
   </div>
+  <script src="dropdowns.js"></script>
+  <script src="script.js"></script>
 </body>
 
 </html>

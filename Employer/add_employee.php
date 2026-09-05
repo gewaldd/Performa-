@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="form-group">
                             <label for="role">Role <span class="required-mark">*</span></label>
-                            <select id="role" name="role" required>
+                            <select id="role" class="perform-select" name="role" required>
                                 <option value="" disabled <?php echo empty($_POST['role']) ? 'selected' : ''; ?>>Select role</option>
                                 <option value="probationary" <?php echo ($_POST['role'] ?? '') === 'probationary' ? 'selected' : ''; ?>>Probationary Employee</option>
                                 <option value="supervisor" <?php echo ($_POST['role'] ?? '') === 'supervisor' ? 'selected' : ''; ?>>Supervisor</option>
@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="form-group" id="industryField" aria-hidden="false">
                             <label for="industry">Industry (for KPI template)</label>
-                            <select id="industry" name="industry">
+                            <select id="industry" class="perform-select" name="industry">
                                 <?php foreach (kpi_templates() as $key => $tpl): ?>
                                     <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>" <?php echo ($_POST['industry'] ?? '') === $key ? 'selected' : ''; ?>><?php echo htmlspecialchars($tpl['label'], ENT_QUOTES); ?></option>
                                 <?php endforeach; ?>
@@ -153,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </main>
     </div>
+    <script src="dropdowns.js"></script>
     <script>
         // Industry only matters for probationary employees, hide it otherwise
         const roleSelect = document.getElementById('role');

@@ -206,7 +206,7 @@ try {
               <label for="employee">Select Employee</label>
               <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-                <select id="employee" class="employee-select-control" name="employee">
+                <select id="employee" class="perform-select perform-select--overlay employee-select-control" name="employee">
                   <?php foreach ($employeesList as $emp): ?>
                     <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
                   <?php endforeach; ?>
@@ -218,7 +218,7 @@ try {
               <label for="report_type">Report Type</label>
               <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['file']; ?></span>
-                <select id="report_type" class="employee-select-control" name="report_type">
+                <select id="report_type" class="perform-select perform-select--overlay employee-select-control" name="report_type">
                   <?php foreach ($reportTypes as $key => $label): ?>
                     <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
                   <?php endforeach; ?>
@@ -264,6 +264,7 @@ try {
     <span>Powered by PHP &amp; Firebase</span>
   </footer>
 
+  <script src="dropdowns.js"></script>
   <script src="script.js"></script>
 </body>
 

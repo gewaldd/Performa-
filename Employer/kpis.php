@@ -250,7 +250,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
         <div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(47,109,246,0.08);color:var(--text);"><?php echo htmlspecialchars($kpiMessage, ENT_QUOTES); ?></div>
       <?php endif; ?>
 
-      <div class="toolbar">
+      <div class="toolbar toolbar--search-only">
         <label class="search-bar" aria-label="Search KPIs, categories">
           <span class="search-icon"><?php echo $icons['search']; ?></span>
           <input type="search" id="kpiSearch" placeholder="Search KPIs, categories..." />
@@ -272,7 +272,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
             <div class="employee-select-row">
               <form method="get" class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-                <select class="employee-select-control" name="employee" onchange="this.form.submit()">
+                <select class="perform-select perform-select--overlay employee-select-control" name="employee" onchange="this.form.submit()">
                   <?php foreach ($probationaryEmployees as $emp): ?>
                     <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
                       <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
@@ -397,6 +397,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
     <span>Powered by PHP &amp; Firebase</span>
   </footer>
 
+  <script src="dropdowns.js"></script>
   <script src="script.js"></script>
   <script src="kpis.js"></script>
 </body>

@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           <form method="get" class="form-grid single-field-grid" style="margin-bottom:8px;">
             <div class="form-group">
               <label for="employee">Employee</label>
-              <select id="employee" name="employee" onchange="this.form.submit()">
+              <select id="employee" class="perform-select" name="employee" onchange="this.form.submit()">
                 <?php foreach ($employees as $emp): ?>
                   <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>" <?php echo $emp['uid'] === $selectedUid ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
@@ -144,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       </div>
     </main>
   </div>
+  <script src="dropdowns.js"></script>
 </body>
 
 </html>
