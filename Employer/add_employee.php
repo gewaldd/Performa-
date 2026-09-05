@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/employer_layout.php';
 require_login();
 require_role('employer');
 
@@ -87,13 +88,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Performa | Add Employee</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
     <div class="app-shell">
+        <?php employer_render_shell('Employees'); ?>
         <main class="main content-narrow">
             <div class="page-header">
                 <div>

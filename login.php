@@ -9,10 +9,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Performa — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="Admin/styles.css" />
     <style>
+        :root {
+            --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+            --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+        }
+
         body {
             margin: 0;
+            font-family: var(--font-sans);
             background: #f8fafc;
         }
 

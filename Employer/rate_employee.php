@@ -3,6 +3,7 @@ $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
 require_once $rootDir . '/kpi_templates.php';
+require_once __DIR__ . '/employer_layout.php';
 
 require_login();
 require_role('employer');
@@ -82,13 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   <title>Performa | Rate Employee</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
   <div class="app-shell">
+    <?php employer_render_shell('KPIs'); ?>
     <main class="main" style="max-width:640px;margin:0 auto;">
       <div class="page-header">
         <div>
@@ -100,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
       <div class="settings-panel">
         <?php if ($message): ?>
-          <div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(47,109,246,0.08);color:var(--text);"><?php echo $message; ?></div>
+          <div class="alert alert-info"><?php echo $message; ?></div>
         <?php endif; ?>
 
         <?php if (!$employees): ?>

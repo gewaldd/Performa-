@@ -1,5 +1,7 @@
 :root {
   color-scheme: light;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
   --bg: #f5f7fb;
   --surface: rgba(255, 255, 255, 0.88);
   --surface-strong: #ffffff;
@@ -38,7 +40,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Space Grotesk", "Segoe UI Variable", "Segoe UI", "Trebuchet MS", sans-serif;
+  font-family: var(--font-sans);
   background:
     radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 32%),
     radial-gradient(circle at bottom right, rgba(33, 205, 149, 0.08), transparent 26%),
@@ -2521,6 +2523,92 @@ select:disabled {
   background-color: rgba(255, 255, 255, 0.98);
 }
 
+.settings-panel {
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+}
+
+.settings-card-row {
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+}
+
+/* Button-styled anchors must share real button treatment, including no text underline. */
+a.btn-primary,
+a.btn-cancel,
+a.btn-outline,
+a.ghost-button,
+a.edit-button,
+a.add-kpi-button,
+a.filter-chip,
+a.view-more,
+a.settings-card-action {
+  text-decoration: none !important;
+}
+
+/* Text actions must not inherit the fixed icon-button box. */
+.directory-row [data-label="Actions"] .edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 76px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(47, 109, 246, 0.2);
+  background: rgba(47, 109, 246, 0.08);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.directory-row [data-label="Actions"] .edit-button:hover {
+  border-color: rgba(47, 109, 246, 0.35);
+  background: rgba(47, 109, 246, 0.14);
+}
+
+@media (max-width: 760px) {
+  .pagination-bar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .pagination-bar > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .page-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .page-buttons .page-btn {
+    width: auto;
+    min-width: 92px;
+  }
+
+  .page-buttons #pageIndicator {
+    order: 0;
+  }
+
+  .directory-row [data-label="Actions"] .edit-button {
+    min-width: 84px;
+    min-height: 36px;
+  }
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3155,6 +3243,186 @@ select.perform-select option:checked {
   }
 }
 
+@media (max-width: 760px) {
+  .sidebar {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 112px;
+    padding: 10px 12px 8px;
+    overflow: visible;
+  }
+
+  .brand {
+    min-height: 30px;
+    padding: 0;
+  }
+
+  .nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    gap: 4px;
+    padding: 0;
+  }
+
+  .nav-item,
+  .nav-item.active,
+  .nav-item:hover {
+    min-width: 0;
+    min-height: 48px;
+    padding: 6px 3px;
+    gap: 3px;
+    border-radius: var(--radius-sm);
+    transform: none;
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .nav-item span:last-child {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .pagination-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    flex-direction: initial;
+  }
+
+  .pagination-bar > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .pagination-bar .page-buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .pagination-bar .page-buttons .page-btn {
+    width: auto;
+    flex: 0 0 auto;
+  }
+}
+
+/* Reference-aligned Employer shell and desktop density. */
+@media (min-width: 761px) {
+  .app-shell {
+    grid-template-columns: 192px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding: 16px 10px 14px;
+  }
+
+  .brand {
+    padding: 8px 10px 24px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .nav {
+    padding: 0 2px;
+    gap: 4px;
+  }
+
+  .nav-item {
+    min-height: 38px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .main {
+    padding: 18px 24px 30px;
+  }
+
+  .topbar {
+    min-height: 42px;
+    margin: -18px -24px 20px;
+    padding: 0 24px;
+    border-bottom: 1px solid rgba(27, 39, 62, 0.06);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .topbar .search-bar {
+    max-width: 288px;
+    min-height: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .topbar .search-bar input,
+  .topbar .search-bar input[type="search"] {
+    font-size: 12px;
+  }
+
+  .topbar-actions,
+  .topbar-actions > * {
+    min-height: 34px;
+  }
+
+  .page-header {
+    padding: 0 0 18px;
+  }
+
+  .page-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .metric-card,
+  .panel,
+  .insight-card,
+  .report-panel,
+  .settings-panel,
+  .directory-panel,
+  .metrics-panel {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .metric-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .settings-panel,
+  .report-panel {
+    padding: 20px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 192px minmax(0, 1fr);
+  }
+
+  .brand-name,
+  .nav-item span:last-child,
+  .sidebar-footer > div {
+    display: block;
+  }
+
+  .sidebar {
+    align-items: stretch;
+  }
+
+  .nav-item {
+    justify-content: flex-start;
+  }
+}
+
 /* Shared custom option menu. The real select remains in the form as the
    source of truth; this layer controls the cross-page opened appearance. */
 .perform-select-host {
@@ -3349,4 +3617,16 @@ select.perform-select option:checked {
   .perform-select-menu {
     max-width: calc(100vw - 24px);
   }
+}
+
+.score-value,
+.timeline-day,
+.timeline-left,
+.kpi-target,
+.kpi-current strong,
+.metric-meta strong,
+.pagination-bar,
+.report-meta {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

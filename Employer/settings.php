@@ -119,7 +119,7 @@ $navItems = [
   <meta name="description" content="Manage your account preferences and system configurations." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -173,9 +173,7 @@ $navItems = [
       </div>
 
       <?php if ($message): ?>
-        <div style="margin-bottom:16px;padding:12px;border-radius:8px;
-          background:<?php echo $messageTone === 'error' ? 'rgba(237,91,87,0.1)' : ($messageTone === 'success' ? 'rgba(22,167,109,0.1)' : 'rgba(47,109,246,0.08)'); ?>;
-          color:var(--text);"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+        <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
       <?php endif; ?>
 
       <div class="settings-panel">
