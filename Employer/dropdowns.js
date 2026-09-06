@@ -1,14 +1,20 @@
 (() => {
-  const selects = Array.from(document.querySelectorAll("select.perform-select"));
+  const selects = Array.from(
+    document.querySelectorAll("select.perform-select")
+  );
+
   if (!selects.length) return;
 
-  const openMenus = new WeakMap();
+  const state = new WeakMap();
 
-  const getContainer = (select) => {
+  const isManaged = (select) => Boolean(state.get(select));
+
+  function getContainer(select) {
     const parent = select.parentElement;
 
     if (
-      parent?.matches(
+      parent &&
+      parent.matches(
         ".employee-select, .filter-select, .perform-select-host"
       )
     ) {
@@ -22,64 +28,108 @@
       select.parentElement.insertBefore(host, select);
     }
 
-    host.append(select);
+    host.appendChild(select);
+
     return host;
-  };
+  }
 
-  const closeAll = (except = null) => {
-    document
-      .querySelectorAll(
-        ".perform-select-host.is-open, .employee-select.is-open, .filter-select.is-open"
-      )
-      .forEach((container) => {
-        if (container === except) return;
+  function closeSelect(select) {
+    const itemState = state.get(select);
 
-        const trigger = container.querySelector(
-          ":scope > .perform-select-trigger"
-        );
+    if (!itemState) return;
 
-        const menu = openMenus.get(container);
+    const {
+      container,
+      trigger,
+      menu
+    } = itemState;
 
-        container.classList.remove("is-open");
-        trigger?.setAttribute("aria-expanded", "false");
+    container.classList.remove("is-open");
 
-        if (menu) {
-          menu.classList.remove("is-visible");
-          menu.remove();
-        }
+    trigger?.setAttribute(
+      "aria-expanded",
+      "false"
+    );
 
-        openMenus.delete(container);
-      });
-  };
+    if (menu) {
+      menu.classList.remove("is-visible");
+      menu.remove();
+    }
 
-  const positionMenu = (trigger, menu) => {
+    itemState.menu = null;
+  }
+
+  function closeAll(except = null) {
+    selects.forEach((select) => {
+      if (select !== except) {
+        closeSelect(select);
+      }
+    });
+  }
+
+  function syncTrigger(select) {
+    const itemState = state.get(select);
+
+    if (!itemState) return;
+
+    const {
+      trigger
+    } = itemState;
+
+    const selected =
+      select.options[
+        select.selectedIndex
+      ];
+
+    const value =
+      trigger.querySelector(
+        ".perform-select-value"
+      );
+
+    if (value) {
+      value.textContent =
+        selected?.textContent?.trim() ||
+        "Select an option";
+    }
+  }
+
+  function positionMenu(trigger, menu) {
     if (!trigger || !menu) return;
 
-    const rect = trigger.getBoundingClientRect();
+    const rect =
+      trigger.getBoundingClientRect();
 
-    const viewportPadding = 12;
+    const viewportPadding = 10;
     const gap = 6;
-    const maxMenuHeight = 280;
+    const maximumHeight = 280;
 
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const viewportWidth =
+      window.innerWidth;
 
-    /*
-     * Match the trigger width by default.
-     * Never allow the menu to exceed the viewport.
-     */
-    const availableWidth =
-      viewportWidth - viewportPadding * 2;
+    const viewportHeight =
+      window.innerHeight;
+
+    const maximumWidth =
+      viewportWidth -
+      viewportPadding * 2;
 
     const width = Math.min(
-      Math.max(rect.width, 180),
-      availableWidth
+      Math.max(rect.width, 1),
+      maximumWidth
     );
 
     /*
-     * Calculate available space from the ACTUAL trigger position
-     * in the viewport.
+     * Because the menu is already attached to <body>,
+     * scrollHeight now represents its natural content height.
      */
+    const naturalHeight = Math.min(
+      Math.max(
+        menu.scrollHeight || 1,
+        1
+      ),
+      maximumHeight
+    );
+
     const spaceBelow =
       viewportHeight -
       rect.bottom -
@@ -91,43 +141,29 @@
       viewportPadding -
       gap;
 
-    const minimumUsableHeight = 120;
+    const opensAbove =
+      spaceBelow < naturalHeight &&
+      spaceAbove > spaceBelow;
 
-    let openAbove = false;
+    const availableSpace =
+      opensAbove
+        ? spaceAbove
+        : spaceBelow;
 
-    if (
-      spaceBelow < minimumUsableHeight &&
-      spaceAbove > spaceBelow
-    ) {
-      openAbove = true;
-    }
-
-    const availableSpace = openAbove
-      ? spaceAbove
-      : spaceBelow;
-
-    const maxHeight = Math.max(
+    const height = Math.max(
       1,
-      Math.min(maxMenuHeight, availableSpace)
+      Math.min(
+        naturalHeight,
+        availableSpace
+      )
     );
 
-    let top;
-
-    if (openAbove) {
-      /*
-       * Temporarily use the desired menu height.
-       * max-height will constrain it when necessary.
-       */
-      top = rect.top - maxHeight - gap;
-    } else {
-      top = rect.bottom + gap;
-    }
+    let top = opensAbove
+      ? rect.top - height - gap
+      : rect.bottom + gap;
 
     let left = rect.left;
 
-    /*
-     * Keep the menu inside the viewport.
-     */
     if (
       left + width >
       viewportWidth - viewportPadding
@@ -138,74 +174,47 @@
         width;
     }
 
-    left = Math.max(viewportPadding, left);
+    left = Math.max(
+      viewportPadding,
+      left
+    );
 
-    /*
-     * Final vertical clamp.
-     */
     top = Math.max(
       viewportPadding,
       Math.min(
         top,
         viewportHeight -
           viewportPadding -
-          Math.min(maxHeight, maxMenuHeight)
+          height
       )
     );
 
-    menu.style.top = `${Math.round(top)}px`;
-    menu.style.left = `${Math.round(left)}px`;
-    menu.style.width = `${Math.round(width)}px`;
-    menu.style.maxHeight = `${Math.round(maxHeight)}px`;
+    menu.style.top =
+      `${Math.round(top)}px`;
 
-    menu.dataset.placement = openAbove
-      ? "above"
-      : "below";
-  };
+    menu.style.left =
+      `${Math.round(left)}px`;
 
-  const setValue = (select, value) => {
-    if (select.value === value) return;
+    menu.style.width =
+      `${Math.round(width)}px`;
 
-    select.value = value;
+    menu.style.maxHeight =
+      `${Math.round(height)}px`;
 
-    select.dispatchEvent(
-      new Event("change", {
-        bubbles: true,
-      })
-    );
-  };
+    menu.dataset.placement =
+      opensAbove
+        ? "above"
+        : "below";
+  }
 
-  const syncTrigger = (select, trigger) => {
-    const selected =
-      select.options[select.selectedIndex];
+  function buildMenu(select) {
+    const itemState =
+      state.get(select);
 
-    const value =
-      trigger.querySelector(
-        ".perform-select-value"
-      );
-
-    if (value) {
-      value.textContent =
-        selected?.textContent.trim() ||
-        "Select an option";
-    }
-  };
-
-  const openSelect = (
-    select,
-    container,
-    trigger
-  ) => {
-    closeAll(container);
+    if (!itemState) return null;
 
     const menu =
       document.createElement("div");
-
-    const options =
-      Array.from(select.options);
-
-    const selectedIndex =
-      Math.max(0, select.selectedIndex);
 
     menu.className =
       "perform-select-menu";
@@ -217,140 +226,243 @@
 
     menu.setAttribute(
       "aria-label",
-      select.getAttribute("aria-label") ||
+      select.getAttribute(
+        "aria-label"
+      ) ||
         select.name ||
         select.id ||
         "Select an option"
     );
 
-    options.forEach((option, index) => {
-      const item =
-        document.createElement("button");
-
-      item.type = "button";
-
-      item.className =
-        "perform-select-option";
-
-      item.setAttribute(
-        "role",
-        "option"
-      );
-
-      item.dataset.value =
-        option.value;
-
-      item.dataset.index =
-        String(index);
-
-      item.textContent =
-        option.textContent.trim();
-
-      item.disabled =
-        option.disabled;
-
-      item.setAttribute(
-        "aria-selected",
-        String(
-          index === selectedIndex
-        )
-      );
-
-      if (index === selectedIndex) {
-        item.classList.add(
-          "is-selected"
-        );
-      }
-
-      if (option.disabled) {
-        item.classList.add(
-          "is-disabled"
-        );
-      }
-
-      item.addEventListener(
-        "click",
-        () => {
-          if (option.disabled) return;
-
-          setValue(
-            select,
-            option.value
+    Array.from(
+      select.options
+    ).forEach(
+      (option, index) => {
+        const button =
+          document.createElement(
+            "button"
           );
 
-          syncTrigger(
-            select,
-            trigger
+        button.type = "button";
+
+        button.className =
+          "perform-select-option";
+
+        button.setAttribute(
+          "role",
+          "option"
+        );
+
+        button.setAttribute(
+          "aria-selected",
+          String(
+            index ===
+              select.selectedIndex
+          )
+        );
+
+        button.textContent =
+          option.textContent.trim();
+
+        button.disabled =
+          option.disabled;
+
+        if (
+          index ===
+          select.selectedIndex
+        ) {
+          button.classList.add(
+            "is-selected"
           );
-
-          closeAll();
-
-          trigger.focus();
         }
-      );
 
-      menu.append(item);
-    });
+        if (option.disabled) {
+          button.classList.add(
+            "is-disabled"
+          );
+        }
 
-    /*
-     * IMPORTANT:
-     * Render the menu directly under <body>.
-     *
-     * This prevents parent grid/flex/overflow/
-     * transform/height rules from stretching
-     * or repositioning the dropdown.
-     */
-    document.body.append(menu);
+        button.addEventListener(
+          "click",
+          (event) => {
+            event.preventDefault();
+            event.stopPropagation();
 
-    openMenus.set(
-      container,
+            if (option.disabled) {
+              return;
+            }
+
+            select.value =
+              option.value;
+
+            select.dispatchEvent(
+              new Event(
+                "change",
+                {
+                  bubbles: true
+                }
+              )
+            );
+
+            closeSelect(select);
+
+            itemState.trigger.focus({
+              preventScroll: true
+            });
+          }
+        );
+
+        menu.appendChild(button);
+      }
+    );
+
+    return menu;
+  }
+
+  function openSelect(select) {
+    const itemState =
+      state.get(select);
+
+    if (
+      !itemState ||
+      select.disabled
+    ) {
+      return;
+    }
+
+    closeAll(select);
+
+    const menu =
+      buildMenu(select);
+
+    if (!menu) return;
+
+    document.body.appendChild(
       menu
     );
 
-    container.classList.add(
+    itemState.menu = menu;
+
+    itemState.container.classList.add(
       "is-open"
     );
 
-    trigger.setAttribute(
+    itemState.trigger.setAttribute(
       "aria-expanded",
       "true"
     );
 
     /*
-     * Position using viewport coordinates.
-     * Because the menu is position: fixed,
-     * getBoundingClientRect() is exactly what
-     * we want here.
+     * Wait one frame so the browser has calculated
+     * the menu's natural dimensions before positioning it.
      */
-    positionMenu(
-      trigger,
-      menu
-    );
-
     requestAnimationFrame(() => {
+      if (
+        state.get(select)?.menu !==
+        menu
+      ) {
+        return;
+      }
+
+      positionMenu(
+        itemState.trigger,
+        menu
+      );
+
       menu.classList.add(
         "is-visible"
       );
     });
+  }
 
-    const selectedOption =
-      menu.querySelector(
-        ".perform-select-option.is-selected"
+  function moveSelection(
+    select,
+    direction
+  ) {
+    const enabled =
+      Array.from(
+        select.options
+      )
+        .map(
+          (
+            option,
+            index
+          ) => ({
+            option,
+            index
+          })
+        )
+        .filter(
+          ({ option }) =>
+            !option.disabled
+        );
+
+    if (!enabled.length) {
+      return;
+    }
+
+    let current =
+      enabled.findIndex(
+        ({ index }) =>
+          index ===
+          select.selectedIndex
       );
 
-    selectedOption?.scrollIntoView({
-      block: "nearest",
-    });
-  };
+    if (current < 0) {
+      current =
+        direction > 0
+          ? -1
+          : enabled.length;
+    }
 
-  const setup = (select) => {
+    let next;
+
+    if (direction === -999999) {
+      next = 0;
+    } else if (
+      direction === 999999
+    ) {
+      next =
+        enabled.length - 1;
+    } else {
+      next =
+        Math.max(
+          0,
+          Math.min(
+            enabled.length - 1,
+            current + direction
+          )
+        );
+    }
+
+    if (!enabled[next]) return;
+
+    select.value =
+      enabled[next]
+        .option
+        .value;
+
+    select.dispatchEvent(
+      new Event(
+        "change",
+        {
+          bubbles: true
+        }
+      )
+    );
+  }
+
+  function setup(select) {
+    if (isManaged(select)) {
+      return;
+    }
+
     const container =
       getContainer(select);
 
     /*
-     * Keep the actual <select> as the real
-     * form/data source while visually replacing
-     * its browser UI with our custom control.
+     * Keep the native select available to the application
+     * while removing its visible browser UI.
      */
     select.classList.add(
       "perform-select-native"
@@ -358,8 +470,21 @@
 
     select.tabIndex = -1;
 
+    /*
+     * Prevent duplicate custom triggers.
+     */
+    if (
+      container.querySelector(
+        ":scope > .perform-select-trigger"
+      )
+    ) {
+      return;
+    }
+
     const trigger =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
     trigger.type = "button";
 
@@ -378,20 +503,26 @@
 
     trigger.setAttribute(
       "aria-label",
-      select.getAttribute("aria-label") ||
+      select.getAttribute(
+        "aria-label"
+      ) ||
         select.name ||
         select.id ||
         "Select an option"
     );
 
     const value =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
     value.className =
       "perform-select-value";
 
     const chevron =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
     chevron.className =
       "perform-select-trigger-chevron";
@@ -406,30 +537,59 @@
       chevron
     );
 
-    container.append(trigger);
-
-    syncTrigger(
-      select,
+    container.appendChild(
       trigger
+    );
+
+    state.set(
+      select,
+      {
+        container,
+        trigger,
+        menu: null
+      }
+    );
+
+    syncTrigger(select);
+
+    /*
+     * VERY IMPORTANT:
+     * These controls are sometimes nested inside <label>.
+     * Prevent the label's default activation from interfering
+     * with the custom dropdown.
+     */
+    trigger.addEventListener(
+      "mousedown",
+      (event) => {
+        event.preventDefault();
+      }
+    );
+
+    trigger.addEventListener(
+      "touchstart",
+      (event) => {
+        event.preventDefault();
+      },
+      {
+        passive: false
+      }
     );
 
     trigger.addEventListener(
       "click",
-      () => {
-        if (select.disabled) return;
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-        if (
-          container.classList.contains(
-            "is-open"
-          )
-        ) {
-          closeAll();
+        const itemState =
+          state.get(select);
+
+        if (!itemState) return;
+
+        if (itemState.menu) {
+          closeSelect(select);
         } else {
-          openSelect(
-            select,
-            container,
-            trigger
-          );
+          openSelect(select);
         }
       }
     );
@@ -437,85 +597,54 @@
     trigger.addEventListener(
       "keydown",
       (event) => {
-        const enabled =
-          Array.from(select.options)
-            .map((option, index) => ({
-              option,
-              index,
-            }))
-            .filter(
-              ({ option }) =>
-                !option.disabled
+        switch (event.key) {
+          case "ArrowDown":
+            event.preventDefault();
+            moveSelection(
+              select,
+              1
             );
+            break;
 
-        if (event.key === "Escape") {
-          event.preventDefault();
+          case "ArrowUp":
+            event.preventDefault();
+            moveSelection(
+              select,
+              -1
+            );
+            break;
 
-          closeAll();
+          case "Home":
+            event.preventDefault();
+            moveSelection(
+              select,
+              -999999
+            );
+            break;
 
-          return;
-        }
+          case "End":
+            event.preventDefault();
+            moveSelection(
+              select,
+              999999
+            );
+            break;
 
-        if (
-          event.key === "Enter" ||
-          event.key === " "
-        ) {
-          event.preventDefault();
+          case "Enter":
+          case " ":
+            event.preventDefault();
 
-          trigger.click();
+            trigger.click();
+            break;
 
-          return;
-        }
+          case "Escape":
+            event.preventDefault();
 
-        if (
-          ![
-            "ArrowDown",
-            "ArrowUp",
-            "Home",
-            "End",
-          ].includes(event.key)
-        ) {
-          return;
-        }
+            closeSelect(select);
+            break;
 
-        event.preventDefault();
-
-        if (!enabled.length) return;
-
-        const current =
-          enabled.findIndex(
-            ({ index }) =>
-              index ===
-              select.selectedIndex
-          );
-
-        const next =
-          event.key === "Home"
-            ? 0
-            : event.key === "End"
-              ? enabled.length - 1
-              : Math.max(
-                  0,
-                  Math.min(
-                    enabled.length - 1,
-                    current +
-                      (event.key ===
-                      "ArrowDown"
-                        ? 1
-                        : -1)
-                  )
-                );
-
-        if (enabled[next]) {
-          setValue(
-            select,
-            enabled[next].option.value
-          );
-
-          syncTrigger(
-            select,
-            trigger
-          );
+          default:
+            break;
         }
       }
     );
@@ -523,18 +652,15 @@
     select.addEventListener(
       "change",
       () => {
-        syncTrigger(
-          select,
-          trigger
-        );
+        syncTrigger(select);
       }
     );
-  };
+  }
 
   selects.forEach(setup);
 
   /*
-   * Close when clicking outside
+   * Clicking outside closes every custom dropdown.
    */
   document.addEventListener(
     "click",
@@ -544,7 +670,7 @@
 
       if (
         target.closest(
-          ".perform-select-host, .employee-select, .filter-select, .perform-select-menu"
+          ".perform-select-trigger, .perform-select-menu"
         )
       ) {
         return;
@@ -555,9 +681,7 @@
   );
 
   /*
-   * If the viewport changes or the page scrolls,
-   * close the menu rather than leaving a stale
-   * floating menu behind.
+   * Close menus when the viewport/layout changes.
    */
   window.addEventListener(
     "resize",
