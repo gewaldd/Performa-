@@ -1,4 +1,12 @@
 <?php
+require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../kpi_templates.php';
+require_login();
+require_role('supervisor');
+
+$supervisorName = $_SESSION['name'] ?? 'Supervisor';
+
 $navItems = [
     ['label' => 'Dashboard', 'href' => 'supervisor_dashboard.php', 'active' => false],
     ['label' => 'My Employees', 'href' => 'employees.php', 'active' => true],
@@ -8,12 +16,29 @@ $navItems = [
     ['label' => 'Notifications', 'href' => 'notifications.php', 'active' => false],
 ];
 
-// TODO(firebase): replace with a Firestore query filtered to
-// employees where assignedSupervisorId == current user's uid.
-$employees = [
-    ['name' => 'Maria Clara', 'role' => 'Customer Support Spec.', 'status' => 'Needs Review', 'statusClass' => 'status-warning', 'timeline' => '45 days left', 'score' => '3.8'],
-    ['name' => 'Jose Rizal', 'role' => 'Software Engineer', 'status' => 'On Track', 'statusClass' => 'status-good', 'timeline' => '90 days left', 'score' => '4.5'],
-];
+$employees = [];
+try {
+    $docs = firestore_list_documents('Users');
+    foreach ($docs as $doc) {
+        $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+        if (strpos($roleKey, 'probation') !== false) {
+            $employees[] = [
+                'uid' => $doc['uid'] ?? '',
+                'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+                'email' => $doc['email'] ?? '',
+                'industry' => $doc['industry'] ?? 'retail',
+                'hireDate' => $doc['hireDate'] ?? '',
+            ];
+        }
+    }
+} catch (\Throwable $e) {
+}
+
+$allRatings = [];
+try {
+    $allRatings = firestore_list_documents('Ratings');
+} catch (\Throwable $e) {
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -44,9 +69,9 @@ $employees = [
                 </nav>
             </div>
             <div class="sidebar-footer">
-                <div class="profile-avatar">SP</div>
+                <div class="profile-avatar"><?php echo strtoupper(substr($supervisorName, 0, 2)); ?></div>
                 <div>
-                    <div class="profile-name">Sofia Panganiban</div>
+                    <div class="profile-name"><?php echo htmlspecialchars($supervisorName, ENT_QUOTES); ?></div>
                     <div class="profile-role">Shift Supervisor</div>
                 </div>
             </div>
@@ -54,44 +79,78 @@ $employees = [
         <main class="main">
             <section class="hero">
                 <p class="eyebrow">My Employees</p>
-                <h1>Employees assigned to you for KPI tracking.</h1>
+                <h1>Probationary employees and their KPI progress.</h1>
             </section>
             <section class="panel" style="padding-top:18px;">
                 <div class="panel-header">
                     <div>
-                        <h2>Assigned Employee List</h2>
-                        <p>View-only. Employee profiles and KPI configuration are managed by the Employer.</p>
+                        <h2>Employee List</h2>
+                        <p>Live data from Firestore. Employee profiles and KPI configuration are managed by the
+                            Employer.</p>
                     </div>
                 </div>
-                <div class="table-wrap">
-                    <div class="table-head"><span>Employee</span><span>Timeline</span><span>KPI
-                            Score</span><span>Status</span></div>
-                    <?php foreach ($employees as $employee): ?>
-                        <div class="table-row">
-                            <div class="employee-cell">
-                                <div class="avatar"></div>
-                                <div>
-                                    <div class="employee-name">
-                                        <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?></div>
-                                    <div class="employee-role">
-                                        <?php echo htmlspecialchars($employee['role'], ENT_QUOTES); ?></div>
+                <?php if (empty($employees)): ?>
+                    <p style="padding:24px; color:var(--muted);">No probationary employees found yet.</p>
+                <?php else: ?>
+                    <div class="table-wrap">
+                        <div class="table-head"><span>Employee</span><span>Timeline</span><span>KPI
+                                Score</span><span>Status</span></div>
+                        <?php foreach ($employees as $emp): ?>
+                            <?php
+                            $summary = employee_kpi_summary($allRatings, $emp['uid'], $emp['industry']);
+
+                            $daysIn = null;
+                            $daysLeft = null;
+                            $timelineText = 'No hire date on file';
+                            $progress = 0;
+                            if (!empty($emp['hireDate'])) {
+                                try {
+                                    $hire = new DateTime($emp['hireDate']);
+                                    $today = new DateTime('today');
+                                    $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
+                                    $daysLeft = max(0, 180 - $daysIn);
+                                    $timelineText = "Day {$daysIn} · {$daysLeft} days left";
+                                    $progress = min(100, (int) round(($daysIn / 180) * 100));
+                                } catch (\Throwable $e) {
+                                }
+                            }
+
+                            if ($summary['hasData']) {
+                                $statusInfo = kpi_status_for_score($summary['score'], $summary['targetAvg']);
+                            } else {
+                                $statusInfo = ['status' => 'Not Yet Rated', 'statusClass' => 'status-neutral'];
+                            }
+                            ?>
+                            <div class="table-row">
+                                <div class="employee-cell">
+                                    <div class="avatar"></div>
+                                    <div>
+                                        <div class="employee-name">
+                                            <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></div>
+                                        <div class="employee-role">
+                                            <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $emp['industry'])), ENT_QUOTES); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="timeline-cell">
+                                    <div class="timeline-text">
+                                        <?php echo htmlspecialchars($timelineText, ENT_QUOTES); ?></div>
+                                    <div class="timeline-bar"><span
+                                            style="width: <?php echo (int) $progress; ?>%; background: var(--primary);"></span>
+                                    </div>
+                                </div>
+                                <div class="score-cell">
+                                    <strong
+                                        class="score-value"><?php echo $summary['hasData'] ? number_format($summary['score'], 1) : '—'; ?></strong>
+                                </div>
+                                <div class="status-cell">
+                                    <span
+                                        class="status-pill <?php echo htmlspecialchars($statusInfo['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($statusInfo['status'], ENT_QUOTES); ?></span>
                                 </div>
                             </div>
-                            <div class="timeline-cell">
-                                <div class="timeline-text">
-                                    <?php echo htmlspecialchars($employee['timeline'], ENT_QUOTES); ?></div>
-                                <div class="timeline-bar"><span style="width: 68%; background: #2f6df6;"></span></div>
-                            </div>
-                            <div class="score-cell"><strong
-                                    class="score-value"><?php echo htmlspecialchars($employee['score'], ENT_QUOTES); ?></strong>
-                                <div class="stars" aria-hidden="true">★★★★☆</div>
-                            </div>
-                            <div class="status-cell"><span
-                                    class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($employee['status'], ENT_QUOTES); ?></span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </section>
         </main>
     </div>

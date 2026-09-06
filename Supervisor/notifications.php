@@ -1,4 +1,11 @@
 <?php
+require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../firebase_init.php';
+require_login();
+require_role('supervisor');
+
+$supervisorName = $_SESSION['name'] ?? 'Supervisor';
+
 $navItems = [
     ['label' => 'Dashboard', 'href' => 'supervisor_dashboard.php', 'active' => false],
     ['label' => 'My Employees', 'href' => 'employees.php', 'active' => false],
@@ -8,13 +15,51 @@ $navItems = [
     ['label' => 'Notifications', 'href' => 'notifications.php', 'active' => true],
 ];
 
-// TODO(firebase): replace with a Firestore query on the notifications
-// collection, filtered to the current supervisor's uid.
-$notifications = [
-    ['title' => 'Maria Clara is nearing her deadline', 'detail' => '45 days left until regularization decision.', 'time' => '2 hours ago', 'unread' => true],
-    ['title' => 'New KPI added by Employer', 'detail' => '"Quality of Work" was added to the Customer Support role.', 'time' => 'Yesterday', 'unread' => true],
-    ['title' => 'Rating submitted successfully', 'detail' => 'Your weekly rating for Jose Rizal was recorded.', 'time' => '3 days ago', 'unread' => false],
-];
+$notifications = [];
+
+try {
+    $employees = [];
+    foreach (firestore_list_documents('Users') as $doc) {
+        $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+        if (strpos($roleKey, 'probation') !== false) {
+            $employees[$doc['uid']] = $doc['name'] ?? $doc['email'] ?? 'Unknown';
+        }
+    }
+
+    $ratings = [];
+    try {
+        $ratings = firestore_list_documents('Ratings');
+    } catch (\Throwable $e) {
+    }
+
+    $ratedUids = [];
+    foreach ($ratings as $r) {
+        $ratedUids[$r['employeeUid'] ?? ''] = true;
+    }
+
+    // Notification 1: employees who have never been rated.
+    foreach ($employees as $uid => $name) {
+        if (empty($ratedUids[$uid])) {
+            $notifications[] = [
+                'title' => $name . ' has not been rated yet',
+                'detail' => 'Submit a weekly rating for this employee in Rating Entry.',
+                'unread' => true,
+            ];
+        }
+    }
+
+    // Notification 2: most recent ratings submitted (last 5).
+    usort($ratings, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
+    $recent = array_slice($ratings, 0, 5);
+    foreach ($recent as $r) {
+        $notifications[] = [
+            'title' => 'Rating submitted for ' . ($r['employeeName'] ?? 'an employee'),
+            'detail' => 'Rated by ' . ($r['ratedBy'] === ($_SESSION['uid'] ?? '') ? 'you' : ($r['ratedByRole'] ?? 'a teammate')) . ' on ' . (!empty($r['ratedAt']) ? date('M j, Y', strtotime($r['ratedAt'])) : '—'),
+            'unread' => false,
+        ];
+    }
+} catch (\Throwable $e) {
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,7 +91,7 @@ $notifications = [
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--primary);
+            background: var(--primary, #2f6df6);
             margin-top: 6px;
             flex-shrink: 0;
         }
@@ -65,13 +110,6 @@ $notifications = [
             font-size: 12.5px;
             color: var(--muted);
             margin-top: 2px;
-        }
-
-        .notif-time {
-            font-size: 11.5px;
-            color: var(--muted);
-            white-space: nowrap;
-            margin-left: auto;
         }
     </style>
 </head>
@@ -95,9 +133,9 @@ $notifications = [
                 </nav>
             </div>
             <div class="sidebar-footer">
-                <div class="profile-avatar">SP</div>
+                <div class="profile-avatar"><?php echo strtoupper(substr($supervisorName, 0, 2)); ?></div>
                 <div>
-                    <div class="profile-name">Sofia Panganiban</div>
+                    <div class="profile-name"><?php echo htmlspecialchars($supervisorName, ENT_QUOTES); ?></div>
                     <div class="profile-role">Shift Supervisor</div>
                 </div>
             </div>
@@ -105,27 +143,30 @@ $notifications = [
         <main class="main">
             <section class="hero">
                 <p class="eyebrow">Notifications</p>
-                <h1>Alerts and updates.</h1>
+                <h1>Alerts based on your employees' rating activity.</h1>
             </section>
             <section class="panel" style="padding:18px;">
                 <div class="panel-header">
                     <div>
                         <h2>Recent Notifications</h2>
-                        <p>Deadline reminders and updates relevant to your assigned employees.</p>
+                        <p>Live data derived from Firestore employee and rating records.</p>
                     </div>
                 </div>
-                <div class="notif-list">
-                    <?php foreach ($notifications as $notif): ?>
-                        <div class="notif-row <?php echo $notif['unread'] ? '' : 'read'; ?>">
-                            <span class="notif-dot"></span>
-                            <div>
-                                <div class="notif-title"><?php echo htmlspecialchars($notif['title'], ENT_QUOTES); ?></div>
-                                <div class="notif-detail"><?php echo htmlspecialchars($notif['detail'], ENT_QUOTES); ?></div>
+                <?php if (empty($notifications)): ?>
+                    <p style="padding:24px 0; color:var(--muted);">Nothing to show yet.</p>
+                <?php else: ?>
+                    <div class="notif-list">
+                        <?php foreach ($notifications as $notif): ?>
+                            <div class="notif-row <?php echo $notif['unread'] ? '' : 'read'; ?>">
+                                <span class="notif-dot"></span>
+                                <div>
+                                    <div class="notif-title"><?php echo htmlspecialchars($notif['title'], ENT_QUOTES); ?></div>
+                                    <div class="notif-detail"><?php echo htmlspecialchars($notif['detail'], ENT_QUOTES); ?></div>
+                                </div>
                             </div>
-                            <span class="notif-time"><?php echo htmlspecialchars($notif['time'], ENT_QUOTES); ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </section>
         </main>
     </div>
