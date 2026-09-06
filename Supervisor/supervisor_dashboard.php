@@ -11,6 +11,7 @@ $navItems = [
     ['label' => 'Dashboard', 'href' => 'supervisor_dashboard.php', 'active' => true],
     ['label' => 'My Employees', 'href' => 'employees.php', 'active' => false],
     ['label' => 'Rating Entry', 'href' => 'ratings.php', 'active' => false],
+    ['label' => 'Reports', 'href' => 'reports.php', 'active' => false],
     ['label' => 'Settings', 'href' => 'settings.php', 'active' => false],
     ['label' => 'Notifications', 'href' => 'notifications.php', 'active' => false],
 ];
