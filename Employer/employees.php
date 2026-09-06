@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/employer_layout.php';
 
 require_login();
 require_role('employer');
@@ -31,14 +32,6 @@ $icons = [
   'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   'more-vertical' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>',
-];
-
-$navItems = [
-  ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'active' => false, 'icon' => 'home'],
-  ['label' => 'Employees', 'href' => 'employees.php', 'active' => true, 'icon' => 'users'],
-  ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false, 'icon' => 'target'],
-  ['label' => 'Reports', 'href' => 'reports.php', 'active' => false, 'icon' => 'bar-chart'],
-  ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
 function normalize_role_key(?string $role): string
@@ -110,35 +103,7 @@ sort($departments);
 
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand">
-          <div class="brand-mark">
-            <span class="brand-mark-dot"></span>
-          </div>
-          <div class="brand-name">Performa</div>
-        </div>
-
-        <nav class="nav" aria-label="Primary">
-          <?php foreach ($navItems as $item): ?>
-            <a class="nav-item<?php echo $item['active'] ? ' active' : ''; ?>"
-              href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>">
-              <span class="nav-icon"><?php echo $icons[$item['icon']]; ?></span>
-              <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
-            </a>
-          <?php endforeach; ?>
-        </nav>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="profile-avatar"
-          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
-        <div>
-          <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
-          <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
-        </div>
-      </div>
-    </aside>
+    <?php employer_render_shell('Employees'); ?>
 
     <main class="main">
       <header class="topbar">

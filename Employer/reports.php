@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/employer_layout.php';
 require_once $rootDir . '/kpi_templates.php';
 
 require_login();
@@ -32,14 +33,6 @@ $icons = [
   'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
   'file' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
   'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-];
-
-$navItems = [
-  ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'active' => false, 'icon' => 'home'],
-  ['label' => 'Employees', 'href' => 'employees.php', 'active' => false, 'icon' => 'users'],
-  ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false, 'icon' => 'target'],
-  ['label' => 'Reports', 'href' => 'reports.php', 'active' => true, 'icon' => 'bar-chart'],
-  ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
 $reportTypes = [
@@ -144,35 +137,7 @@ try {
 
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand">
-          <div class="brand-mark">
-            <span class="brand-mark-dot"></span>
-          </div>
-          <div class="brand-name">Performa</div>
-        </div>
-
-        <nav class="nav" aria-label="Primary">
-          <?php foreach ($navItems as $item): ?>
-            <a class="nav-item<?php echo $item['active'] ? ' active' : ''; ?>"
-              href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>">
-              <span class="nav-icon"><?php echo $icons[$item['icon']]; ?></span>
-              <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
-            </a>
-          <?php endforeach; ?>
-        </nav>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="profile-avatar"
-          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
-        <div>
-          <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
-          <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
-        </div>
-      </div>
-    </aside>
+    <?php employer_render_shell('Reports'); ?>
 
     <main class="main">
       <header class="topbar">
@@ -206,7 +171,7 @@ try {
               <label for="employee">Select Employee</label>
               <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['user']; ?></span>
-                <select id="employee" class="perform-select perform-select--overlay employee-select-control" name="employee">
+                <select id="employee" class="perform-select employee-select-control" name="employee">
                   <?php foreach ($employeesList as $emp): ?>
                     <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></option>
                   <?php endforeach; ?>
@@ -218,7 +183,7 @@ try {
               <label for="report_type">Report Type</label>
               <div class="employee-select">
                 <span class="employee-select-icon"><?php echo $icons['file']; ?></span>
-                <select id="report_type" class="perform-select perform-select--overlay employee-select-control" name="report_type">
+                <select id="report_type" class="perform-select employee-select-control" name="report_type">
                   <?php foreach ($reportTypes as $key => $label): ?>
                     <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES); ?></option>
                   <?php endforeach; ?>

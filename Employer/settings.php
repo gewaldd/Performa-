@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/employer_layout.php';
 
 require_login();
 require_role('employer');
@@ -101,13 +102,6 @@ $icons = [
   'trash' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
 ];
 
-$navItems = [
-  ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'active' => false, 'icon' => 'home'],
-  ['label' => 'Employees', 'href' => 'employees.php', 'active' => false, 'icon' => 'users'],
-  ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false, 'icon' => 'target'],
-  ['label' => 'Reports', 'href' => 'reports.php', 'active' => false, 'icon' => 'bar-chart'],
-  ['label' => 'Settings', 'href' => 'settings.php', 'active' => true, 'icon' => 'settings'],
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,35 +120,7 @@ $navItems = [
 
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand">
-          <div class="brand-mark">
-            <span class="brand-mark-dot"></span>
-          </div>
-          <div class="brand-name">Performa</div>
-        </div>
-
-        <nav class="nav" aria-label="Primary">
-          <?php foreach ($navItems as $item): ?>
-            <a class="nav-item<?php echo $item['active'] ? ' active' : ''; ?>"
-              href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>">
-              <span class="nav-icon"><?php echo $icons[$item['icon']]; ?></span>
-              <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
-            </a>
-          <?php endforeach; ?>
-        </nav>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="profile-avatar"
-          style="background-image: url('<?php echo "https://ui-avatars.com/api/?name=" . urlencode($profileName) . "&background=2f6df6&color=fff&size=160"; ?>');"></div>
-        <div>
-          <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
-          <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
-        </div>
-      </div>
-    </aside>
+    <?php employer_render_shell('Settings'); ?>
 
     <main class="main">
       <header class="topbar">

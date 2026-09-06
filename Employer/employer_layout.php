@@ -19,6 +19,8 @@ function employer_render_shell(string $active): void
   }
   $profileName = $_SESSION['name'] ?? 'Employer';
   $profileRole = ucwords(str_replace('_', ' ', $_SESSION['role'] ?? 'Employer'));
+  $profileAvatarSeed = urlencode(strtolower($_SESSION['email'] ?? $profileName));
+  $profileAvatarUrl = 'https://ui-avatars.com/api/?name=' . $profileAvatarSeed . '&background=2f6df6&color=fff&size=160';
   $items = [
     ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'key' => 'Dashboard', 'icon' => 'home'],
     ['label' => 'Employees', 'href' => 'employees.php', 'key' => 'Employees', 'icon' => 'users'],
@@ -43,7 +45,7 @@ function employer_render_shell(string $active): void
       </nav>
     </div>
     <div class="sidebar-footer">
-      <div class="profile-avatar" aria-hidden="true"></div>
+      <div class="profile-avatar" style="background-image: url('<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>');" aria-hidden="true"></div>
       <div>
         <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
         <div class="profile-role"><?php echo htmlspecialchars($profileRole, ENT_QUOTES); ?></div>

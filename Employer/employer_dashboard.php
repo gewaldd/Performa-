@@ -2,6 +2,7 @@
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/employer_layout.php';
 require_once $rootDir . '/kpi_templates.php';
 
 require_login();
@@ -24,14 +25,6 @@ $icons = [
   'cap' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.66 3 3 6 3s6-1.34 6-3v-5"/></svg>',
   'sparkle' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5 5l2.8 2.8M16.2 16.2 19 19M3 12h4M17 12h4M5 19l2.8-2.8M16.2 7.8 19 5"/></svg>',
   'more' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
-];
-
-$navItems = [
-  ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'active' => true, 'icon' => 'home'],
-  ['label' => 'Employees', 'href' => 'employees.php', 'active' => false, 'icon' => 'users'],
-  ['label' => 'KPIs', 'href' => 'kpis.php', 'active' => false, 'icon' => 'target'],
-  ['label' => 'Reports', 'href' => 'reports.php', 'active' => false, 'icon' => 'bar-chart'],
-  ['label' => 'Settings', 'href' => 'settings.php', 'active' => false, 'icon' => 'settings'],
 ];
 
 // session: show signed-in user's name/role if present
@@ -172,6 +165,20 @@ $metrics = [
   ['label' => 'Overall Performance', 'value' => $scoredCount > 0 ? number_format($scoreTotal / $scoredCount, 1) : '—', 'suffix' => $scoredCount > 0 ? '/ 5.0' : '', 'badge' => $scoredCount > 0 ? 'Avg Score' : 'No Ratings Yet', 'tone' => 'neutral', 'iconClass' => 'icon-mint', 'icon' => 'trend'],
 ];
 
+// Real nearest regularization deadline across actual probationary
+// employees (not a hardcoded figure). Supervisors are excluded — the
+// 180-day countdown only applies to probationary staff.
+$nearestDeadlineDays = null;
+foreach ($liveUsers as $u) {
+  if (stripos($u['role'], 'probation') === false) {
+    continue;
+  }
+  $rawDaysLeft = (int) $u['daysLeft'];
+  if ($rawDaysLeft > 0 && ($nearestDeadlineDays === null || $rawDaysLeft < $nearestDeadlineDays)) {
+    $nearestDeadlineDays = $rawDaysLeft;
+  }
+}
+
 $evaluations = $liveUsers;
 
 // Real AI Insight: the rated probationary employee furthest below their
@@ -228,35 +235,7 @@ $recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
 
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand">
-          <div class="brand-mark">
-            <span class="brand-mark-dot"></span>
-          </div>
-          <div class="brand-name">Performa</div>
-        </div>
-
-        <nav class="nav" aria-label="Primary">
-          <?php foreach ($navItems as $item): ?>
-            <a class="nav-item<?php echo $item['active'] ? ' active' : ''; ?>"
-              href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>">
-              <span class="nav-icon"><?php echo $icons[$item['icon']]; ?></span>
-              <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
-            </a>
-          <?php endforeach; ?>
-        </nav>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="profile-avatar" style="background-image: url('<?php echo 'https://ui-avatars.com/api/?name=' . urlencode($profileName) . '&background=2f6df6&color=fff&size=160'; ?>');">
-        </div>
-        <div>
-          <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
-          <div class="profile-role"><?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?></div>
-        </div>
-      </div>
-    </aside>
+    <?php employer_render_shell('Dashboard'); ?>
 
     <main class="main" id="dashboard">
       <header class="topbar">
@@ -266,10 +245,12 @@ $recommendation = $insightEmployee ? 'Performance Improvement Training' : null;
         </label>
 
         <div class="topbar-actions">
-          <div class="deadline-pill">
-            <span class="deadline-icon"><?php echo $icons['bell']; ?></span>
-            2 days until regularization deadline
-          </div>
+          <?php if ($nearestDeadlineDays !== null): ?>
+            <div class="deadline-pill">
+              <span class="deadline-icon"><?php echo $icons['bell']; ?></span>
+              <?php echo (int) $nearestDeadlineDays; ?> day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?> until nearest regularization deadline
+            </div>
+          <?php endif; ?>
           <button class="icon-button" type="button" aria-label="Messages"><?php echo $icons['mail']; ?></button>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>

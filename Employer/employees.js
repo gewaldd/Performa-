@@ -56,10 +56,14 @@ function render() {
 
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
-    if (searchInput) searchInput.value = "";
-    if (deptFilter) deptFilter.value = "";
-    if (statusFilter) statusFilter.value = "";
-    if (typeFilter) typeFilter.value = "";
+    [searchInput, deptFilter, statusFilter, typeFilter].forEach((el) => {
+      if (!el) return;
+      el.value = "";
+      // Setting .value programmatically does not fire a native change
+      // event, so dropdowns.js (which listens for "change" to refresh the
+      // visible trigger label) would otherwise leave the old label showing.
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     currentPage = 1;
     render();
   });

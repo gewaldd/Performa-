@@ -303,10 +303,9 @@ body::before {
 }
 
 .hero h1 {
-  margin: 0 0 8px;
-  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  margin: 0 0 6px;
+  font-size: 1.7rem;
   font-weight: 700;
-  line-height: 1.15;
 }
 
 .hero p {
@@ -1303,14 +1302,16 @@ select option:checked {
 }
 
 .filter-select {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 12px;
-  border-radius: 10px;
-  background: rgba(244, 247, 252, 0.9);
-  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid rgba(27, 39, 62, 0.14);
+  box-shadow: var(--shadow-soft);
   font-size: 13px;
   color: var(--text);
   cursor: pointer;
@@ -1562,48 +1563,6 @@ select option:checked {
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 700;
-}
-
-.select-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 10px;
-  background: rgba(244, 247, 252, 0.9);
-  border: 1px solid var(--panel-border);
-  font-size: 14px;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.select-field svg {
-  width: 14px;
-  height: 14px;
-  color: #94a3bd;
-}
-
-.btn-dark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 10px;
-  background: #10182d;
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.btn-dark svg {
-  width: 14px;
-  height: 14px;
 }
 
 .reports-section-header {
@@ -2215,8 +2174,6 @@ a:focus-visible,
   .toolbar-pill,
   .pending-pill,
   .btn-primary,
-  .btn-dark,
-  .select-field,
   .employee-select {
     width: 100%;
     justify-content: center;
@@ -2326,8 +2283,7 @@ input[type="radio"] {
 }
 
 .btn-primary,
-.primary-button,
-.btn-dark {
+.primary-button {
   min-height: 40px;
   border-radius: var(--radius-sm);
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
@@ -2335,7 +2291,6 @@ input[type="radio"] {
 
 .btn-primary:hover,
 .primary-button:hover,
-.btn-dark:hover,
 .ghost-button:hover,
 .btn-outline:hover,
 .btn-cancel:hover,
@@ -2350,7 +2305,6 @@ input[type="radio"] {
 
 .btn-primary:active,
 .primary-button:active,
-.btn-dark:active,
 .ghost-button:active,
 .btn-outline:active,
 .btn-cancel:active,
@@ -2375,7 +2329,6 @@ input[type="radio"] {
 
 .btn-primary:disabled,
 .primary-button:disabled,
-.btn-dark:disabled,
 .ghost-button:disabled,
 .btn-outline:disabled,
 .reset-button:disabled,
@@ -2717,7 +2670,6 @@ a.settings-card-action {
 
   .btn-primary,
   .primary-button,
-  .btn-dark,
   .ghost-button,
   .btn-outline,
   .btn-cancel {
@@ -2877,8 +2829,7 @@ a.settings-card-action {
 
   .page-header .btn-primary,
   .page-header .ghost-button,
-  .report-form-row > .btn-primary,
-  .report-form-row > .btn-dark {
+  .report-form-row > .btn-primary {
     width: 100%;
     justify-content: center;
   }
@@ -3005,8 +2956,7 @@ a.settings-card-action {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .report-form-row > .btn-primary,
-  .report-form-row > .btn-dark {
+  .report-form-row > .btn-primary {
     grid-column: 1 / -1;
     justify-self: start;
   }
@@ -3067,29 +3017,6 @@ select.perform-select option:checked {
   color: var(--primary-dark);
 }
 
-.employee-select select.perform-select--overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0 42px 0 46px;
-  border: 0;
-  border-radius: inherit;
-  background-color: transparent;
-  background-image: none;
-  box-shadow: none;
-  color: inherit;
-}
-
-.employee-select select.perform-select--overlay:hover,
-.employee-select select.perform-select--overlay:focus {
-  background-color: transparent;
-  background-image: none;
-  box-shadow: none;
-}
-
 .employee-select {
   min-height: 44px;
   padding: 0 14px;
@@ -3105,16 +3032,6 @@ select.perform-select option:checked {
 
 .employee-select-chevron {
   color: #61708b;
-}
-
-.filter-select {
-  position: relative;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
-  border: 1px solid rgba(27, 39, 62, 0.14);
-  box-shadow: var(--shadow-soft);
 }
 
 .filter-select::after {
@@ -3526,26 +3443,32 @@ select.perform-select option:checked {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232f6df6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 15 6-6 6 6'/%3E%3C/svg%3E");
 }
 
-.employee-select,
-.filter-select {
+.employee-select {
   position: relative;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid rgba(27, 39, 62, 0.14);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  box-shadow: var(--shadow-soft);
 }
 
-.employee-select > .perform-select-trigger,
-.filter-select > .perform-select-trigger {
-  position: absolute;
-  inset: 0;
-  min-height: 0;
-  height: 100%;
+.employee-select > .perform-select-trigger {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 42px 0 46px;
   border: 0;
+  border-radius: inherit;
   background: transparent;
-  padding: 0 14px 0 46px;
+  box-shadow: none;
 }
 
 .employee-select > .perform-select-trigger:hover,
-.employee-select.is-open > .perform-select-trigger,
-.filter-select > .perform-select-trigger:hover,
-.filter-select.is-open > .perform-select-trigger {
+.employee-select.is-open > .perform-select-trigger {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
@@ -3645,4 +3568,346 @@ select.perform-select option:checked {
 .report-meta {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   FINAL DROPDOWN LAYOUT OVERRIDES
+   Fixes oversized/native-looking dropdown menus and keeps
+   the custom option panel anchored to the trigger.
+   ========================================================= */
+
+/* Keep dropdown hosts from creating unexpected sizing/overflow contexts. */
+.employee-select,
+.perform-select-host {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.filter-select {
+  position: relative;
+  width: auto;
+  min-width: 180px;
+  max-width: 240px;
+  flex: 0 1 auto;
+  min-height: 44px;
+  overflow: visible;
+}
+
+/* The real select is data/form infrastructure only.
+   The visible control is the generated trigger. */
+select.perform-select.perform-select-native {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 1px !important;
+  min-height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+/* Generated custom trigger. */
+.perform-select-trigger {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.perform-select-value {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+   IMPORTANT:
+   The menu is a floating overlay. It must NEVER become part of
+   the page's normal layout or inherit the size of its parent.
+   JavaScript supplies top/left/width at runtime.
+*/
+.perform-select-menu {
+  position: fixed !important;
+  inset: auto auto auto auto;
+  z-index: 10000 !important;
+
+  display: grid !important;
+  grid-auto-rows: minmax(38px, auto);
+  gap: 2px;
+
+  box-sizing: border-box;
+  height: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: min(280px, calc(100vh - 24px)) !important;
+
+  margin: 0;
+  padding: 6px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border: 1px solid rgba(27, 39, 62, 0.14);
+  border-radius: 12px;
+  background: #ffffff;
+
+  box-shadow: 0 18px 38px rgba(23, 33, 58, 0.16);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translateY(-4px);
+  transform-origin: top center;
+
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 0s linear 140ms;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.perform-select-menu[data-placement="above"] {
+  transform: translateY(4px);
+  transform-origin: bottom center;
+}
+
+.perform-select-menu.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 0s linear 0s;
+}
+
+.perform-select-option {
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 10px;
+
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.perform-select-option:hover,
+.perform-select-option:focus-visible {
+  background: rgba(47, 109, 246, 0.08);
+  color: var(--primary-dark);
+  outline: none;
+}
+
+.perform-select-option.is-selected {
+  background: rgba(47, 109, 246, 0.12);
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.perform-select-option.is-disabled,
+.perform-select-option:disabled {
+  color: #94a3bd;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Prevent old wrapper-level chevrons from creating duplicates. */
+.employee-select:has(> .perform-select-trigger) > .employee-select-chevron {
+  display: none !important;
+}
+
+.filter-select:has(> .perform-select-trigger)::after {
+  display: none !important;
+}
+
+/* Keep the visible trigger aligned with the existing employee selector icon. */
+.employee-select > .perform-select-trigger {
+  box-sizing: border-box;
+  padding-left: 46px;
+  padding-right: 42px;
+}
+
+.employee-select-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--primary-dark);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.employee-select-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Mobile: preserve viewport boundaries without changing page flow. */
+@media (max-width: 760px) {
+  .perform-select-menu {
+    max-width: calc(100vw - 24px) !important;
+    max-height: min(280px, calc(100vh - 24px)) !important;
+    border-radius: 11px;
+  }
+
+  .perform-select-option {
+    min-height: 42px;
+    padding: 9px 11px;
+  }
+}
+
+/* =========================================================
+   FINAL EMPLOYEE FILTER BAR LAYOUT
+   ========================================================= */
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-soft);
+  flex-wrap: nowrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+}
+
+.filter-select {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 180px;
+  max-width: 240px;
+  min-height: 42px;
+  padding: 0 12px;
+  gap: 7px;
+  border: 1px solid rgba(27, 39, 62, 0.12);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.filter-select > span:first-child {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.filter-select > .perform-select-trigger {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 22px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.filter-select > .perform-select-trigger:hover,
+.filter-select.is-open > .perform-select-trigger {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: 8px;
+  width: auto;
+}
+
+@media (max-width: 1000px) and (min-width: 761px) {
+  .filter-bar {
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .filter-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .filter-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .filter-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
