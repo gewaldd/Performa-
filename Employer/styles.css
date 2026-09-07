@@ -5262,3 +5262,269 @@ select:disabled {
       0.01ms !important;
   }
 }
+
+/* =========================================================
+   DASHBOARD FINAL POLISH
+   Keeps the existing Employer design system while improving
+   spacing, hierarchy, and dashboard-specific responsiveness.
+   ========================================================= */
+
+#dashboard {
+  min-width: 0;
+}
+
+/* Give the dashboard header enough breathing room without
+   making it feel like a floating card. */
+#dashboard .topbar {
+  min-height: 56px;
+  margin-bottom: 20px;
+}
+
+/* Desktop dashboard header balance */
+@media (min-width: 1101px) {
+  #dashboard .topbar {
+    gap: 28px;
+  }
+
+  #dashboard .topbar .search-bar {
+    width: min(340px, 34vw);
+    max-width: 340px;
+  }
+
+  #dashboard .topbar-actions {
+    gap: 12px;
+  }
+}
+
+/* Hero */
+#dashboard .hero {
+  padding:
+    2px
+    0
+    22px;
+}
+
+#dashboard .hero-top {
+  align-items: flex-end;
+}
+
+#dashboard .hero-top h1 {
+  margin-bottom: 7px;
+}
+
+#dashboard .hero-top p {
+  max-width: 540px;
+}
+
+/* Metrics get a little more breathing room */
+#dashboard .metrics {
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+#dashboard .metric-card {
+  min-width: 0;
+  min-height: 142px;
+
+  justify-content: space-between;
+
+  padding: 18px;
+}
+
+/* Evaluation panel */
+#dashboard .evaluations {
+  min-width: 0;
+  overflow: hidden;
+}
+
+#dashboard .table-toolbar {
+  padding-bottom: 16px;
+}
+
+#dashboard .filter-chip {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+#dashboard .filter-chip:hover {
+  transform: none;
+}
+
+/* Better row breathing room */
+#dashboard .table-row {
+  min-height: 74px;
+}
+
+/* Insight card */
+#dashboard .insight-card {
+  min-width: 0;
+}
+
+#dashboard .insight-score-row {
+  line-height: 1.4;
+}
+
+#dashboard .insight-actions form {
+  margin: 0;
+}
+
+/* Prevent long employee names from destroying the grid */
+#dashboard .employee-cell > div:last-child,
+#dashboard .employee-name,
+#dashboard .employee-role {
+  min-width: 0;
+}
+
+#dashboard .employee-name,
+#dashboard .employee-role {
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  #dashboard .topbar {
+    gap: 16px;
+  }
+
+  #dashboard .topbar .search-bar {
+    width: min(300px, 42vw);
+    max-width: 300px;
+  }
+
+  #dashboard .hero-top {
+    align-items: flex-start;
+  }
+
+  #dashboard .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #dashboard .insight-card {
+    width: 100%;
+  }
+
+  #dashboard .table-row {
+    gap: 14px;
+    padding:
+      14px
+      18px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  #dashboard .topbar {
+    margin-bottom: 16px;
+  }
+
+  #dashboard .hero {
+    padding:
+      0
+      0
+      20px;
+  }
+
+  #dashboard .hero-top {
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  #dashboard .hero-top > div {
+    min-width: 0;
+  }
+
+  #dashboard .hero-top .btn-primary {
+    width: 100%;
+  }
+
+  #dashboard .metrics {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  #dashboard .metric-card {
+    min-height: 128px;
+  }
+
+  #dashboard .panel-header {
+    align-items: flex-start;
+  }
+
+  #dashboard .panel-actions {
+    width: auto;
+  }
+
+  #dashboard .panel-actions .ghost-button {
+    min-height: 38px;
+  }
+
+  #dashboard .chip-group {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  #dashboard .chip-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  #dashboard .filter-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  #dashboard .table-row {
+    min-height: 0;
+  }
+
+  #dashboard .employee-cell {
+    padding-bottom: 2px;
+  }
+
+  #dashboard .status-cell {
+    gap: 10px;
+  }
+
+  #dashboard .insight-card {
+    margin-top: 0;
+  }
+
+  #dashboard .insight-actions {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+  #dashboard .hero-top h1 {
+    font-size: 1.35rem;
+  }
+
+  #dashboard .metric-card {
+    padding: 15px;
+  }
+
+  #dashboard .panel {
+    border-radius: 16px;
+  }
+
+  #dashboard .panel-header {
+    padding-inline: 15px;
+  }
+
+  #dashboard .table-toolbar {
+    padding-inline: 15px;
+  }
+}

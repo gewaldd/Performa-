@@ -30,24 +30,49 @@ $reportTypes = [
   'risk_analysis' => 'Underperformance Risk Analysis',
 ];
 
-// Probationary employees, for the Generate Report picker
-$employeesList = [];
-try {
-  $docs = firestore_list_documents('Users');
-  foreach ($docs as $doc) {
-    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
-    if (strpos($roleKey, 'probation') !== false) {
-      $employeesList[] = [
-        'uid' => $doc['uid'] ?? '',
-        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
-        'industry' => $doc['industry'] ?? 'retail',
-      ];
-    }
+/* =========================================================
+   FAST DISK-BACKED DATA CACHING (BYPASS FIRESTORE WAITS)
+   ========================================================= */
+function get_cached_collection($collectionName, $ttlSeconds = 600) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $ttlSeconds)) {
+    $data = json_decode(file_get_contents($cacheFile), true);
+    if (is_array($data)) return $data;
   }
-} catch (Throwable $e) {
-  // leave $employeesList empty
+  
+  try {
+    $data = firestore_list_documents($collectionName);
+    @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+    return $data;
+  } catch (Throwable $e) {
+    if (file_exists($cacheFile)) {
+      $data = json_decode(file_get_contents($cacheFile), true);
+      if (is_array($data)) return $data;
+    }
+    return [];
+  }
 }
 
+function clear_collection_cache($collectionName) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile)) @unlink($cacheFile);
+}
+
+// 1. Instant Probationary Employees List
+$employeesList = [];
+$docs = get_cached_collection('Users', 600);
+foreach ($docs as $doc) {
+  $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+  if (strpos($roleKey, 'probation') !== false) {
+    $employeesList[] = [
+      'uid' => $doc['uid'] ?? '',
+      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+      'industry' => $doc['industry'] ?? 'retail',
+    ];
+  }
+}
+
+// 2. Report Generation Action
 $genMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'generate_report') {
   $empUid = $_POST['employee'] ?? '';
@@ -64,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
   } else {
     try {
       $template = kpi_template_for($emp['industry']);
-      $allRatings = firestore_list_documents('Ratings');
+      $allRatings = get_cached_collection('Ratings', 600);
       $mine = array_filter($allRatings, fn($r) => ($r['employeeUid'] ?? '') === $emp['uid']);
       usort($mine, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
       $mine = array_values($mine);
@@ -82,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
         'generatedAt' => date('c'),
         'generatedBy' => $_SESSION['name'] ?? '',
       ]);
+      
+      // Invalidate cache so newly created report appears immediately
+      clear_collection_cache('Reports');
       $genMessage = 'Report generated for ' . htmlspecialchars($emp['name']) . '.';
     } catch (\Throwable $e) {
       $genMessage = 'Failed to generate report: ' . $e->getMessage();
@@ -89,37 +117,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
   }
 }
 
-// Load real generated reports
+// 3. Instant Reports List
 $reports = [];
 $contributorCounts = [];
-try {
-  $reportDocs = firestore_list_documents('Reports');
-  usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
-  $iconCycle = ['blue', 'orange', 'green', 'red'];
-  foreach ($reportDocs as $i => $r) {
-    $genDate = !empty($r['generatedAt']) ? date('M j, Y', strtotime($r['generatedAt'])) : '';
-    $reports[] = [
-      'id' => $r['uid'] ?? '',
-      'title' => ($r['employeeName'] ?? 'Unknown') . ' – ' . ($r['reportTypeLabel'] ?? 'Performance Report'),
-      'meta' => 'Generated on ' . $genDate,
-      'iconClass' => $iconCycle[$i % count($iconCycle)],
-    ];
-    $contributor = trim((string) ($r['generatedBy'] ?? ''));
-    if ($contributor !== '') {
-      $contributorCounts[$contributor] = ($contributorCounts[$contributor] ?? 0) + 1;
-    }
+$reportDocs = get_cached_collection('Reports', 600);
+
+usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
+$iconCycle = ['blue', 'orange', 'green', 'red'];
+
+foreach ($reportDocs as $i => $r) {
+  $genDate = !empty($r['generatedAt']) ? date('M j, Y', strtotime($r['generatedAt'])) : '';
+  $reports[] = [
+    'id' => $r['uid'] ?? '',
+    'title' => ($r['employeeName'] ?? 'Unknown') . ' – ' . ($r['reportTypeLabel'] ?? 'Performance Report'),
+    'meta' => 'Generated on ' . $genDate,
+    'iconClass' => $iconCycle[$i % count($iconCycle)],
+  ];
+  $contributor = trim((string) ($r['generatedBy'] ?? ''));
+  if ($contributor !== '') {
+    $contributorCounts[$contributor] = ($contributorCounts[$contributor] ?? 0) + 1;
   }
-} catch (Throwable $e) {
-  // leave $reports empty
 }
 
-// Real "top contributors" this period — who has actually generated the most
-// reports, computed from the reports' own generatedBy field (not invented).
 arsort($contributorCounts);
 $topContributors = array_slice(array_keys($contributorCounts), 0, 3);
 $otherContributorCount = max(0, count($contributorCounts) - count($topContributors));
 
-// Real current calendar quarter, not a fabricated "review period".
 $currentQuarter = 'Q' . (int) ceil((int) date('n') / 3) . ' ' . date('Y');
 ?>
 <!DOCTYPE html>

@@ -39,3 +39,68 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php on line 136
+[07-Sep-2026 07:09:44 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:46 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:47 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:51 UTC] PHP Warning:  require_once(D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[07-Sep-2026 07:09:51 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/includes/icons.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:4
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4

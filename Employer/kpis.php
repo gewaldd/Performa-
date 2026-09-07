@@ -36,22 +36,46 @@ $trendClass = ['up' => 'trend-up', 'flat' => 'trend-flat', 'down' => 'trend-down
 $badgeCycle = ['blue', 'purple', 'orange', 'green'];
 $accentCycle = ['#16a76d', '#2f6df6', '#eb9e21', '#8b5cf6'];
 
-// Load probationary employees for the picker, with industry for template lookup
-$probationaryEmployees = [];
-try {
-  $docs = firestore_list_documents('Users');
-  foreach ($docs as $doc) {
-    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
-    if (strpos($roleKey, 'probation') !== false) {
-      $probationaryEmployees[] = [
-        'uid' => $doc['uid'] ?? '',
-        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
-        'industry' => $doc['industry'] ?? 'retail',
-      ];
-    }
+/* =========================================================
+   FAST DISK-BACKED DATA CACHING (BYPASS FIRESTORE WAITS)
+   ========================================================= */
+function get_cached_collection($collectionName, $ttlSeconds = 600) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $ttlSeconds)) {
+    $data = json_decode(file_get_contents($cacheFile), true);
+    if (is_array($data)) return $data;
   }
-} catch (Throwable $e) {
-  // leave $probationaryEmployees empty so the page still renders
+  
+  try {
+    $data = firestore_list_documents($collectionName);
+    @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+    return $data;
+  } catch (Throwable $e) {
+    if (file_exists($cacheFile)) {
+      $data = json_decode(file_get_contents($cacheFile), true);
+      if (is_array($data)) return $data;
+    }
+    return [];
+  }
+}
+
+function clear_collection_cache($collectionName) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile)) @unlink($cacheFile);
+}
+
+// 1. Fetch Users Cache
+$probationaryEmployees = [];
+$allUsers = get_cached_collection('Users', 600);
+foreach ($allUsers as $doc) {
+  $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+  if (strpos($roleKey, 'probation') !== false) {
+    $probationaryEmployees[] = [
+      'uid' => $doc['uid'] ?? '',
+      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+      'industry' => $doc['industry'] ?? 'retail',
+    ];
+  }
 }
 
 $selectedEmployeeId = $_GET['employee'] ?? '';
@@ -70,6 +94,7 @@ if ($probationaryEmployees) {
 $selectedEmployeeName = $selectedEmployee ? $selectedEmployee['name'] : 'No employees yet';
 $currentIndustry = $selectedEmployee['industry'] ?? 'retail';
 
+// 2. Form Handlers & Instant Cache Updates
 $kpiMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_kpi') {
   $newName = trim($_POST['kpi_name'] ?? '');
@@ -79,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_k
     try {
       add_custom_kpi($industryForKpi, $newName, max(1.0, min(5.0, $newTarget)));
       $kpiMessage = 'KPI added.';
+      clear_collection_cache('Ratings');
     } catch (\Throwable $e) {
       $kpiMessage = 'Failed to add KPI: ' . $e->getMessage();
     }
@@ -92,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     try {
       set_kpi_target_override($industryForKpi, $kpiKey, max(1.0, min(5.0, $newTarget)));
       $kpiMessage = 'KPI target updated.';
+      clear_collection_cache('Ratings');
     } catch (\Throwable $e) {
       $kpiMessage = 'Failed to update KPI: ' . $e->getMessage();
     }
@@ -100,23 +127,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
 
 $template = kpi_template_for($currentIndustry);
 
-// Load this employee's ratings, newest first, to get current + previous scores for trend
+// 3. Fetch Ratings Cache
 $latestScores = [];
 $previousScores = [];
+
 if ($selectedEmployee) {
-  try {
-    $allRatings = firestore_list_documents('Ratings');
-    $mine = array_filter($allRatings, fn($r) => ($r['employeeUid'] ?? '') === $selectedEmployee['uid']);
+  $allRatings = get_cached_collection('Ratings', 600);
+  $mine = [];
+  $targetUid = $selectedEmployee['uid'];
+  
+  foreach ($allRatings as $r) {
+    if (($r['employeeUid'] ?? '') === $targetUid) {
+      $mine[] = $r;
+    }
+  }
+
+  if (!empty($mine)) {
     usort($mine, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
-    $mine = array_values($mine);
     if (isset($mine[0]['scores'])) {
       $latestScores = $mine[0]['scores'];
     }
     if (isset($mine[1]['scores'])) {
       $previousScores = $mine[1]['scores'];
     }
-  } catch (Throwable $e) {
-    // leave scores empty, page still renders with "no ratings yet"
   }
 }
 
@@ -173,8 +206,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
   <meta name="description" content="Define and track organization-wide performance metrics." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -332,8 +364,7 @@ foreach (array_slice($template['kpis'], 0, 3) as $i => $kpi) {
               <strong><?php echo htmlspecialchars($card['current'], ENT_QUOTES); ?></strong>
             </div>
             <div class="category-bar">
-              <span
-                style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"></span>
+              <span style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"></span>
             </div>
             <span class="category-status <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
               <?php echo $icons[$card['statusIcon']]; ?>

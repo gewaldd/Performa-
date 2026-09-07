@@ -25,61 +25,71 @@ $icons = [
 function normalize_role_key(?string $role): string
 {
   $roleKey = strtolower(trim((string) $role));
-  if (strpos($roleKey, 'probation') !== false)
-    return 'probationary';
-  if (strpos($roleKey, 'supervis') !== false)
-    return 'supervisor';
-  if (strpos($roleKey, 'employ') !== false)
-    return 'employer';
-  if (strpos($roleKey, 'admin') !== false)
-    return 'admin';
+  if (strpos($roleKey, 'probation') !== false) return 'probationary';
+  if (strpos($roleKey, 'supervis') !== false) return 'supervisor';
+  if (strpos($roleKey, 'employ') !== false) return 'employer';
+  if (strpos($roleKey, 'admin') !== false) return 'admin';
   return $roleKey;
 }
 
 function display_role_label(?string $role): string
 {
-  return ucwords(str_replace('_', ' ', (string) $role));
+  $raw = trim((string) $role);
+  return $raw !== '' ? ucwords(str_replace('_', ' ', $raw)) : 'Employee';
 }
 
 $deptClassCycle = ['dept-blue', 'dept-gray', 'dept-orange', 'dept-green', 'dept-purple'];
 
-/**
- * Stable color per department name (hashed), not per row position — so
- * "Engineering" always renders the same color everywhere in the app,
- * instead of shifting depending on where it happens to sort in the list.
- */
 function department_pill_class(string $dept, array $cycle): string
 {
   $index = abs(crc32(strtolower($dept))) % count($cycle);
   return $cycle[$index];
 }
 
+/* =========================================================
+   FAST SHORT-SESSION CACHING (Removes Lag completely)
+   ========================================================= */
 $directory = [];
-try {
-  $docs = firestore_list_documents('Users');
-  foreach ($docs as $doc) {
-    $roleKey = normalize_role_key($doc['role'] ?? null);
-    if ($roleKey === 'admin' || $roleKey === 'employer') {
-      continue;
+$cacheKey = 'performa_employee_directory';
+$cacheTimeKey = 'performa_employee_directory_time';
+$cacheTTL = 20; // 20-second cache time for instant navigation
+
+if (isset($_SESSION[$cacheKey], $_SESSION[$cacheTimeKey]) && (time() - $_SESSION[$cacheTimeKey] < $cacheTTL) && !isset($_GET['created'])) {
+  $directory = $_SESSION[$cacheKey];
+} else {
+  try {
+    $docs = firestore_list_documents('Users');
+    foreach ($docs as $doc) {
+      $roleKey = normalize_role_key($doc['role'] ?? null);
+      
+      // STRICT FILTER: Only exclude pure admins or employers
+      if ($roleKey === 'admin' || $roleKey === 'employer') {
+        continue;
+      }
+
+      $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
+      $status = $doc['status'] ?? 'Active';
+      $roleLabel = display_role_label($doc['role'] ?? null);
+      $dept = ($doc['department'] ?? '') ?: $roleLabel;
+
+      $directory[] = [
+        'uid' => $doc['uid'] ?? '',
+        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+        'email' => $doc['email'] ?? '',
+        'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
+        'role' => $roleLabel,
+        'dept' => $dept,
+        'deptClass' => department_pill_class($dept, $deptClassCycle),
+        'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
+        'status' => $status,
+        'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
+      ];
     }
-    $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
-    $status = $doc['status'] ?? 'Active';
-    $dept = ($doc['department'] ?? '') ?: display_role_label($doc['role'] ?? null);
-    $directory[] = [
-      'uid' => $doc['uid'] ?? '',
-      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
-      'email' => $doc['email'] ?? '',
-      'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
-      'role' => display_role_label($doc['role'] ?? null),
-      'dept' => $dept,
-      'deptClass' => department_pill_class($dept, $deptClassCycle),
-      'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
-      'status' => $status,
-      'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
-    ];
+    $_SESSION[$cacheKey] = $directory;
+    $_SESSION[$cacheTimeKey] = time();
+  } catch (Throwable $e) {
+    // preserve directory state if call fails
   }
-} catch (Throwable $e) {
-  // leave $directory empty so the page still renders
 }
 
 $departments = array_values(array_unique(array_column($directory, 'dept')));
