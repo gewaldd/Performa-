@@ -6,6 +6,20 @@ require_once __DIR__ . '/employer_layout.php';
 require_login();
 require_role('employer');
 
+// Fetch existing supervisors so the Employer can assign one to a new probationary employee.
+$supervisors = [];
+try {
+    $allUsers = firestore_list_documents('Users');
+    foreach ($allUsers as $u) {
+        $roleKey = strtolower(trim((string) ($u['role'] ?? '')));
+        if ($roleKey === 'supervisor') {
+            $supervisors[] = ['uid' => $u['uid'] ?? '', 'name' => $u['name'] ?? $u['email'] ?? 'Unnamed Supervisor'];
+        }
+    }
+} catch (\Throwable $e) {
+    // Non-fatal: dropdown will just be empty
+}
+
 $message = '';
 $messageTone = 'info';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $roleKey = $_POST['role'] ?? '';
     $industry = trim($_POST['industry'] ?? 'retail');
     $password = trim($_POST['password'] ?? '');
+    $hireDate = trim($_POST['hireDate'] ?? '');
+    $supervisorId = trim($_POST['supervisorId'] ?? '');
 
     if (!$name || !$email || !$roleKey || !$department) {
         $message = 'Please fill out name, email, department and role.';
@@ -30,6 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = $roleMap[$roleKey] ?? null;
         if (!$role) {
             $message = 'Invalid role selected.';
+            $messageTone = 'error';
+        } elseif ($role === 'probationary_employee' && !$hireDate) {
+            $message = 'Please provide a hire date for the probationary employee.';
             $messageTone = 'error';
         } else {
             // Duplicate email check against existing Users
@@ -55,6 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $uid = identitytoolkit_create_user($name, $email, $password);
 
+                    // Look up the supervisor's name for a denormalized display field.
+                    $supervisorName = '';
+                    if ($supervisorId) {
+                        foreach ($supervisors as $s) {
+                            if ($s['uid'] === $supervisorId) {
+                                $supervisorName = $s['name'];
+                                break;
+                            }
+                        }
+                    }
+
                     $newUser = [
                         'name' => $name,
                         'email' => $email,
@@ -65,6 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ];
                     if ($role === 'probationary_employee') {
                         $newUser['industry'] = $industry;
+                        $newUser['hireDate'] = $hireDate;
+                        $newUser['supervisorId'] = $supervisorId;
+                        $newUser['supervisorName'] = $supervisorName;
                     }
                     firestore_write_document('Users', $uid, $newUser);
 
@@ -141,6 +174,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                             <span class="field-hint">Only applies to probationary employees.</span>
                         </div>
+                        <div class="form-group" id="hireDateField" aria-hidden="false">
+                            <label for="hireDate">Hire Date <span class="required-mark">*</span></label>
+                            <input id="hireDate" name="hireDate" type="date" value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
+                            <span class="field-hint">Only applies to probationary employees.</span>
+                        </div>
+                        <div class="form-group" id="supervisorField" aria-hidden="false">
+                            <label for="supervisorId">Assign Supervisor</label>
+                            <select id="supervisorId" class="perform-select" name="supervisorId">
+                                <option value="">— No supervisor assigned yet —</option>
+                                <?php foreach ($supervisors as $s): ?>
+                                    <option value="<?php echo htmlspecialchars($s['uid'], ENT_QUOTES); ?>" <?php echo ($_POST['supervisorId'] ?? '') === $s['uid'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($s['name'], ENT_QUOTES); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="field-hint">Only applies to probationary employees. <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
+                        </div>
                         <div class="form-group">
                             <label for="password">Temporary password (optional)</label>
                             <input id="password" name="password" type="text" placeholder="Auto-generated if left blank" />
@@ -157,13 +205,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <script src="dropdowns.js"></script>
     <script>
-        // Industry only matters for probationary employees, hide it otherwise
+        // Industry, Hire Date, and Assign Supervisor only matter for probationary employees.
         const roleSelect = document.getElementById('role');
         const industryField = document.getElementById('industryField');
+        const hireDateField = document.getElementById('hireDateField');
+        const supervisorField = document.getElementById('supervisorField');
+        const hireDateInput = document.getElementById('hireDate');
+
         function syncIndustryVisibility() {
             const hidden = roleSelect.value !== 'probationary';
             industryField.hidden = hidden;
             industryField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+            hireDateField.hidden = hidden;
+            hireDateField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+            supervisorField.hidden = hidden;
+            supervisorField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+            hireDateInput.required = !hidden;
         }
         roleSelect.addEventListener('change', syncIndustryVisibility);
         syncIndustryVisibility();
