@@ -10,3 +10,5 @@
 [07-Sep-2026 04:15:54 UTC] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in D:\Downloads\odysseus-dev\Performa-\session_login.php on line 78
 [07-Sep-2026 04:22:58 UTC] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in D:\Downloads\odysseus-dev\Performa-\session_login.php on line 63
 [07-Sep-2026 04:22:58 UTC] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in D:\Downloads\odysseus-dev\Performa-\session_login.php on line 78
+[07-Sep-2026 10:01:47 UTC] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in D:\Downloads\odysseus-dev\Performa-\session_login.php on line 63
+[07-Sep-2026 10:01:48 UTC] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in D:\Downloads\odysseus-dev\Performa-\session_login.php on line 78

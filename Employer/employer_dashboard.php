@@ -328,14 +328,14 @@ if ($cacheValid) {
 
                 $accentColor =
                     $meetsTarget
-                        ? '#2f6df6'
-                        : '#f0a11b';
+                        ? 'var(--color-info)'
+                        : 'var(--color-warning)';
             } else {
                 $stars = 0;
                 $status = 'No Ratings Yet';
                 $statusClass = 'status-neutral';
                 $statusKey = 'no-data';
-                $accentColor = '#8892a6';
+                $accentColor = 'var(--color-neutral)';
             }
 
             /*
@@ -349,7 +349,7 @@ if ($cacheValid) {
                 $status = 'Needs Review';
                 $statusClass = 'status-warning';
                 $statusKey = 'needs-review';
-                $accentColor = '#f0a11b';
+                $accentColor = 'var(--color-warning)';
             }
 
             /*
@@ -364,7 +364,7 @@ if ($cacheValid) {
                 $status = 'Ready for Reg.';
                 $statusClass = 'status-ready';
                 $statusKey = 'ready-for-reg';
-                $accentColor = '#2f6df6';
+                $accentColor = 'var(--color-info)';
             }
 
             $liveUsers[] = [
@@ -706,14 +706,14 @@ $insightScore =
             align-items: center;
             justify-content: center;
 
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
 
-            flex: 0 0 30px;
+            flex: 0 0 40px;
 
             border-radius: 50%;
 
-            background: rgba(47, 109, 246, 0.10);
+            background: var(--color-info-bg);
             color: var(--primary);
 
             text-decoration: none;
@@ -733,7 +733,7 @@ $insightScore =
 
             box-shadow:
                 0 6px 14px
-                rgba(47, 109, 246, 0.18);
+                var(--color-info-focus-ring);
         }
 
         .eval-btn:active {
@@ -761,6 +761,18 @@ $insightScore =
             color: #ffffff;
         }
 
+        .sr-only {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+
         .dashboard-empty {
             padding: 42px 20px;
             text-align: center;
@@ -774,9 +786,9 @@ $insightScore =
             }
 
             .eval-btn {
-                width: 32px;
-                height: 32px;
-                flex-basis: 32px;
+                width: 40px;
+                height: 40px;
+                flex-basis: 40px;
             }
         }
     </style>
@@ -795,11 +807,15 @@ $insightScore =
 
         <header class="topbar">
 
-            <label
-                class="search-bar"
-                aria-label="Search employees or reports"
-            >
-                <span class="search-icon">
+            <label class="search-bar">
+                <span class="sr-only">
+                    Search employees or reports
+                </span>
+
+                <span
+                    class="search-icon"
+                    aria-hidden="true"
+                >
                     <?php echo $icons['search']; ?>
                 </span>
 
@@ -817,7 +833,10 @@ $insightScore =
 
                     <div class="deadline-pill">
 
-                        <span class="deadline-icon">
+                        <span
+                            class="deadline-icon"
+                            aria-hidden="true"
+                        >
                             <?php echo $icons['bell']; ?>
                         </span>
 
@@ -993,7 +1012,7 @@ $insightScore =
 
                     <div
                         class="chip-group"
-                        role="tablist"
+                        role="group"
                         aria-label="Evaluation filters"
                     >
 
