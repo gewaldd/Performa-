@@ -1,20 +1,8 @@
 <?php
-$rootDir = __DIR__ . '/..';
-require_once $rootDir . '/auth.php';
-require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/employer_layout.php';
-require_once $rootDir . '/kpi_templates.php';
-
-require_login();
-require_role('employer');
-
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
-}
-if (empty($_SESSION['uid'])) {
-  header('Location: ../login.php');
-  exit;
-}
+require_once __DIR__ . '/../kpi_templates.php';
 
 $profileName = $_SESSION['name'] ?? 'Unknown User';
 $profileRole = $_SESSION['role'] ?? 'Employer';

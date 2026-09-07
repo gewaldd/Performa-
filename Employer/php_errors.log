@@ -23,3 +23,19 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in D:\Downloads\odysseus-dev\Performa-\Employer\settings.php on line 123
+[07-Sep-2026 06:01:16 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function kpi_templates() in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php:136
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php on line 136
+[07-Sep-2026 06:01:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function kpi_templates() in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php:136
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php on line 136
+[07-Sep-2026 06:02:40 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function kpi_templates() in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php:136
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php on line 136
+[07-Sep-2026 06:02:42 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function kpi_templates() in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php:136
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\add_employee.php on line 136
