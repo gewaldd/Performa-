@@ -1,20 +1,8 @@
 <?php
-$rootDir = __DIR__ . '/..';
-require_once $rootDir . '/auth.php';
-require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/employer_layout.php';
-require_once $rootDir . '/kpi_templates.php';
-
-require_login();
-require_role('employer');
-
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
-}
-if (empty($_SESSION['uid'])) {
-  header('Location: ../login.php');
-  exit;
-}
+require_once __DIR__ . '/../kpi_templates.php';
 
 $profileName = $_SESSION['name'] ?? 'Unknown User';
 $profileRole = $_SESSION['role'] ?? 'Employer';
@@ -42,24 +30,49 @@ $reportTypes = [
   'risk_analysis' => 'Underperformance Risk Analysis',
 ];
 
-// Probationary employees, for the Generate Report picker
-$employeesList = [];
-try {
-  $docs = firestore_list_documents('Users');
-  foreach ($docs as $doc) {
-    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
-    if (strpos($roleKey, 'probation') !== false) {
-      $employeesList[] = [
-        'uid' => $doc['uid'] ?? '',
-        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
-        'industry' => $doc['industry'] ?? 'retail',
-      ];
-    }
+/* =========================================================
+   FAST DISK-BACKED DATA CACHING (BYPASS FIRESTORE WAITS)
+   ========================================================= */
+function get_cached_collection($collectionName, $ttlSeconds = 600) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $ttlSeconds)) {
+    $data = json_decode(file_get_contents($cacheFile), true);
+    if (is_array($data)) return $data;
   }
-} catch (Throwable $e) {
-  // leave $employeesList empty
+  
+  try {
+    $data = firestore_list_documents($collectionName);
+    @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+    return $data;
+  } catch (Throwable $e) {
+    if (file_exists($cacheFile)) {
+      $data = json_decode(file_get_contents($cacheFile), true);
+      if (is_array($data)) return $data;
+    }
+    return [];
+  }
 }
 
+function clear_collection_cache($collectionName) {
+  $cacheFile = sys_get_temp_dir() . '/performa_' . md5($collectionName) . '.json';
+  if (file_exists($cacheFile)) @unlink($cacheFile);
+}
+
+// 1. Instant Probationary Employees List
+$employeesList = [];
+$docs = get_cached_collection('Users', 600);
+foreach ($docs as $doc) {
+  $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
+  if (strpos($roleKey, 'probation') !== false) {
+    $employeesList[] = [
+      'uid' => $doc['uid'] ?? '',
+      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+      'industry' => $doc['industry'] ?? 'retail',
+    ];
+  }
+}
+
+// 2. Report Generation Action
 $genMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'generate_report') {
   $empUid = $_POST['employee'] ?? '';
@@ -76,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
   } else {
     try {
       $template = kpi_template_for($emp['industry']);
-      $allRatings = firestore_list_documents('Ratings');
+      $allRatings = get_cached_collection('Ratings', 600);
       $mine = array_filter($allRatings, fn($r) => ($r['employeeUid'] ?? '') === $emp['uid']);
       usort($mine, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
       $mine = array_values($mine);
@@ -94,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
         'generatedAt' => date('c'),
         'generatedBy' => $_SESSION['name'] ?? '',
       ]);
+      
+      // Invalidate cache so newly created report appears immediately
+      clear_collection_cache('Reports');
       $genMessage = 'Report generated for ' . htmlspecialchars($emp['name']) . '.';
     } catch (\Throwable $e) {
       $genMessage = 'Failed to generate report: ' . $e->getMessage();
@@ -101,24 +117,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
   }
 }
 
-// Load real generated reports
+// 3. Instant Reports List
 $reports = [];
-try {
-  $reportDocs = firestore_list_documents('Reports');
-  usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
-  $iconCycle = ['blue', 'orange', 'green', 'red'];
-  foreach ($reportDocs as $i => $r) {
-    $genDate = !empty($r['generatedAt']) ? date('M j, Y', strtotime($r['generatedAt'])) : '';
-    $reports[] = [
-      'id' => $r['uid'] ?? '',
-      'title' => ($r['employeeName'] ?? 'Unknown') . ' – ' . ($r['reportTypeLabel'] ?? 'Performance Report'),
-      'meta' => 'Generated on ' . $genDate,
-      'iconClass' => $iconCycle[$i % count($iconCycle)],
-    ];
+$contributorCounts = [];
+$reportDocs = get_cached_collection('Reports', 600);
+
+usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
+$iconCycle = ['blue', 'orange', 'green', 'red'];
+
+foreach ($reportDocs as $i => $r) {
+  $genDate = !empty($r['generatedAt']) ? date('M j, Y', strtotime($r['generatedAt'])) : '';
+  $reports[] = [
+    'id' => $r['uid'] ?? '',
+    'title' => ($r['employeeName'] ?? 'Unknown') . ' – ' . ($r['reportTypeLabel'] ?? 'Performance Report'),
+    'meta' => 'Generated on ' . $genDate,
+    'iconClass' => $iconCycle[$i % count($iconCycle)],
+  ];
+  $contributor = trim((string) ($r['generatedBy'] ?? ''));
+  if ($contributor !== '') {
+    $contributorCounts[$contributor] = ($contributorCounts[$contributor] ?? 0) + 1;
   }
-} catch (Throwable $e) {
-  // leave $reports empty
 }
+
+arsort($contributorCounts);
+$topContributors = array_slice(array_keys($contributorCounts), 0, 3);
+$otherContributorCount = max(0, count($contributorCounts) - count($topContributors));
+
+$currentQuarter = 'Q' . (int) ceil((int) date('n') / 3) . ' ' . date('Y');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,6 +168,10 @@ try {
       <header class="topbar">
         <div></div>
         <div class="topbar-actions">
+          <div class="deadline-pill" style="background: rgba(47, 109, 246, 0.12); color: var(--primary-dark);">
+            <span class="deadline-icon"><?php echo $icons['calendar']; ?></span>
+            Review Period: <?php echo htmlspecialchars($currentQuarter, ENT_QUOTES); ?>
+          </div>
           <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
@@ -216,11 +245,29 @@ try {
               <div class="report-meta"><?php echo htmlspecialchars($report['meta'], ENT_QUOTES); ?></div>
             </div>
             <div class="report-actions">
+              <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1"><?php echo $icons['download']; ?> Download PDF</a>
               <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>"><?php echo $icons['file']; ?> View</a>
             </div>
           </div>
         <?php endforeach; ?>
       </div>
+
+      <?php if ($topContributors): ?>
+        <div class="reports-section-header" style="margin-top: 24px; border-top: 1px solid var(--panel-border); padding-top: 16px;">
+          <span style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase;">Top Contributors This Period</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;">
+              <?php foreach ($topContributors as $index => $name): ?>
+                <div class="avatar" style="width:28px;height:28px;border:2px solid #fff;margin-left:<?php echo $index === 0 ? '0' : '-8px'; ?>;background-image: url('https://ui-avatars.com/api/?name=<?php echo urlencode($name); ?>&background=2f6df6&color=fff&size=64');"
+                  title="<?php echo htmlspecialchars($name, ENT_QUOTES); ?>"></div>
+              <?php endforeach; ?>
+            </div>
+            <span style="font-size:13px;color:var(--muted);">
+              <?php echo htmlspecialchars($topContributors[0], ENT_QUOTES); ?><?php echo $otherContributorCount > 0 ? ' & ' . $otherContributorCount . ' other' . ($otherContributorCount === 1 ? '' : 's') : ''; ?>
+            </span>
+          </div>
+        </div>
+      <?php endif; ?>
     </main>
   </div>
 

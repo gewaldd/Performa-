@@ -38,7 +38,7 @@ function firebase_credentials_path(): string
         }
     }
 
-    return __DIR__ . '/firebase-service-account.json';
+    return __DIR__ . '/../firebase-service-account.json';
 }
 
 function load_service_account(): array

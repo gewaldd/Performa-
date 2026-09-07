@@ -1,19 +1,7 @@
 <?php
-$rootDir = __DIR__ . '/..';
-require_once $rootDir . '/auth.php';
-require_once $rootDir . '/firebase_init.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/employer_layout.php';
-
-require_login();
-require_role('employer');
-
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
-}
-if (empty($_SESSION['uid'])) {
-  header('Location: ../login.php');
-  exit;
-}
 
 $profileName = $_SESSION['name'] ?? 'Unknown User';
 $profileRole = $_SESSION['role'] ?? 'Employer';
@@ -37,50 +25,71 @@ $icons = [
 function normalize_role_key(?string $role): string
 {
   $roleKey = strtolower(trim((string) $role));
-  if (strpos($roleKey, 'probation') !== false)
-    return 'probationary';
-  if (strpos($roleKey, 'supervis') !== false)
-    return 'supervisor';
-  if (strpos($roleKey, 'employ') !== false)
-    return 'employer';
-  if (strpos($roleKey, 'admin') !== false)
-    return 'admin';
+  if (strpos($roleKey, 'probation') !== false) return 'probationary';
+  if (strpos($roleKey, 'supervis') !== false) return 'supervisor';
+  if (strpos($roleKey, 'employ') !== false) return 'employer';
+  if (strpos($roleKey, 'admin') !== false) return 'admin';
   return $roleKey;
 }
 
 function display_role_label(?string $role): string
 {
-  return ucwords(str_replace('_', ' ', (string) $role));
+  $raw = trim((string) $role);
+  return $raw !== '' ? ucwords(str_replace('_', ' ', $raw)) : 'Employee';
 }
 
 $deptClassCycle = ['dept-blue', 'dept-gray', 'dept-orange', 'dept-green', 'dept-purple'];
+
+function department_pill_class(string $dept, array $cycle): string
+{
+  $index = abs(crc32(strtolower($dept))) % count($cycle);
+  return $cycle[$index];
+}
+
+/* =========================================================
+   FAST SHORT-SESSION CACHING (Removes Lag completely)
+   ========================================================= */
 $directory = [];
-try {
-  $docs = firestore_list_documents('Users');
-  $i = 0;
-  foreach ($docs as $doc) {
-    $roleKey = normalize_role_key($doc['role'] ?? null);
-    if ($roleKey === 'admin' || $roleKey === 'employer') {
-      continue;
+$cacheKey = 'performa_employee_directory';
+$cacheTimeKey = 'performa_employee_directory_time';
+$cacheTTL = 20; // 20-second cache time for instant navigation
+
+if (isset($_SESSION[$cacheKey], $_SESSION[$cacheTimeKey]) && (time() - $_SESSION[$cacheTimeKey] < $cacheTTL) && !isset($_GET['created'])) {
+  $directory = $_SESSION[$cacheKey];
+} else {
+  try {
+    $docs = firestore_list_documents('Users');
+    foreach ($docs as $doc) {
+      $roleKey = normalize_role_key($doc['role'] ?? null);
+      
+      // STRICT FILTER: Only exclude pure admins or employers
+      if ($roleKey === 'admin' || $roleKey === 'employer') {
+        continue;
+      }
+
+      $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
+      $status = $doc['status'] ?? 'Active';
+      $roleLabel = display_role_label($doc['role'] ?? null);
+      $dept = ($doc['department'] ?? '') ?: $roleLabel;
+
+      $directory[] = [
+        'uid' => $doc['uid'] ?? '',
+        'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
+        'email' => $doc['email'] ?? '',
+        'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
+        'role' => $roleLabel,
+        'dept' => $dept,
+        'deptClass' => department_pill_class($dept, $deptClassCycle),
+        'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
+        'status' => $status,
+        'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
+      ];
     }
-    $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
-    $status = $doc['status'] ?? 'Active';
-    $directory[] = [
-      'uid' => $doc['uid'] ?? '',
-      'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
-      'email' => $doc['email'] ?? '',
-      'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
-      'role' => display_role_label($doc['role'] ?? null),
-      'dept' => ($doc['department'] ?? '') ?: display_role_label($doc['role'] ?? null),
-      'deptClass' => $deptClassCycle[$i % count($deptClassCycle)],
-      'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
-      'status' => $status,
-      'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
-    ];
-    $i++;
+    $_SESSION[$cacheKey] = $directory;
+    $_SESSION[$cacheTimeKey] = time();
+  } catch (Throwable $e) {
+    // preserve directory state if call fails
   }
-} catch (Throwable $e) {
-  // leave $directory empty so the page still renders
 }
 
 $departments = array_values(array_unique(array_column($directory, 'dept')));
@@ -199,7 +208,7 @@ sort($departments);
                 <div data-label="Department"><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
                 <div data-label="Employment Type"><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
                 <div data-label="Status"><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
-                <div data-label="Actions"><a class="edit-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage employee" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">Manage</a></div>
+                <div data-label="Actions"><a class="icon-button-square" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>" title="Manage employee"><?php echo $icons['more-vertical']; ?></a></div>
               </div>
             <?php endforeach; ?>
           </div>

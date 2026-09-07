@@ -1,10 +1,8 @@
 <?php
-require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../firebase_init.php';
-require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/employer_layout.php';
-require_login();
-require_role('employer');
+require_once __DIR__ . '/../kpi_templates.php';
 
 // Fetch existing supervisors so the Employer can assign one to a new probationary employee.
 $supervisors = [];
