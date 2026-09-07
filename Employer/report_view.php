@@ -17,8 +17,16 @@ if (empty($_SESSION['uid'])) {
 }
 
 $reportId = $_GET['id'] ?? '';
-$report = $reportId ? firestore_get_document('Reports', $reportId) : null;
+$report = null;
+try {
+  $report = $reportId ? firestore_get_document('Reports', $reportId) : null;
+} catch (Throwable $e) {
+  // leave $report null so the page shows "Report not found" instead of a
+  // silent blank page (display_errors is off in production).
+  $report = null;
+}
 $template = $report ? kpi_template_for($report['industry'] ?? 'retail') : null;
+$autoPrint = $report && !empty($_GET['autoprint']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,6 +45,13 @@ $template = $report ? kpi_template_for($report['industry'] ?? 'retail') : null;
       .no-print { display: none !important; }
     }
   </style>
+  <?php if ($autoPrint): ?>
+    <script>
+      // "Download PDF" on the Reports list opens straight into the browser's
+      // print dialog (Save as PDF) instead of just showing the report.
+      window.addEventListener('load', () => window.print());
+    </script>
+  <?php endif; ?>
 </head>
 
 <body>

@@ -103,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gener
 
 // Load real generated reports
 $reports = [];
+$contributorCounts = [];
 try {
   $reportDocs = firestore_list_documents('Reports');
   usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
@@ -115,10 +116,23 @@ try {
       'meta' => 'Generated on ' . $genDate,
       'iconClass' => $iconCycle[$i % count($iconCycle)],
     ];
+    $contributor = trim((string) ($r['generatedBy'] ?? ''));
+    if ($contributor !== '') {
+      $contributorCounts[$contributor] = ($contributorCounts[$contributor] ?? 0) + 1;
+    }
   }
 } catch (Throwable $e) {
   // leave $reports empty
 }
+
+// Real "top contributors" this period — who has actually generated the most
+// reports, computed from the reports' own generatedBy field (not invented).
+arsort($contributorCounts);
+$topContributors = array_slice(array_keys($contributorCounts), 0, 3);
+$otherContributorCount = max(0, count($contributorCounts) - count($topContributors));
+
+// Real current calendar quarter, not a fabricated "review period".
+$currentQuarter = 'Q' . (int) ceil((int) date('n') / 3) . ' ' . date('Y');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,6 +157,10 @@ try {
       <header class="topbar">
         <div></div>
         <div class="topbar-actions">
+          <div class="deadline-pill" style="background: rgba(47, 109, 246, 0.12); color: var(--primary-dark);">
+            <span class="deadline-icon"><?php echo $icons['calendar']; ?></span>
+            Review Period: <?php echo htmlspecialchars($currentQuarter, ENT_QUOTES); ?>
+          </div>
           <button class="icon-button" type="button" aria-label="Notifications"><?php echo $icons['bell']; ?></button>
           <a class="ghost-button" href="../logout.php" aria-label="Sign out">Sign out</a>
         </div>
@@ -216,11 +234,29 @@ try {
               <div class="report-meta"><?php echo htmlspecialchars($report['meta'], ENT_QUOTES); ?></div>
             </div>
             <div class="report-actions">
+              <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1"><?php echo $icons['download']; ?> Download PDF</a>
               <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>"><?php echo $icons['file']; ?> View</a>
             </div>
           </div>
         <?php endforeach; ?>
       </div>
+
+      <?php if ($topContributors): ?>
+        <div class="reports-section-header" style="margin-top: 24px; border-top: 1px solid var(--panel-border); padding-top: 16px;">
+          <span style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase;">Top Contributors This Period</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;">
+              <?php foreach ($topContributors as $index => $name): ?>
+                <div class="avatar" style="width:28px;height:28px;border:2px solid #fff;margin-left:<?php echo $index === 0 ? '0' : '-8px'; ?>;background-image: url('https://ui-avatars.com/api/?name=<?php echo urlencode($name); ?>&background=2f6df6&color=fff&size=64');"
+                  title="<?php echo htmlspecialchars($name, ENT_QUOTES); ?>"></div>
+              <?php endforeach; ?>
+            </div>
+            <span style="font-size:13px;color:var(--muted);">
+              <?php echo htmlspecialchars($topContributors[0], ENT_QUOTES); ?><?php echo $otherContributorCount > 0 ? ' & ' . $otherContributorCount . ' other' . ($otherContributorCount === 1 ? '' : 's') : ''; ?>
+            </span>
+          </div>
+        </div>
+      <?php endif; ?>
     </main>
   </div>
 

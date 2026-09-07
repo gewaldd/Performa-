@@ -1,0 +1,25 @@
+[07-Sep-2026 04:15:57 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function employer_render_shell() in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:238
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 238
+[07-Sep-2026 04:16:04 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function employer_render_shell() in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php:238
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 238
+[07-Sep-2026 04:16:06 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function employer_render_shell() in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php:195
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 195
+[07-Sep-2026 04:16:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function employer_render_shell() in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php:195
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 195
+[07-Sep-2026 04:16:14 UTC] PHP Warning:  require(D:\Downloads\odysseus-dev\Performa-\Employer/layout.php): Failed to open stream: No such file or directory in D:\Downloads\odysseus-dev\Performa-\Employer\reports.php on line 213
+[07-Sep-2026 04:16:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required 'D:\Downloads\odysseus-dev\Performa-\Employer/layout.php' (include_path='.;C:\php\pear') in D:\Downloads\odysseus-dev\Performa-\Employer\reports.php:213
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\reports.php on line 213
+[07-Sep-2026 04:16:14 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function employer_render_shell() in D:\Downloads\odysseus-dev\Performa-\Employer\settings.php:123
+Stack trace:
+#0 {main}
+  thrown in D:\Downloads\odysseus-dev\Performa-\Employer\settings.php on line 123

@@ -54,10 +54,21 @@ function display_role_label(?string $role): string
 }
 
 $deptClassCycle = ['dept-blue', 'dept-gray', 'dept-orange', 'dept-green', 'dept-purple'];
+
+/**
+ * Stable color per department name (hashed), not per row position — so
+ * "Engineering" always renders the same color everywhere in the app,
+ * instead of shifting depending on where it happens to sort in the list.
+ */
+function department_pill_class(string $dept, array $cycle): string
+{
+  $index = abs(crc32(strtolower($dept))) % count($cycle);
+  return $cycle[$index];
+}
+
 $directory = [];
 try {
   $docs = firestore_list_documents('Users');
-  $i = 0;
   foreach ($docs as $doc) {
     $roleKey = normalize_role_key($doc['role'] ?? null);
     if ($roleKey === 'admin' || $roleKey === 'employer') {
@@ -65,19 +76,19 @@ try {
     }
     $avatarSeed = urlencode(strtolower($doc['email'] ?? ($doc['name'] ?? 'user')));
     $status = $doc['status'] ?? 'Active';
+    $dept = ($doc['department'] ?? '') ?: display_role_label($doc['role'] ?? null);
     $directory[] = [
       'uid' => $doc['uid'] ?? '',
       'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
       'email' => $doc['email'] ?? '',
       'avatar' => 'https://ui-avatars.com/api/?name=' . $avatarSeed . '&background=2f6df6&color=fff&size=160',
       'role' => display_role_label($doc['role'] ?? null),
-      'dept' => ($doc['department'] ?? '') ?: display_role_label($doc['role'] ?? null),
-      'deptClass' => $deptClassCycle[$i % count($deptClassCycle)],
+      'dept' => $dept,
+      'deptClass' => department_pill_class($dept, $deptClassCycle),
       'type' => $roleKey === 'probationary' ? 'Probationary' : 'Regular',
       'status' => $status,
       'statusClass' => $status === 'Disabled' ? 'status-danger' : 'status-good',
     ];
-    $i++;
   }
 } catch (Throwable $e) {
   // leave $directory empty so the page still renders
@@ -199,7 +210,7 @@ sort($departments);
                 <div data-label="Department"><span class="dept-pill <?php echo htmlspecialchars($person['deptClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['dept'], ENT_QUOTES); ?></span></div>
                 <div data-label="Employment Type"><?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?></div>
                 <div data-label="Status"><span class="status-pill <?php echo htmlspecialchars($person['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($person['status'], ENT_QUOTES); ?></span></div>
-                <div data-label="Actions"><a class="edit-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage employee" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">Manage</a></div>
+                <div data-label="Actions"><a class="icon-button-square" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>" aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>" title="Manage employee"><?php echo $icons['more-vertical']; ?></a></div>
               </div>
             <?php endforeach; ?>
           </div>
