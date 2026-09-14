@@ -48,6 +48,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | My Employees</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -126,7 +127,8 @@ try {
                                     <div class="avatar"></div>
                                     <div>
                                         <div class="employee-name">
-                                            <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?></div>
+                                            <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
+                                        </div>
                                         <div class="employee-role">
                                             <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $emp['industry'])), ENT_QUOTES); ?>
                                         </div>
@@ -134,7 +136,8 @@ try {
                                 </div>
                                 <div class="timeline-cell">
                                     <div class="timeline-text">
-                                        <?php echo htmlspecialchars($timelineText, ENT_QUOTES); ?></div>
+                                        <?php echo htmlspecialchars($timelineText, ENT_QUOTES); ?>
+                                    </div>
                                     <div class="timeline-bar"><span
                                             style="width: <?php echo (int) $progress; ?>%; background: var(--primary);"></span>
                                     </div>

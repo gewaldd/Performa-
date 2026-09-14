@@ -32,6 +32,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Reports</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -77,7 +78,8 @@ try {
                     <p style="padding:24px 0; color:var(--muted);">No reports have been generated yet.</p>
                 <?php else: ?>
                     <div class="table-wrap" style="margin-top:14px;">
-                        <div class="table-head"><span>Employee</span><span>Report Type</span><span>Industry</span><span>Generated</span>
+                        <div class="table-head"><span>Employee</span><span>Report
+                                Type</span><span>Industry</span><span>Generated</span>
                         </div>
                         <?php foreach ($reports as $r): ?>
                             <div class="table-row">

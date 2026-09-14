@@ -68,7 +68,7 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">3 new comments this week</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">◌</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 
@@ -94,7 +94,8 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
                         <div class="chip-group" role="tablist" aria-label="Feedback filters">
                             <button class="filter-chip active" type="button" data-filter="all">All</button>
                             <button class="filter-chip" type="button" data-filter="received">Received</button>
-                            <button class="filter-chip" type="button" data-filter="action-required">Action Required</button>
+                            <button class="filter-chip" type="button" data-filter="action-required">Action
+                                Required</button>
                             <button class="filter-chip" type="button" data-filter="pending">Pending</button>
                         </div>
                         <p class="table-note">Search by sender, topic, or status.</p>
@@ -114,23 +115,29 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
                                     data-search="<?php echo htmlspecialchars(strtolower($entry['sender'] . ' ' . $entry['role'] . ' ' . $entry['message']), ENT_QUOTES); ?>"
                                     data-filter="<?php echo htmlspecialchars(strtolower(str_replace(' ', '-', $entry['status'])), ENT_QUOTES); ?>">
                                     <div class="employee-cell" role="cell">
-                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);"></div>
+                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);">
+                                        </div>
                                         <div>
-                                            <div class="employee-name"><?php echo htmlspecialchars($entry['sender'], ENT_QUOTES); ?></div>
-                                            <div class="employee-role"><?php echo htmlspecialchars($entry['role'], ENT_QUOTES); ?></div>
+                                            <div class="employee-name">
+                                                <?php echo htmlspecialchars($entry['sender'], ENT_QUOTES); ?></div>
+                                            <div class="employee-role">
+                                                <?php echo htmlspecialchars($entry['role'], ENT_QUOTES); ?></div>
                                         </div>
                                     </div>
 
                                     <div class="timeline-cell" role="cell">
-                                        <div class="timeline-text"><?php echo htmlspecialchars($entry['message'], ENT_QUOTES); ?></div>
+                                        <div class="timeline-text">
+                                            <?php echo htmlspecialchars($entry['message'], ENT_QUOTES); ?></div>
                                     </div>
 
                                     <div class="score-cell" role="cell">
-                                        <strong class="score-value"><?php echo htmlspecialchars($entry['date'], ENT_QUOTES); ?></strong>
+                                        <strong
+                                            class="score-value"><?php echo htmlspecialchars($entry['date'], ENT_QUOTES); ?></strong>
                                     </div>
 
                                     <div class="status-cell" role="cell">
-                                        <span class="status-pill <?php echo htmlspecialchars($entry['statusClass'], ENT_QUOTES); ?>">
+                                        <span
+                                            class="status-pill <?php echo htmlspecialchars($entry['statusClass'], ENT_QUOTES); ?>">
                                             <?php echo htmlspecialchars($entry['status'], ENT_QUOTES); ?>
                                         </span>
                                     </div>
@@ -154,8 +161,9 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
 
                     <button class="primary-button" id="assignCourseButton" type="button"
                         data-completed-label="Acknowledged"
-                        data-confirm-text="Your feedback review has been noted." >Acknowledge Feedback</button>
-                    <p class="microcopy">Use your feedback page to track what needs a response and where you are already aligned.</p>
+                        data-confirm-text="Your feedback review has been noted.">Acknowledge Feedback</button>
+                    <p class="microcopy">Use your feedback page to track what needs a response and where you are already
+                        aligned.</p>
                 </aside>
             </section>
         </main>

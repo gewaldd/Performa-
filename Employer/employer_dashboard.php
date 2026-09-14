@@ -202,38 +202,38 @@ if ($cacheValid) {
 
             $createdTime =
                 $createdAt
-                    ? strtotime($createdAt)
-                    : false;
+                ? strtotime($createdAt)
+                : false;
 
             $daysSince =
                 $createdTime
-                    ? max(
-                        0,
-                        (int) floor(
-                            (time() - $createdTime) /
-                            86400
-                        )
+                ? max(
+                    0,
+                    (int) floor(
+                        (time() - $createdTime) /
+                        86400
                     )
-                    : 0;
+                )
+                : 0;
 
             $daysLeft =
                 $createdTime
-                    ? max(
-                        0,
-                        180 - $daysSince
-                    )
-                    : 0;
+                ? max(
+                    0,
+                    180 - $daysSince
+                )
+                : 0;
 
             $progress =
                 $createdTime
-                    ? min(
-                        100,
-                        (int) round(
-                            ($daysSince / 180) *
-                            100
-                        )
+                ? min(
+                    100,
+                    (int) round(
+                        ($daysSince / 180) *
+                        100
                     )
-                    : 0;
+                )
+                : 0;
 
             $email =
                 $doc['email']
@@ -248,8 +248,8 @@ if ($cacheValid) {
                 urlencode(
                     strtolower(
                         $email !== ''
-                            ? $email
-                            : $name
+                        ? $email
+                        : $name
                     )
                 );
 
@@ -281,8 +281,8 @@ if ($cacheValid) {
 
             $score =
                 $hasScore
-                    ? (float) $summary['score']
-                    : null;
+                ? (float) $summary['score']
+                : null;
 
             /*
              * Use the real target average whenever available.
@@ -290,13 +290,13 @@ if ($cacheValid) {
              */
             $targetAvg =
                 isset($summary['targetAvg'])
-                    ? (float) $summary['targetAvg']
-                    : 4.2;
+                ? (float) $summary['targetAvg']
+                : 4.2;
 
             $targetAvg =
                 $targetAvg > 0
-                    ? $targetAvg
-                    : 4.2;
+                ? $targetAvg
+                : 4.2;
 
             if ($hasScore) {
                 $stars =
@@ -313,23 +313,23 @@ if ($cacheValid) {
 
                 $status =
                     $meetsTarget
-                        ? 'On Track'
-                        : 'Needs Review';
+                    ? 'On Track'
+                    : 'Needs Review';
 
                 $statusClass =
                     $meetsTarget
-                        ? 'status-good'
-                        : 'status-warning';
+                    ? 'status-good'
+                    : 'status-warning';
 
                 $statusKey =
                     $meetsTarget
-                        ? 'on-track'
-                        : 'needs-review';
+                    ? 'on-track'
+                    : 'needs-review';
 
                 $accentColor =
                     $meetsTarget
-                        ? 'var(--color-info)'
-                        : 'var(--color-warning)';
+                    ? 'var(--color-info)'
+                    : 'var(--color-warning)';
             } else {
                 $stars = 0;
                 $status = 'No Ratings Yet';
@@ -473,8 +473,8 @@ foreach ($liveUsers as $user) {
 
 $overallPerformance =
     $scoredCount > 0
-        ? $scoreTotal / $scoredCount
-        : null;
+    ? $scoreTotal / $scoredCount
+    : null;
 
 $metrics = [
     [
@@ -521,21 +521,21 @@ $metrics = [
 
         'value' =>
             $overallPerformance !== null
-                ? number_format(
-                    $overallPerformance,
-                    1
-                )
-                : '—',
+            ? number_format(
+                $overallPerformance,
+                1
+            )
+            : '—',
 
         'suffix' =>
             $overallPerformance !== null
-                ? '/ 5.0'
-                : '',
+            ? '/ 5.0'
+            : '',
 
         'badge' =>
             $overallPerformance !== null
-                ? 'Average'
-                : 'No Ratings Yet',
+            ? 'Average'
+            : 'No Ratings Yet',
 
         'tone' =>
             'neutral',
@@ -624,34 +624,34 @@ $justAssigned =
 
 $insightTitle =
     $insightEmployee
-        ? 'Intervention Suggested'
-        : 'No Data Yet';
+    ? 'Intervention Suggested'
+    : 'No Data Yet';
 
 $insightName =
     $insightEmployee
-        ? $insightEmployee['name']
-        : null;
+    ? $insightEmployee['name']
+    : null;
 
 $recommendation =
     $insightEmployee
-        ? 'Performance Improvement Training'
-        : null;
+    ? 'Performance Improvement Training'
+    : null;
 
 $insightTarget =
     $insightEmployee
-        ? (float) (
-            $insightEmployee['targetAvg']
-            ?? 4.2
-        )
-        : null;
+    ? (float) (
+        $insightEmployee['targetAvg']
+        ?? 4.2
+    )
+    : null;
 
 $insightScore =
     $insightEmployee
-        ? (float) (
-            $insightEmployee['score']
-            ?? 0
-        )
-        : null;
+    ? (float) (
+        $insightEmployee['score']
+        ?? 0
+    )
+    : null;
 ?>
 
 <!DOCTYPE html>
@@ -660,38 +660,23 @@ $insightScore =
 <head>
     <meta charset="UTF-8" />
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Performa | Employer Dashboard</title>
 
-    <meta
-        name="description"
-        content="Employer KPI dashboard for probationary employee evaluation and training recommendations."
-    />
+    <meta name="description"
+        content="Employer KPI dashboard for probationary employee evaluation and training recommendations." />
 
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
 
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    />
+        rel="stylesheet" />
 
-    <link
-        rel="stylesheet"
-        href="styles.css"
-    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 
     <style>
         .status-cell {
@@ -732,8 +717,7 @@ $insightScore =
             transform: translateY(-1px);
 
             box-shadow:
-                0 6px 14px
-                var(--color-info-focus-ring);
+                0 6px 14px var(--color-info-focus-ring);
         }
 
         .eval-btn:active {
@@ -796,305 +780,236 @@ $insightScore =
 
 <body>
 
-<div class="app-shell">
+    <div class="app-shell">
 
-    <?php employer_render_shell('Dashboard'); ?>
+        <?php employer_render_shell('Dashboard'); ?>
 
-    <main
-        class="main"
-        id="dashboard"
-    >
+        <main class="main" id="dashboard">
 
-        <header class="topbar">
+            <header class="topbar">
 
-            <label class="search-bar">
-                <span class="sr-only">
-                    Search employees or reports
-                </span>
+                <label class="search-bar">
+                    <span class="sr-only">
+                        Search employees or reports
+                    </span>
 
-                <span
-                    class="search-icon"
-                    aria-hidden="true"
-                >
-                    <?php echo $icons['search']; ?>
-                </span>
+                    <span class="search-icon" aria-hidden="true">
+                        <?php echo $icons['search']; ?>
+                    </span>
 
-                <input
-                    id="dashboardSearch"
-                    type="search"
-                    placeholder="Search employees, reports..."
-                    autocomplete="off"
-                />
-            </label>
+                    <input id="dashboardSearch" type="search" placeholder="Search employees, reports..."
+                        autocomplete="off" />
+                </label>
 
-            <div class="topbar-actions">
+                <div class="topbar-actions">
 
-                <?php if ($nearestDeadlineDays !== null): ?>
+                    <?php if ($nearestDeadlineDays !== null): ?>
 
-                    <div class="deadline-pill">
+                        <div class="deadline-pill">
 
-                        <span
-                            class="deadline-icon"
-                            aria-hidden="true"
-                        >
-                            <?php echo $icons['bell']; ?>
-                        </span>
+                            <span class="deadline-icon" aria-hidden="true">
+                                <?php echo $icons['bell']; ?>
+                            </span>
 
-                        <?php echo (int) $nearestDeadlineDays; ?>
+                            <?php echo (int) $nearestDeadlineDays; ?>
 
-                        day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?>
+                            day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?>
 
-                        until nearest regularization deadline
+                            until nearest regularization deadline
 
-                    </div>
+                        </div>
 
-                <?php endif; ?>
+                    <?php endif; ?>
 
-                <button
-                    class="icon-button"
-                    type="button"
-                    aria-label="Messages"
-                >
-                    <?php echo $icons['mail']; ?>
-                </button>
+                    <button class="icon-button" type="button" aria-label="Messages">
+                        <?php echo $icons['mail']; ?>
+                    </button>
 
-                <a
-                    class="ghost-button"
-                    href="../logout.php"
-                    aria-label="Sign out"
-                >
-                    Sign out
-                </a>
-
-            </div>
-
-        </header>
-
-        <section class="hero">
-
-            <div class="hero-top">
-
-                <div>
-
-                    <h1>
-                        Probationary Overview
-                    </h1>
-
-                    <p>
-                        Track and evaluate employees approaching regularization.
-                    </p>
+                    <a class="ghost-button" href="../logout.php" aria-label="Sign out">
+                        Sign out
+                    </a>
 
                 </div>
 
-                <a
-                    class="btn-primary"
-                    href="add_employee.php"
-                >
-                    <?php echo $icons['plus']; ?>
-                    Add Employee
-                </a>
+            </header>
 
-            </div>
+            <section class="hero">
 
-        </section>
-
-        <section
-            class="metrics"
-            id="kpis"
-            aria-label="Key dashboard metrics"
-        >
-
-            <?php foreach ($metrics as $metric): ?>
-
-                <article class="metric-card">
-
-                    <div class="metric-card-top">
-
-                        <div
-                            class="metric-icon <?php echo htmlspecialchars($metric['iconClass'], ENT_QUOTES); ?>"
-                        >
-                            <?php
-                            echo $icons[
-                                $metric['icon']
-                            ];
-                            ?>
-                        </div>
-
-                        <div
-                            class="metric-badge <?php echo htmlspecialchars($metric['tone'], ENT_QUOTES); ?>"
-                        >
-                            <?php
-                            echo htmlspecialchars(
-                                $metric['badge'],
-                                ENT_QUOTES
-                            );
-                            ?>
-                        </div>
-
-                    </div>
-
-                    <div class="metric-meta">
-
-                        <span>
-                            <?php
-                            echo htmlspecialchars(
-                                $metric['label'],
-                                ENT_QUOTES
-                            );
-                            ?>
-                        </span>
-
-                        <strong>
-
-                            <?php
-                            echo htmlspecialchars(
-                                $metric['value'],
-                                ENT_QUOTES
-                            );
-                            ?>
-
-                            <?php if (!empty($metric['suffix'])): ?>
-
-                                <small>
-                                    <?php
-                                    echo htmlspecialchars(
-                                        $metric['suffix'],
-                                        ENT_QUOTES
-                                    );
-                                    ?>
-                                </small>
-
-                            <?php endif; ?>
-
-                        </strong>
-
-                    </div>
-
-                </article>
-
-            <?php endforeach; ?>
-
-        </section>
-
-        <section class="content-grid">
-
-            <div
-                class="panel evaluations"
-                id="employees"
-            >
-
-                <div class="panel-header">
+                <div class="hero-top">
 
                     <div>
 
-                        <h2>
-                            Active Evaluations
-                        </h2>
+                        <h1>
+                            Probationary Overview
+                        </h1>
+
+                        <p>
+                            Track and evaluate employees approaching regularization.
+                        </p>
 
                     </div>
 
-                    <div class="panel-actions">
-
-                        <button
-                            class="ghost-button"
-                            type="button"
-                            id="exportEvaluationsBtn"
-                        >
-                            <?php echo $icons['download']; ?>
-                            Export CSV
-                        </button>
-
-                    </div>
+                    <a class="btn-primary" href="add_employee.php">
+                        <?php echo $icons['plus']; ?>
+                        Add Employee
+                    </a>
 
                 </div>
 
-                <div class="table-toolbar">
+            </section>
 
-                    <div
-                        class="chip-group"
-                        role="group"
-                        aria-label="Evaluation filters"
-                    >
+            <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
 
-                        <button
-                            class="filter-chip active"
-                            type="button"
-                            data-filter="all"
-                        >
-                            All
-                        </button>
+                <?php foreach ($metrics as $metric): ?>
 
-                        <button
-                            class="filter-chip"
-                            type="button"
-                            data-filter="needs-review"
-                        >
-                            Needs Review
-                        </button>
+                    <article class="metric-card">
 
-                        <button
-                            class="filter-chip"
-                            type="button"
-                            data-filter="on-track"
-                        >
-                            On Track
-                        </button>
+                        <div class="metric-card-top">
 
-                        <button
-                            class="filter-chip"
-                            type="button"
-                            data-filter="ready-for-reg"
-                        >
-                            Ready
-                        </button>
-
-                    </div>
-
-                </div>
-
-                <div
-                    class="table-wrap"
-                    role="table"
-                    aria-label="Active probationary evaluations"
-                >
-
-                    <div
-                        class="table-head"
-                        role="row"
-                    >
-                        <span role="columnheader">
-                            EMPLOYEE
-                        </span>
-
-                        <span role="columnheader">
-                            TIMELINE PROGRESS
-                        </span>
-
-                        <span role="columnheader">
-                            KPI SCORE
-                        </span>
-
-                        <span role="columnheader">
-                            STATUS
-                        </span>
-                    </div>
-
-                    <div id="evaluationRows">
-
-                        <?php if (empty($evaluations)): ?>
-
-                            <div class="dashboard-empty">
-                                No probationary employees are currently available.
+                            <div class="metric-icon <?php echo htmlspecialchars($metric['iconClass'], ENT_QUOTES); ?>">
+                                <?php
+                                echo $icons[
+                                    $metric['icon']
+                                ];
+                                ?>
                             </div>
 
-                        <?php else: ?>
+                            <div class="metric-badge <?php echo htmlspecialchars($metric['tone'], ENT_QUOTES); ?>">
+                                <?php
+                                echo htmlspecialchars(
+                                    $metric['badge'],
+                                    ENT_QUOTES
+                                );
+                                ?>
+                            </div>
 
-                            <?php foreach ($evaluations as $employee): ?>
+                        </div>
 
-                                <div
-                                    class="table-row"
-                                    role="row"
-                                    data-search="<?php
+                        <div class="metric-meta">
+
+                            <span>
+                                <?php
+                                echo htmlspecialchars(
+                                    $metric['label'],
+                                    ENT_QUOTES
+                                );
+                                ?>
+                            </span>
+
+                            <strong>
+
+                                <?php
+                                echo htmlspecialchars(
+                                    $metric['value'],
+                                    ENT_QUOTES
+                                );
+                                ?>
+
+                                <?php if (!empty($metric['suffix'])): ?>
+
+                                    <small>
+                                        <?php
+                                        echo htmlspecialchars(
+                                            $metric['suffix'],
+                                            ENT_QUOTES
+                                        );
+                                        ?>
+                                    </small>
+
+                                <?php endif; ?>
+
+                            </strong>
+
+                        </div>
+
+                    </article>
+
+                <?php endforeach; ?>
+
+            </section>
+
+            <section class="content-grid">
+
+                <div class="panel evaluations" id="employees">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                Active Evaluations
+                            </h2>
+
+                        </div>
+
+                        <div class="panel-actions">
+
+                            <button class="ghost-button" type="button" id="exportEvaluationsBtn">
+                                <?php echo $icons['download']; ?>
+                                Export CSV
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="table-toolbar">
+
+                        <div class="chip-group" role="group" aria-label="Evaluation filters">
+
+                            <button class="filter-chip active" type="button" data-filter="all">
+                                All
+                            </button>
+
+                            <button class="filter-chip" type="button" data-filter="needs-review">
+                                Needs Review
+                            </button>
+
+                            <button class="filter-chip" type="button" data-filter="on-track">
+                                On Track
+                            </button>
+
+                            <button class="filter-chip" type="button" data-filter="ready-for-reg">
+                                Ready
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="table-wrap" role="table" aria-label="Active probationary evaluations">
+
+                        <div class="table-head" role="row">
+                            <span role="columnheader">
+                                EMPLOYEE
+                            </span>
+
+                            <span role="columnheader">
+                                TIMELINE PROGRESS
+                            </span>
+
+                            <span role="columnheader">
+                                KPI SCORE
+                            </span>
+
+                            <span role="columnheader">
+                                STATUS
+                            </span>
+                        </div>
+
+                        <div id="evaluationRows">
+
+                            <?php if (empty($evaluations)): ?>
+
+                                <div class="dashboard-empty">
+                                    No probationary employees are currently available.
+                                </div>
+
+                            <?php else: ?>
+
+                                <?php foreach ($evaluations as $employee): ?>
+
+                                    <div class="table-row" role="row" data-search="<?php
                                     echo htmlspecialchars(
                                         strtolower(
                                             $employee['name'] .
@@ -1105,383 +1020,315 @@ $insightScore =
                                         ),
                                         ENT_QUOTES
                                     );
-                                    ?>"
-                                    data-filter="<?php
+                                    ?>" data-filter="<?php
                                     echo htmlspecialchars(
                                         $employee['statusKey'],
                                         ENT_QUOTES
                                     );
-                                    ?>"
-                                >
+                                    ?>">
 
-                                    <div
-                                        class="employee-cell"
-                                        role="cell"
-                                    >
+                                        <div class="employee-cell" role="cell">
 
-                                        <div
-                                            class="avatar"
-                                            style="background-image:url('<?php echo htmlspecialchars($employee['avatar'], ENT_QUOTES); ?>');"
-                                            aria-hidden="true"
-                                        ></div>
+                                            <div class="avatar"
+                                                style="background-image:url('<?php echo htmlspecialchars($employee['avatar'], ENT_QUOTES); ?>');"
+                                                aria-hidden="true"></div>
 
-                                        <div>
+                                            <div>
 
-                                            <div class="employee-name">
-                                                <?php
-                                                echo htmlspecialchars(
-                                                    $employee['name'],
-                                                    ENT_QUOTES
-                                                );
-                                                ?>
-                                            </div>
+                                                <div class="employee-name">
+                                                    <?php
+                                                    echo htmlspecialchars(
+                                                        $employee['name'],
+                                                        ENT_QUOTES
+                                                    );
+                                                    ?>
+                                                </div>
 
-                                            <div class="employee-role">
-                                                <?php
-                                                echo htmlspecialchars(
-                                                    $employee['role'],
-                                                    ENT_QUOTES
-                                                );
-                                                ?>
+                                                <div class="employee-role">
+                                                    <?php
+                                                    echo htmlspecialchars(
+                                                        $employee['role'],
+                                                        ENT_QUOTES
+                                                    );
+                                                    ?>
+                                                </div>
+
                                             </div>
 
                                         </div>
 
-                                    </div>
+                                        <div class="timeline-cell" role="cell" data-label="Timeline">
 
-                                    <div
-                                        class="timeline-cell"
-                                        role="cell"
-                                        data-label="Timeline"
-                                    >
+                                            <div class="timeline-text">
 
-                                        <div class="timeline-text">
+                                                <span class="timeline-day">
+                                                    <?php
+                                                    echo htmlspecialchars(
+                                                        $employee['day'],
+                                                        ENT_QUOTES
+                                                    );
+                                                    ?>
+                                                </span>
 
-                                            <span class="timeline-day">
-                                                <?php
-                                                echo htmlspecialchars(
-                                                    $employee['day'],
-                                                    ENT_QUOTES
-                                                );
-                                                ?>
-                                            </span>
+                                                <span class="timeline-left"
+                                                    style="color:<?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;">
+                                                    <?php
+                                                    echo htmlspecialchars(
+                                                        $employee['daysLeft'],
+                                                        ENT_QUOTES
+                                                    );
+                                                    ?>
+                                                </span>
 
-                                            <span
-                                                class="timeline-left"
-                                                style="color:<?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;"
-                                            >
-                                                <?php
-                                                echo htmlspecialchars(
-                                                    $employee['daysLeft'],
-                                                    ENT_QUOTES
-                                                );
-                                                ?>
-                                            </span>
+                                            </div>
 
-                                        </div>
+                                            <div class="timeline-bar">
 
-                                        <div class="timeline-bar">
-
-                                            <span
-                                                style="
+                                                <span style="
                                                     width:<?php echo (int) $employee['progress']; ?>%;
                                                     background:<?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;
-                                                "
-                                            ></span>
+                                                "></span>
+
+                                            </div>
+
+                                        </div>
+
+                                        <div class="score-cell" role="cell" data-label="KPI Score">
+
+                                            <?php if ($employee['hasScore']): ?>
+
+                                                <strong class="score-value">
+                                                    <?php
+                                                    echo number_format(
+                                                        (float) $employee['score'],
+                                                        1
+                                                    );
+                                                    ?>
+                                                </strong>
+
+                                                <div class="stars" aria-hidden="true">
+                                                    <?php
+                                                    echo str_repeat(
+                                                        '★',
+                                                        (int) $employee['stars']
+                                                    );
+
+                                                    echo str_repeat(
+                                                        '☆',
+                                                        5 - (int) $employee['stars']
+                                                    );
+                                                    ?>
+                                                </div>
+
+                                            <?php else: ?>
+
+                                                <strong class="score-value" style="color:var(--muted);">
+                                                    —
+                                                </strong>
+
+                                                <div class="stars" style="color:var(--muted);">
+                                                    No Ratings Yet
+                                                </div>
+
+                                            <?php endif; ?>
+
+                                        </div>
+
+                                        <div class="status-cell" role="cell" data-label="Status">
+
+                                            <span
+                                                class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>">
+                                                <?php
+                                                echo htmlspecialchars(
+                                                    $employee['status'],
+                                                    ENT_QUOTES
+                                                );
+                                                ?>
+                                            </span>
+
+                                            <a href="evaluate.php?uid=<?php echo urlencode($employee['uid']); ?>"
+                                                class="eval-btn" title="Evaluate Employee"
+                                                aria-label="Evaluate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>">
+                                                <?php echo $icons['target']; ?>
+                                            </a>
 
                                         </div>
 
                                     </div>
 
-                                    <div
-                                        class="score-cell"
-                                        role="cell"
-                                        data-label="KPI Score"
-                                    >
+                                <?php endforeach; ?>
 
-                                        <?php if ($employee['hasScore']): ?>
+                            <?php endif; ?>
 
-                                            <strong class="score-value">
-                                                <?php
-                                                echo number_format(
-                                                    (float) $employee['score'],
-                                                    1
-                                                );
-                                                ?>
-                                            </strong>
-
-                                            <div
-                                                class="stars"
-                                                aria-hidden="true"
-                                            >
-                                                <?php
-                                                echo str_repeat(
-                                                    '★',
-                                                    (int) $employee['stars']
-                                                );
-
-                                                echo str_repeat(
-                                                    '☆',
-                                                    5 - (int) $employee['stars']
-                                                );
-                                                ?>
-                                            </div>
-
-                                        <?php else: ?>
-
-                                            <strong
-                                                class="score-value"
-                                                style="color:var(--muted);"
-                                            >
-                                                —
-                                            </strong>
-
-                                            <div
-                                                class="stars"
-                                                style="color:var(--muted);"
-                                            >
-                                                No Ratings Yet
-                                            </div>
-
-                                        <?php endif; ?>
-
-                                    </div>
-
-                                    <div
-                                        class="status-cell"
-                                        role="cell"
-                                        data-label="Status"
-                                    >
-
-                                        <span
-                                            class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>"
-                                        >
-                                            <?php
-                                            echo htmlspecialchars(
-                                                $employee['status'],
-                                                ENT_QUOTES
-                                            );
-                                            ?>
-                                        </span>
-
-                                        <a
-                                            href="evaluate.php?uid=<?php echo urlencode($employee['uid']); ?>"
-                                            class="eval-btn"
-                                            title="Evaluate Employee"
-                                            aria-label="Evaluate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>"
-                                        >
-                                            <?php echo $icons['target']; ?>
-                                        </a>
-
-                                    </div>
-
-                                </div>
-
-                            <?php endforeach; ?>
-
-                        <?php endif; ?>
+                        </div>
 
                     </div>
 
-                </div>
-
-                <a
-                    class="view-more"
-                    href="employees.php"
-                >
-                    View All Probationary Staff →
-                </a>
-
-            </div>
-
-            <aside
-                class="insight-card"
-                id="insight"
-            >
-
-                <div class="insight-top">
-
-                    <span
-                        class="insight-icon"
-                        aria-hidden="true"
-                    ></span>
-
-                    <span class="insight-label">
-                        INSIGHT
-                    </span>
+                    <a class="view-more" href="employees.php">
+                        View All Probationary Staff →
+                    </a>
 
                 </div>
 
-                <h2>
-                    <?php
-                    echo htmlspecialchars(
-                        $insightTitle,
-                        ENT_QUOTES
-                    );
-                    ?>
-                </h2>
+                <aside class="insight-card" id="insight">
 
-                <?php if ($insightEmployee): ?>
+                    <div class="insight-top">
 
-                    <p id="insightText">
+                        <span class="insight-icon" aria-hidden="true"></span>
 
-                        Based on their latest KPI ratings,
-                        <strong>
-                            <?php
-                            echo htmlspecialchars(
-                                $insightName,
-                                ENT_QUOTES
-                            );
-                            ?>
-                        </strong>
-                        is currently below the employee KPI target average and may benefit from targeted upskilling.
-
-                    </p>
-
-                    <div class="insight-score-row">
-
-                        Current:
-
-                        <strong>
-                            <?php
-                            echo number_format(
-                                $insightScore,
-                                1
-                            );
-                            ?>
-                        </strong>
-
-                        <span> / </span>
-
-                        Target:
-
-                        <strong>
-                            <?php
-                            echo number_format(
-                                $insightTarget,
-                                1
-                            );
-                            ?>
-                        </strong>
-
-                    </div>
-
-                    <div class="recommendation-box">
-
-                        <span
-                            class="recommendation-icon"
-                            aria-hidden="true"
-                        >
-                            <?php echo $icons['cap']; ?>
+                        <span class="insight-label">
+                            INSIGHT
                         </span>
 
-                        <div>
+                    </div>
 
-                            <div class="recommendation-label">
-                                Recommended Action:
-                            </div>
+                    <h2>
+                        <?php
+                        echo htmlspecialchars(
+                            $insightTitle,
+                            ENT_QUOTES
+                        );
+                        ?>
+                    </h2>
 
-                            <strong id="recommendationTitle">
+                    <?php if ($insightEmployee): ?>
+
+                        <p id="insightText">
+
+                            Based on their latest KPI ratings,
+                            <strong>
                                 <?php
                                 echo htmlspecialchars(
-                                    $recommendation,
+                                    $insightName,
                                     ENT_QUOTES
+                                );
+                                ?>
+                            </strong>
+                            is currently below the employee KPI target average and may benefit from targeted upskilling.
+
+                        </p>
+
+                        <div class="insight-score-row">
+
+                            Current:
+
+                            <strong>
+                                <?php
+                                echo number_format(
+                                    $insightScore,
+                                    1
+                                );
+                                ?>
+                            </strong>
+
+                            <span> / </span>
+
+                            Target:
+
+                            <strong>
+                                <?php
+                                echo number_format(
+                                    $insightTarget,
+                                    1
                                 );
                                 ?>
                             </strong>
 
                         </div>
 
-                    </div>
+                        <div class="recommendation-box">
 
-                    <div class="insight-actions">
+                            <span class="recommendation-icon" aria-hidden="true">
+                                <?php echo $icons['cap']; ?>
+                            </span>
 
-                        <?php
-                        $alreadyAssigned =
-                            !empty(
+                            <div>
+
+                                <div class="recommendation-label">
+                                    Recommended Action:
+                                </div>
+
+                                <strong id="recommendationTitle">
+                                    <?php
+                                    echo htmlspecialchars(
+                                        $recommendation,
+                                        ENT_QUOTES
+                                    );
+                                    ?>
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                        <div class="insight-actions">
+
+                            <?php
+                            $alreadyAssigned =
+                                !empty(
                                 $insightEmployee['assignedTraining']
                             ) ||
-                            $justAssigned;
-                        ?>
+                                $justAssigned;
+                            ?>
 
-                        <?php if ($alreadyAssigned): ?>
+                            <?php if ($alreadyAssigned): ?>
 
-                            <button
-                                class="primary-button"
-                                type="button"
-                                disabled
-                            >
-                                Assigned
-                            </button>
-
-                        <?php else: ?>
-
-                            <form
-                                method="post"
-                                style="flex:1;"
-                            >
-
-                                <input
-                                    type="hidden"
-                                    name="action"
-                                    value="assign_course"
-                                />
-
-                                <input
-                                    type="hidden"
-                                    name="uid"
-                                    value="<?php echo htmlspecialchars($insightEmployee['uid'], ENT_QUOTES); ?>"
-                                />
-
-                                <input
-                                    type="hidden"
-                                    name="course"
-                                    value="<?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?>"
-                                />
-
-                                <button
-                                    class="primary-button"
-                                    type="submit"
-                                    style="width:100%;"
-                                >
-                                    Assign Course
+                                <button class="primary-button" type="button" disabled>
+                                    Assigned
                                 </button>
 
-                            </form>
+                            <?php else: ?>
 
-                        <?php endif; ?>
+                                <form method="post" style="flex:1;">
 
-                    </div>
+                                    <input type="hidden" name="action" value="assign_course" />
 
-                <?php else: ?>
+                                    <input type="hidden" name="uid"
+                                        value="<?php echo htmlspecialchars($insightEmployee['uid'], ENT_QUOTES); ?>" />
 
-                    <p id="insightText">
-                        No employee has been rated yet. Insights will appear here once KPI ratings exist.
-                    </p>
+                                    <input type="hidden" name="course"
+                                        value="<?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?>" />
 
-                <?php endif; ?>
+                                    <button class="primary-button" type="submit" style="width:100%;">
+                                        Assign Course
+                                    </button>
 
-            </aside>
+                                </form>
 
-        </section>
+                            <?php endif; ?>
 
-    </main>
+                        </div>
 
-</div>
+                    <?php else: ?>
 
-<footer class="site-footer">
+                        <p id="insightText">
+                            No employee has been rated yet. Insights will appear here once KPI ratings exist.
+                        </p>
 
-    <span>
-        Performa employer dashboard
-    </span>
+                    <?php endif; ?>
 
-    <span>
-        Powered by PHP &amp; Firebase
-    </span>
+                </aside>
 
-</footer>
+            </section>
 
-<script src="script.js"></script>
+        </main>
+
+    </div>
+
+    <footer class="site-footer">
+
+        <span>
+            Performa employer dashboard
+        </span>
+
+        <span>
+            Powered by PHP &amp; Firebase
+        </span>
+
+    </footer>
+
+    <script src="script.js"></script>
 
 </body>
+
 </html>

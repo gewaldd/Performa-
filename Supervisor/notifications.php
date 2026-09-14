@@ -69,6 +69,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Notifications</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
     <style>
         .notif-list {
             display: flex;
@@ -161,7 +162,8 @@ try {
                                 <span class="notif-dot"></span>
                                 <div>
                                     <div class="notif-title"><?php echo htmlspecialchars($notif['title'], ENT_QUOTES); ?></div>
-                                    <div class="notif-detail"><?php echo htmlspecialchars($notif['detail'], ENT_QUOTES); ?></div>
+                                    <div class="notif-detail"><?php echo htmlspecialchars($notif['detail'], ENT_QUOTES); ?>
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>

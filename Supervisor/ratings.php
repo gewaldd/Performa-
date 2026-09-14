@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Rating Entry</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
     <style>
         .form-grid {
             display: flex;
@@ -211,9 +212,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                                             <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> (target
                                             <?php echo number_format($kpi['target'], 1); ?>)
                                         </label>
-                                        <input id="score_<?php echo $kpi['key']; ?>"
-                                            name="score_<?php echo $kpi['key']; ?>" type="number" min="1" max="5"
-                                            step="0.1" required />
+                                        <input id="score_<?php echo $kpi['key']; ?>" name="score_<?php echo $kpi['key']; ?>"
+                                            type="number" min="1" max="5" step="0.1" required />
                                     </div>
                                 <?php endforeach; ?>
                             </div>

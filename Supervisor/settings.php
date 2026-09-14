@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Settings</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
     <style>
         .settings-wrap {
             display: flex;
@@ -213,7 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="settings-avatar-row">
                             <div class="big-avatar"><?php echo strtoupper(substr($supervisorName, 0, 2)); ?></div>
                             <div>
-                                <div class="name"><?php echo htmlspecialchars($profile['name'] ?? $supervisorName, ENT_QUOTES); ?>
+                                <div class="name">
+                                    <?php echo htmlspecialchars($profile['name'] ?? $supervisorName, ENT_QUOTES); ?>
                                 </div>
                                 <div class="role">Shift Supervisor</div>
                             </div>
@@ -227,7 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="settings-field">
                             <label>Email</label>
                             <input type="email"
-                                value="<?php echo htmlspecialchars($profile['email'] ?? '—', ENT_QUOTES); ?>" disabled />
+                                value="<?php echo htmlspecialchars($profile['email'] ?? '—', ENT_QUOTES); ?>"
+                                disabled />
                         </div>
 
                         <hr class="settings-divider" />

@@ -157,6 +157,20 @@ body::before {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.logout-link {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.logout-link:hover,
+.logout-link:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .profile-avatar {
   display: grid;
   place-items: center;
@@ -344,6 +358,10 @@ body::before {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr);
   gap: 16px;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .panel,
@@ -965,5 +983,370 @@ body::before {
   .employee-cell,
   .status-cell {
     grid-column: 1;
+  }
+}
+
+/* Performa UI refresh: quiet surfaces, clear hierarchy, and compact HR workflows. */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --panel-border: #dfe5ed;
+  --text: #18263a;
+  --muted: #66758a;
+  --sidebar: #142236;
+  --sidebar-soft: #1c3048;
+  --primary: #245fba;
+  --primary-dark: #184a96;
+  --positive: #18794e;
+  --warning: #a76508;
+  --shadow: 0 4px 16px rgba(20, 34, 54, 0.05);
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+}
+
+body {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body::before {
+  display: none;
+}
+
+.sidebar {
+  padding: 20px 14px 16px;
+  background: var(--sidebar);
+  border-right: 1px solid #243951;
+}
+
+.brand {
+  padding: 8px 10px 24px;
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #3474d1;
+}
+
+.nav {
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.nav-item {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #b9c5d4;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: none;
+}
+
+.nav-item::before {
+  display: none;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  background: #244d7e;
+  color: #fff;
+  transform: none;
+}
+
+.sidebar-footer {
+  margin: 16px 2px 0;
+  padding: 14px 8px 4px;
+  border-top: 1px solid #29405b;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.profile-avatar {
+  background: #3474d1;
+}
+
+.main {
+  max-width: 1480px;
+  padding: 24px 32px 36px;
+}
+
+.topbar {
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--panel-border);
+  backdrop-filter: none;
+}
+
+.search-bar {
+  max-width: 380px;
+  height: 40px;
+  border-radius: 8px;
+  background: #fff;
+  border-color: var(--panel-border);
+  box-shadow: none;
+}
+
+.icon-button {
+  width: auto;
+  min-width: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--primary);
+  background: #fff;
+  box-shadow: none;
+}
+
+.deadline-pill {
+  min-height: 36px;
+  border: 1px solid #d9e5f5;
+  border-radius: 8px;
+  background: #edf4fd;
+  color: var(--primary-dark);
+  box-shadow: none;
+}
+
+.hero {
+  padding: 30px 0 22px;
+  text-align: left;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.hero h1 {
+  max-width: 820px;
+  font-size: clamp(1.65rem, 2.4vw, 2.25rem);
+  line-height: 1.18;
+}
+
+.metrics {
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.metric-card {
+  min-height: 104px;
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: none;
+}
+
+.metric-card.mint,
+.metric-card.gold,
+.metric-card.warm {
+  background: var(--surface);
+}
+
+.metric-icon {
+  display: none;
+}
+
+.metric-meta strong {
+  color: var(--text);
+  font-size: 1.7rem;
+}
+
+.metric-badge,
+.status-pill {
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: transparent;
+}
+
+.content-grid {
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.panel,
+.insight-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  padding: 22px 0 16px;
+  background: var(--surface);
+}
+
+.panel-header {
+  padding: 0 22px 18px;
+  border-bottom: 1px solid #edf0f4;
+  backdrop-filter: none;
+}
+
+.panel-header h2,
+.summary-card h3 {
+  color: var(--text);
+}
+
+.panel-header p,
+.table-note,
+.microcopy {
+  color: var(--muted);
+}
+
+.summary-card,
+.readonly-panel,
+.feedback-list li,
+.notification-item {
+  border: 1px solid #e7ebf0;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.summary-card {
+  margin: 18px 22px 0;
+  padding: 16px;
+}
+
+.summary-row,
+.ack-row,
+.table-row {
+  min-height: 48px;
+  border-bottom: 1px solid #e8edf2;
+  background: transparent;
+}
+
+.summary-row:last-child,
+.ack-row:last-child,
+.table-row:last-child {
+  border-bottom: 0;
+}
+
+.summary-row:hover,
+.ack-row:hover,
+.table-row:hover {
+  background: #f8fafc;
+}
+
+.form-grid {
+  gap: 16px;
+}
+
+.field-group input,
+.field-group select,
+.field-group textarea {
+  min-height: 40px;
+  border: 1px solid #d6dee8;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.field-group input:focus,
+.field-group select:focus,
+.field-group textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(36, 95, 186, .12);
+}
+
+.primary-button,
+.ghost-button,
+.acknowledge-button {
+  min-height: 38px;
+  border-radius: 7px;
+  box-shadow: none;
+  background-image: none;
+}
+
+.primary-button {
+  background: var(--primary);
+}
+
+.primary-button:hover {
+  background: var(--primary-dark);
+}
+
+.insight-card {
+  gap: 16px;
+  padding: 22px;
+  background: #fff;
+  color: var(--text);
+}
+
+.insight-badge {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 11px;
+}
+
+.recommendation-box {
+  padding: 14px;
+  border: 1px solid #dce6f2;
+  border-radius: 8px;
+  background: #f5f9fe;
+}
+
+.recommendation-label,
+.insight-card .microcopy {
+  color: var(--muted);
+}
+
+.site-footer {
+  border-top: 1px solid var(--panel-border);
+  color: var(--muted);
+}
+
+.logout-link {
+  color: #b9c5d4;
+}
+
+@media (max-width: 1100px) {
+  .main {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .main {
+    padding: 18px 16px 28px;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0 4px;
+    border: 0;
+  }
+
+  .sidebar-footer > div {
+    display: none;
+  }
+
+  .sidebar-footer .profile-avatar {
+    display: grid;
+  }
+
+  .hero {
+    padding-top: 24px;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .metric-card {
+    min-height: 88px;
   }
 }

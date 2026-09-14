@@ -77,7 +77,7 @@ $recommendation = 'Review your responsibilities and update your daily focus list
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">Complete your profile update</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">◌</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 
@@ -118,13 +118,16 @@ $recommendation = 'Review your responsibilities and update your daily focus list
                         <?php foreach ($profileDetails as $detail): ?>
                             <div class="table-row">
                                 <div class="employee-cell">
-                                    <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);"></div>
+                                    <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);">
+                                    </div>
                                     <div>
-                                        <div class="employee-name"><?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?></div>
+                                        <div class="employee-name">
+                                            <?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?></div>
                                     </div>
                                 </div>
                                 <div class="timeline-cell">
-                                    <div class="timeline-text"><?php echo htmlspecialchars($detail['value'], ENT_QUOTES); ?></div>
+                                    <div class="timeline-text"><?php echo htmlspecialchars($detail['value'], ENT_QUOTES); ?>
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -143,10 +146,10 @@ $recommendation = 'Review your responsibilities and update your daily focus list
                         <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button"
-                        data-completed-label="Updated"
+                    <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Updated"
                         data-confirm-text="Your profile action has been noted.">Update Profile</button>
-                    <p class="microcopy">Use this page to keep your employee information accurate and aligned with your role.</p>
+                    <p class="microcopy">Use this page to keep your employee information accurate and aligned with your
+                        role.</p>
                 </aside>
             </section>
         </main>

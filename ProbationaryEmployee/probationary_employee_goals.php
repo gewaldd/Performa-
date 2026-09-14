@@ -107,7 +107,7 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">Next one-on-one in 10 days</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">◌</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 
@@ -169,22 +169,28 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
                                     data-search="<?php echo htmlspecialchars(strtolower($goal['name'] . ' ' . $goal['category'] . ' ' . $goal['status']), ENT_QUOTES); ?>"
                                     data-filter="<?php echo htmlspecialchars($goal['statusKey'], ENT_QUOTES); ?>">
                                     <div class="employee-cell" role="cell">
-                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);"></div>
+                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);">
+                                        </div>
                                         <div>
-                                            <div class="employee-name"><?php echo htmlspecialchars($goal['name'], ENT_QUOTES); ?></div>
-                                            <div class="employee-role"><?php echo htmlspecialchars($goal['category'], ENT_QUOTES); ?></div>
+                                            <div class="employee-name">
+                                                <?php echo htmlspecialchars($goal['name'], ENT_QUOTES); ?></div>
+                                            <div class="employee-role">
+                                                <?php echo htmlspecialchars($goal['category'], ENT_QUOTES); ?></div>
                                         </div>
                                     </div>
 
                                     <div class="timeline-cell" role="cell">
-                                        <div class="timeline-text"><?php echo htmlspecialchars($goal['timeline'], ENT_QUOTES); ?></div>
+                                        <div class="timeline-text">
+                                            <?php echo htmlspecialchars($goal['timeline'], ENT_QUOTES); ?></div>
                                         <div class="timeline-bar">
-                                            <span style="width: <?php echo (int) $goal['progress']; ?>%; background: <?php echo htmlspecialchars($goal['progressColor'], ENT_QUOTES); ?>;"></span>
+                                            <span
+                                                style="width: <?php echo (int) $goal['progress']; ?>%; background: <?php echo htmlspecialchars($goal['progressColor'], ENT_QUOTES); ?>;"></span>
                                         </div>
                                     </div>
 
                                     <div class="score-cell" role="cell">
-                                        <strong class="score-value"><?php echo number_format((float) $goal['score'], 1); ?></strong>
+                                        <strong
+                                            class="score-value"><?php echo number_format((float) $goal['score'], 1); ?></strong>
                                         <div class="stars" aria-hidden="true">
                                             <?php echo str_repeat('★', (int) $goal['stars']); ?>
                                             <?php echo str_repeat('☆', 5 - (int) $goal['stars']); ?>
@@ -192,7 +198,8 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
                                     </div>
 
                                     <div class="status-cell" role="cell">
-                                        <span class="status-pill <?php echo htmlspecialchars($goal['statusClass'], ENT_QUOTES); ?>">
+                                        <span
+                                            class="status-pill <?php echo htmlspecialchars($goal['statusClass'], ENT_QUOTES); ?>">
                                             <?php echo htmlspecialchars($goal['status'], ENT_QUOTES); ?>
                                         </span>
                                     </div>
@@ -214,10 +221,10 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
                         <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button"
-                        data-completed-label="Planned"
+                    <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Planned"
                         data-confirm-text="Meeting added to your schedule for goal alignment.">Plan Next Step</button>
-                    <p class="microcopy">This page helps you keep goals visible as you work through the rest of your tasks.</p>
+                    <p class="microcopy">This page helps you keep goals visible as you work through the rest of your
+                        tasks.</p>
                 </aside>
             </section>
         </main>

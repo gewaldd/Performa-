@@ -1,0 +1,213 @@
+:root {
+  --ui-bg: #f3f5f8;
+  --ui-surface: #fff;
+  --ui-soft: #f8fafc;
+  --ui-border: #dfe5ed;
+  --ui-text: #18263a;
+  --ui-muted: #66758a;
+  --ui-sidebar: #142236;
+  --ui-blue: #245fba;
+  --ui-blue-dark: #184a96;
+  --ui-green: #18794e;
+  --ui-amber: #a76508;
+  --ui-radius: 10px;
+  --ui-shadow: 0 4px 16px rgba(20, 34, 54, .05);
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--ui-bg); }
+
+body {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+}
+
+body::before { display: none; }
+
+.app-shell { background: var(--ui-bg); }
+
+.sidebar {
+  background: var(--ui-sidebar);
+  border-right: 1px solid #243951;
+}
+
+.brand-mark { background: #3474d1; }
+
+.nav { gap: 3px; }
+
+.nav-item {
+  min-height: 42px;
+  border-radius: 8px;
+  color: #b9c5d4;
+  font-weight: 500;
+  backdrop-filter: none;
+}
+
+.nav-item::before { display: none; }
+
+.nav-item.active,
+.nav-item:hover {
+  background: #244d7e;
+  color: #fff;
+  transform: none;
+}
+
+.sidebar-footer {
+  border-top: 1px solid #29405b;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.profile-avatar { background: #3474d1; }
+
+.main { max-width: 1480px; }
+
+.topbar {
+  border-bottom: 1px solid var(--ui-border);
+  backdrop-filter: none;
+}
+
+.search-bar,
+.icon-button {
+  border-color: var(--ui-border);
+  background: #fff;
+  box-shadow: none;
+}
+
+.search-bar { border-radius: 8px; }
+
+.deadline-pill {
+  border: 1px solid #d9e5f5;
+  border-radius: 8px;
+  background: #edf4fd;
+  color: var(--ui-blue-dark);
+  box-shadow: none;
+}
+
+.hero { text-align: left; }
+
+.eyebrow { color: var(--ui-blue); }
+
+.metric-card {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: none;
+}
+
+.metric-icon { display: none; }
+
+.metric-badge,
+.status-pill {
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.panel,
+.insight-card {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+}
+
+.panel { background: var(--ui-surface); }
+
+.panel-header {
+  border-bottom: 1px solid #edf0f4;
+  backdrop-filter: none;
+}
+
+.panel-header p,
+.table-note,
+.microcopy { color: var(--ui-muted); }
+
+.table-head {
+  background: var(--ui-soft);
+  color: #55657b;
+}
+
+.table-row {
+  min-height: 52px;
+  border-bottom: 1px solid #e8edf2;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.table-row:hover { background: #f8fafc; }
+
+input,
+select,
+textarea,
+.field-group input,
+.field-group select,
+.field-group textarea {
+  border-color: #d6dee8;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.field-group input:focus,
+.field-group select:focus,
+.field-group textarea:focus {
+  border-color: var(--ui-blue);
+  box-shadow: 0 0 0 3px rgba(36, 95, 186, .12);
+}
+
+.primary-button,
+.ghost-button,
+.acknowledge-button,
+.btn-primary,
+.btn-outline-primary {
+  border-radius: 7px;
+  box-shadow: none;
+  background-image: none;
+}
+
+.primary-button,
+.btn-primary { background: var(--ui-blue); border-color: var(--ui-blue); }
+.primary-button:hover,
+.btn-primary:hover { background: var(--ui-blue-dark); border-color: var(--ui-blue-dark); }
+
+.insight-card {
+  background: #fff;
+  color: var(--ui-text);
+}
+
+.insight-badge {
+  border: 0;
+  background: transparent;
+  color: var(--ui-blue);
+}
+
+.recommendation-box {
+  border: 1px solid #dce6f2;
+  border-radius: 8px;
+  background: #f5f9fe;
+}
+
+.site-footer {
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+}
+
+@media (max-width: 760px) {
+  .main { padding: 18px 16px 28px; }
+  .hero h1 { font-size: 1.65rem; }
+  .table-wrap { overflow-x: visible; }
+  .table-head { display: none; }
+  .table-row {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    min-width: 0;
+    gap: 8px;
+  }
+}

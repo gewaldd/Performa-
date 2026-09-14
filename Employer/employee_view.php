@@ -110,8 +110,11 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
   <title>Performa | <?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -120,11 +123,13 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
     <main class="main" style="max-width:760px;margin:0 auto;">
       <div class="page-header">
         <div>
-          <a href="employees.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to Employees</a>
+          <a href="employees.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to
+            Employees</a>
           <h1><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></h1>
           <p><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES); ?>
             &middot; Status:
-            <strong style="color:<?php echo $statusLabel === 'Disabled' ? '#ed5b57' : '#16a76d'; ?>;"><?php echo $statusLabel; ?></strong>
+            <strong
+              style="color:<?php echo $statusLabel === 'Disabled' ? '#ed5b57' : '#16a76d'; ?>;"><?php echo $statusLabel; ?></strong>
           </p>
         </div>
         <?php if ($isProbationary): ?>
@@ -149,15 +154,18 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <div class="form-grid">
             <div class="form-group">
               <label for="name">Full Name</label>
-              <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($profile['name'] ?? '', ENT_QUOTES); ?>" required />
+              <input id="name" name="name" type="text"
+                value="<?php echo htmlspecialchars($profile['name'] ?? '', ENT_QUOTES); ?>" required />
             </div>
             <div class="form-group">
               <label for="email">Email</label>
-              <input id="email" name="email" type="email" value="<?php echo htmlspecialchars($profile['email'] ?? '', ENT_QUOTES); ?>" required />
+              <input id="email" name="email" type="email"
+                value="<?php echo htmlspecialchars($profile['email'] ?? '', ENT_QUOTES); ?>" required />
             </div>
             <div class="form-group">
               <label for="department">Department</label>
-              <input id="department" name="department" type="text" value="<?php echo htmlspecialchars($profile['department'] ?? '', ENT_QUOTES); ?>" />
+              <input id="department" name="department" type="text"
+                value="<?php echo htmlspecialchars($profile['department'] ?? '', ENT_QUOTES); ?>" />
             </div>
             <?php if ($isProbationary): ?>
               <div class="form-group">
@@ -183,10 +191,12 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         <p style="color:var(--muted);">
           <?php echo $statusLabel === 'Disabled' ? 'This account is disabled and cannot sign in.' : 'This account can sign in normally.'; ?>
         </p>
-        <form method="post" data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate this account? They will be signed out and unable to log in.', ENT_QUOTES); ?>">
+        <form method="post"
+          data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate this account? They will be signed out and unable to log in.', ENT_QUOTES); ?>">
           <input type="hidden" name="action" value="toggle_status" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
-          <button class="btn-cancel" type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
+          <button class="btn-cancel"
+            type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
         </form>
       </div>
 
@@ -195,12 +205,15 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <h4 class="settings-subhead">Probation Progress</h4>
           <p>Day <?php echo $daysSince; ?> of 180 &middot; <?php echo $daysLeft; ?> days remaining</p>
 
-          <h4 class="settings-subhead">Latest KPI Scores (<?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?> template)</h4>
+          <h4 class="settings-subhead">Latest KPI Scores (<?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?>
+            template)</h4>
           <?php if (!$summary['hasData']): ?>
             <p>No ratings submitted yet.</p>
           <?php else: ?>
-            <p>Average score: <strong><?php echo number_format($summary['score'], 1); ?></strong> / 5.0 (template target avg <?php echo number_format($summary['targetAvg'], 1); ?>)
-              &middot; <?php echo $summary['ratingCount']; ?> rating<?php echo $summary['ratingCount'] === 1 ? '' : 's'; ?> on file</p>
+            <p>Average score: <strong><?php echo number_format($summary['score'], 1); ?></strong> / 5.0 (template target avg
+              <?php echo number_format($summary['targetAvg'], 1); ?>)
+              &middot; <?php echo $summary['ratingCount']; ?> rating<?php echo $summary['ratingCount'] === 1 ? '' : 's'; ?>
+              on file</p>
           <?php endif; ?>
 
           <hr class="section-divider" />
@@ -208,12 +221,16 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <h4 class="settings-subhead">Regularization Recommendation</h4>
           <?php if (!empty($profile['regularizationRecommendation'])): ?>
             <p style="color:var(--muted);">
-              Current decision: <strong style="color:var(--text);"><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
-              <?php if (!empty($profile['regularizationDecidedAt'])): ?> &middot; <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?><?php endif; ?>
-              <?php if (!empty($profile['regularizationDecidedBy'])): ?> by <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?><?php endif; ?>
+              Current decision: <strong
+                style="color:var(--text);"><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
+              <?php if (!empty($profile['regularizationDecidedAt'])): ?> &middot;
+                <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?>    <?php endif; ?>
+              <?php if (!empty($profile['regularizationDecidedBy'])): ?> by
+                <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?>    <?php endif; ?>
             </p>
             <?php if (!empty($profile['regularizationNotes'])): ?>
-              <p style="color:var(--muted);">Notes: <?php echo htmlspecialchars($profile['regularizationNotes'], ENT_QUOTES); ?></p>
+              <p style="color:var(--muted);">Notes:
+                <?php echo htmlspecialchars($profile['regularizationNotes'], ENT_QUOTES); ?></p>
             <?php endif; ?>
           <?php endif; ?>
 
@@ -231,7 +248,9 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
               </div>
               <div class="form-group">
                 <label for="notes">Notes</label>
-                <input id="notes" name="notes" type="text" value="<?php echo htmlspecialchars($profile['regularizationNotes'] ?? '', ENT_QUOTES); ?>" placeholder="Optional rationale" />
+                <input id="notes" name="notes" type="text"
+                  value="<?php echo htmlspecialchars($profile['regularizationNotes'] ?? '', ENT_QUOTES); ?>"
+                  placeholder="Optional rationale" />
               </div>
             </div>
             <div class="form-actions">

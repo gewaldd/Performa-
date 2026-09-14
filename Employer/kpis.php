@@ -362,14 +362,14 @@ foreach ($template['kpis'] as $kpi) {
 
   $statusInfo =
     $current !== null
-      ? kpi_status_for_score(
-          $current,
-          $kpi['target']
-        )
-      : [
-          'status' => 'No Data',
-          'statusClass' => 'status-neutral',
-        ];
+    ? kpi_status_for_score(
+      $current,
+      $kpi['target']
+    )
+    : [
+      'status' => 'No Data',
+      'statusClass' => 'status-neutral',
+    ];
 
   $employeeKpis[] = [
     'key' => $kpi['key'],
@@ -386,14 +386,14 @@ foreach ($template['kpis'] as $kpi) {
     'hasData' => $current !== null,
     'stars' =>
       $current !== null
-        ? max(
-            0,
-            min(
-              5,
-              (int) round($current)
-            )
-          )
-        : 0,
+      ? max(
+        0,
+        min(
+          5,
+          (int) round($current)
+        )
+      )
+      : 0,
     'trend' => $trend,
     'status' => $statusInfo['status'],
     'statusClass' =>
@@ -421,14 +421,14 @@ foreach (
 
   $statusInfo =
     $current !== null
-      ? kpi_status_for_score(
-          $current,
-          $kpi['target']
-        )
-      : [
-          'status' => 'No Data',
-          'statusClass' => 'status-neutral',
-        ];
+    ? kpi_status_for_score(
+      $current,
+      $kpi['target']
+    )
+    : [
+      'status' => 'No Data',
+      'statusClass' => 'status-neutral',
+    ];
 
   $categoryCards[] = [
     'badge' => $template['label'],
@@ -444,20 +444,20 @@ foreach (
     ),
     'current' =>
       $current !== null
-        ? number_format($current, 1) . ' / 5.0'
-        : '—',
+      ? number_format($current, 1) . ' / 5.0'
+      : '—',
     'progress' =>
       $current !== null
-        ? min(
-            100,
-            max(
-              0,
-              (int) round(
-                ($current / 5.0) * 100
-              )
-            )
+      ? min(
+        100,
+        max(
+          0,
+          (int) round(
+            ($current / 5.0) * 100
           )
-        : 0,
+        )
+      )
+      : 0,
     'accentColor' =>
       $accentCycle[
         $i % count($accentCycle)
@@ -471,35 +471,20 @@ foreach (
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performa | KPIs</title>
-  <meta
-    name="description"
-    content="Define and track organization-wide performance metrics."
-  />
+  <meta name="description" content="Define and track organization-wide performance metrics." />
 
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  />
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link
-    rel="stylesheet"
-    href="styles.css"
-  />
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body class="kpi-page">
@@ -513,21 +498,13 @@ foreach (
 
       <header class="topbar kpi-topbar" aria-label="KPI page account and utility controls">
         <div class="topbar-actions">
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Notifications"
-          >
+          <button class="icon-button" type="button" aria-label="Notifications">
             <span aria-hidden="true">
               <?php echo $icons['bell']; ?>
             </span>
           </button>
 
-          <a
-            class="ghost-button"
-            href="../logout.php"
-            aria-label="Sign out"
-          >
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
             Sign out
           </a>
         </div>
@@ -541,10 +518,7 @@ foreach (
           </p>
         </div>
 
-        <a
-          class="btn-primary"
-          href="#addKpiForm"
-        >
+        <a class="btn-primary" href="#addKpiForm">
           <span aria-hidden="true">
             <?php echo $icons['plus']; ?>
           </span>
@@ -555,9 +529,7 @@ foreach (
       <?php if ($kpiMessage !== ''): ?>
         <div
           class="alert <?php echo $kpiMessageType === 'success' ? 'alert-success' : ($kpiMessageType === 'error' ? 'alert-error' : 'alert-info'); ?>"
-          role="status"
-          aria-live="polite"
-        >
+          role="status" aria-live="polite">
           <?php
           echo htmlspecialchars(
             $kpiMessage,
@@ -568,28 +540,17 @@ foreach (
       <?php endif; ?>
 
       <div class="kpi-search-wrap">
-        <label
-          class="search-bar"
-          for="kpiSearch"
-        >
+        <label class="search-bar" for="kpiSearch">
           <span class="sr-only">
             Search KPIs and categories
           </span>
 
-          <span
-            class="search-icon"
-            aria-hidden="true"
-          >
+          <span class="search-icon" aria-hidden="true">
             <?php echo $icons['search']; ?>
           </span>
 
-          <input
-            type="search"
-            id="kpiSearch"
-            aria-controls="performanceMetrics"
-            placeholder="Search KPIs, categories..."
-            autocomplete="off"
-          />
+          <input type="search" id="kpiSearch" aria-controls="performanceMetrics"
+            placeholder="Search KPIs, categories..." autocomplete="off" />
         </label>
       </div>
 
@@ -602,11 +563,7 @@ foreach (
             </p>
           </div>
 
-          <button
-            class="btn-primary"
-            type="button"
-            id="exportKpiBtn"
-          >
+          <button class="btn-primary" type="button" id="exportKpiBtn">
             <span aria-hidden="true">
               <?php echo $icons['download']; ?>
             </span>
@@ -615,39 +572,22 @@ foreach (
         </div>
 
         <div class="employee-select-wrap kpi-employee-select-wrap">
-          <label
-            class="employee-select-label"
-            for="employeeSelect"
-          >
+          <label class="employee-select-label" for="employeeSelect">
             Employee
           </label>
 
           <?php if ($probationaryEmployees): ?>
             <div class="employee-select-row kpi-employee-select-row">
 
-              <form
-                method="get"
-                class="employee-select"
-              >
-                <span
-                  class="employee-select-icon"
-                  aria-hidden="true"
-                >
+              <form method="get" class="employee-select">
+                <span class="employee-select-icon" aria-hidden="true">
                   <?php echo $icons['user']; ?>
                 </span>
 
-                <select
-                  class="perform-select employee-select-control"
-                  id="employeeSelect"
-                  name="employee"
-                  aria-describedby="employeeSelectHint"
-                  onchange="this.form.submit()"
-                >
+                <select class="perform-select employee-select-control" id="employeeSelect" name="employee"
+                  aria-describedby="employeeSelectHint" onchange="this.form.submit()">
                   <?php foreach ($probationaryEmployees as $emp): ?>
-                    <option
-                      value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
-                      <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>
-                    >
+                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>" <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
                       <?php
                       echo htmlspecialchars(
                         $emp['name'],
@@ -658,36 +598,25 @@ foreach (
                   <?php endforeach; ?>
                 </select>
 
-                <span
-                  class="employee-select-chevron"
-                  aria-hidden="true"
-                >
+                <span class="employee-select-chevron" aria-hidden="true">
                   <?php echo $icons['chevron-down']; ?>
                 </span>
               </form>
 
-              <a
-                class="ghost-button kpi-rate-button"
-                href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>"
-              >
+              <a class="ghost-button kpi-rate-button"
+                href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">
                 Rate this employee
               </a>
             </div>
 
-            <span
-              id="employeeSelectHint"
-              class="sr-only"
-            >
+            <span id="employeeSelectHint" class="sr-only">
               Changing this selection reloads the KPI information for that employee.
             </span>
 
           <?php else: ?>
 
             <div class="employee-select">
-              <span
-                class="employee-select-icon"
-                aria-hidden="true"
-              >
+              <span class="employee-select-icon" aria-hidden="true">
                 <?php echo $icons['user']; ?>
               </span>
               <span>No probationary employees yet</span>
@@ -697,10 +626,7 @@ foreach (
         </div>
       </section>
 
-      <section
-        class="metrics-panel kpi-metrics-panel"
-        aria-labelledby="performanceMetricsTitle"
-      >
+      <section class="metrics-panel kpi-metrics-panel" aria-labelledby="performanceMetricsTitle">
         <div class="metrics-panel-header">
           <h2 id="performanceMetricsTitle">
             Performance Metrics
@@ -740,10 +666,7 @@ foreach (
               );
             ?>
 
-            <article
-              class="kpi-row"
-              data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>"
-            >
+            <article class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>">
 
               <div data-label="KPI Name">
                 <div class="kpi-name">
@@ -765,10 +688,7 @@ foreach (
                 </div>
               </div>
 
-              <div
-                class="kpi-target"
-                data-label="Target Score"
-              >
+              <div class="kpi-target" data-label="Target Score">
                 <?php
                 echo number_format(
                   (float) $kpi['target'],
@@ -777,14 +697,8 @@ foreach (
                 ?>
               </div>
 
-              <div
-                class="kpi-current"
-                data-label="Current Score"
-              >
-                <div
-                  class="stars"
-                  aria-hidden="true"
-                >
+              <div class="kpi-current" data-label="Current Score">
+                <div class="stars" aria-hidden="true">
                   <?php
                   echo str_repeat(
                     '★',
@@ -802,18 +716,15 @@ foreach (
                   <?php
                   echo $kpi['hasData']
                     ? number_format(
-                        (float) $kpi['current'],
-                        1
-                      )
+                      (float) $kpi['current'],
+                      1
+                    )
                     : '—';
                   ?>
                 </strong>
               </div>
 
-              <div
-                class="trend <?php echo htmlspecialchars($trendClass[$kpi['trend']], ENT_QUOTES); ?>"
-                data-label="Trend"
-              >
+              <div class="trend <?php echo htmlspecialchars($trendClass[$kpi['trend']], ENT_QUOTES); ?>" data-label="Trend">
                 <span aria-hidden="true">
                   <?php
                   echo $kpi['hasData']
@@ -838,9 +749,7 @@ foreach (
               </div>
 
               <div data-label="Status">
-                <span
-                  class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>"
-                >
+                <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>">
                   <?php
                   echo htmlspecialchars(
                     $kpi['status'],
@@ -851,65 +760,33 @@ foreach (
               </div>
 
               <div data-label="Actions">
-                <button
-                  class="edit-button"
-                  type="button"
+                <button class="edit-button" type="button"
                   aria-label="Edit target for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>"
-                  aria-controls="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
-                  aria-expanded="false"
-                  onclick="const form = document.getElementById(<?php echo $editFormIdJson; ?>); if (form) { form.style.display = 'flex'; form.setAttribute('aria-hidden', 'false'); this.style.display = 'none'; this.setAttribute('aria-expanded', 'true'); const input = form.querySelector('input[name=\'kpi_target\']'); if (input) { input.focus(); input.select(); } }"
-                >
+                  aria-controls="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>" aria-expanded="false"
+                  onclick="const form = document.getElementById(<?php echo $editFormIdJson; ?>); if (form) { form.style.display = 'flex'; form.setAttribute('aria-hidden', 'false'); this.style.display = 'none'; this.setAttribute('aria-expanded', 'true'); const input = form.querySelector('input[name=\'kpi_target\']'); if (input) { input.focus(); input.select(); } }">
                   <span aria-hidden="true">
                     <?php echo $icons['edit']; ?>
                   </span>
                 </button>
 
-                <form
-                  method="post"
-                  id="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
-                  style="display:none;align-items:center;gap:6px;"
-                  aria-hidden="true"
-                >
-                  <input
-                    type="hidden"
-                    name="action"
-                    value="edit_kpi_target"
-                  />
+                <form method="post" id="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
+                  style="display:none;align-items:center;gap:6px;" aria-hidden="true">
+                  <input type="hidden" name="action" value="edit_kpi_target" />
 
-                  <input
-                    type="hidden"
-                    name="kpi_key"
-                    value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
-                  />
+                  <input type="hidden" name="kpi_key" value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" />
 
-                  <input
-                    type="hidden"
-                    name="industry"
-                    value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>"
-                  />
+                  <input type="hidden" name="industry"
+                    value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
 
-                  <label
-                    class="sr-only"
-                    for="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
-                  >
+                  <label class="sr-only" for="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
                     Target score for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
                   </label>
 
-                  <input
-                    id="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
-                    type="number"
-                    name="kpi_target"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value="<?php echo number_format((float) $kpi['target'], 1); ?>"
-                    inputmode="decimal"
-                  />
+                  <input id="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" type="number"
+                    name="kpi_target" min="1" max="5" step="0.1"
+                    value="<?php echo number_format((float) $kpi['target'], 1); ?>" inputmode="decimal" />
 
-                  <button
-                    class="btn-primary"
-                    type="submit"
-                  >
+                  <button class="btn-primary" type="submit">
                     Save
                   </button>
                 </form>
@@ -918,10 +795,7 @@ foreach (
             </article>
           <?php endforeach; ?>
 
-          <a
-            class="add-kpi-button kpi-add-link"
-            href="#addKpiForm"
-          >
+          <a class="add-kpi-button kpi-add-link" href="#addKpiForm">
             <span aria-hidden="true">
               <?php echo $icons['plus']; ?>
             </span>
@@ -931,11 +805,7 @@ foreach (
         <?php endif; ?>
       </section>
 
-      <section
-        class="report-panel kpi-add-panel"
-        id="addKpiForm"
-        aria-labelledby="addKpiTitle"
-      >
+      <section class="report-panel kpi-add-panel" id="addKpiForm" aria-labelledby="addKpiTitle">
         <h2 id="addKpiTitle">
           Add a KPI to the
           <?php
@@ -964,36 +834,18 @@ foreach (
           ?>.
         </p>
 
-        <form
-          method="post"
-          class="report-form-row"
-        >
-          <input
-            type="hidden"
-            name="action"
-            value="add_kpi"
-          />
+        <form method="post" class="report-form-row">
+          <input type="hidden" name="action" value="add_kpi" />
 
-          <input
-            type="hidden"
-            name="industry"
-            value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>"
-          />
+          <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
 
           <div class="form-group">
             <label for="kpi_name">
               KPI Name
             </label>
 
-            <input
-              id="kpi_name"
-              name="kpi_name"
-              type="text"
-              required
-              maxlength="120"
-              autocomplete="off"
-              placeholder="e.g. Documentation Quality"
-            />
+            <input id="kpi_name" name="kpi_name" type="text" required maxlength="120" autocomplete="off"
+              placeholder="e.g. Documentation Quality" />
           </div>
 
           <div class="form-group">
@@ -1001,23 +853,11 @@ foreach (
               Target Score (1-5)
             </label>
 
-            <input
-              id="kpi_target"
-              name="kpi_target"
-              type="number"
-              min="1"
-              max="5"
-              step="0.1"
-              value="4.0"
-              inputmode="decimal"
-              required
-            />
+            <input id="kpi_target" name="kpi_target" type="number" min="1" max="5" step="0.1" value="4.0"
+              inputmode="decimal" required />
           </div>
 
-          <button
-            class="btn-primary"
-            type="submit"
-          >
+          <button class="btn-primary" type="submit">
             <span aria-hidden="true">
               <?php echo $icons['plus']; ?>
             </span>
@@ -1027,17 +867,12 @@ foreach (
       </section>
 
       <?php if (!empty($categoryCards)): ?>
-        <section
-          class="category-cards kpi-category-cards"
-          aria-label="KPI category summaries"
-        >
+        <section class="category-cards kpi-category-cards" aria-label="KPI category summaries">
           <?php foreach ($categoryCards as $card): ?>
             <article class="category-card">
 
               <div class="category-card-top">
-                <span
-                  class="category-badge <?php echo htmlspecialchars($card['badgeClass'], ENT_QUOTES); ?>"
-                >
+                <span class="category-badge <?php echo htmlspecialchars($card['badgeClass'], ENT_QUOTES); ?>">
                   <?php
                   echo htmlspecialchars(
                     strtoupper($card['badge']),
@@ -1046,10 +881,7 @@ foreach (
                   ?>
                 </span>
 
-                <span
-                  class="category-icon"
-                  aria-hidden="true"
-                >
+                <span class="category-icon" aria-hidden="true">
                   <?php echo $icons[$card['icon']]; ?>
                 </span>
               </div>
@@ -1084,22 +916,14 @@ foreach (
                 </strong>
               </div>
 
-              <div
-                class="category-bar"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="100"
+              <div class="category-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
                 aria-valuenow="<?php echo (int) $card['progress']; ?>"
-                aria-label="<?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?> progress"
-              >
+                aria-label="<?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?> progress">
                 <span
-                  style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"
-                ></span>
+                  style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"></span>
               </div>
 
-              <span
-                class="category-status <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>"
-              >
+              <span class="category-status <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
                 <span aria-hidden="true">
                   <?php echo $icons[$card['statusIcon']]; ?>
                 </span>
@@ -1133,4 +957,5 @@ foreach (
   <script src="script.js"></script>
   <script src="kpis.js"></script>
 </body>
+
 </html>

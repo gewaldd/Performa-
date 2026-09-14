@@ -96,6 +96,7 @@ $totalAssigned = count($employees);
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Supervisor Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -132,7 +133,8 @@ $totalAssigned = count($employees);
                     <input id="dashboardSearch" type="search" placeholder="Search your employees..." />
                 </label>
                 <div class="topbar-actions">
-                    <div class="deadline-pill"><?php echo $nearingDeadlineCount; ?> employee<?php echo $nearingDeadlineCount === 1 ? '' : 's'; ?>
+                    <div class="deadline-pill"><?php echo $nearingDeadlineCount; ?>
+                        employee<?php echo $nearingDeadlineCount === 1 ? '' : 's'; ?>
                         nearing deadline</div>
                 </div>
             </header>
@@ -151,7 +153,8 @@ $totalAssigned = count($employees);
                 </article>
                 <article class="metric-card gold">
                     <div class="metric-icon">⌛</div>
-                    <div class="metric-meta"><span>Nearing Deadline (&lt; 30 days)</span><strong><?php echo $nearingDeadlineCount; ?></strong>
+                    <div class="metric-meta"><span>Nearing Deadline (&lt; 30
+                            days)</span><strong><?php echo $nearingDeadlineCount; ?></strong>
                     </div>
                     <div class="metric-badge warning">Action Req.</div>
                 </article>
@@ -189,14 +192,17 @@ $totalAssigned = count($employees);
                                             <div class="avatar"></div>
                                             <div>
                                                 <div class="employee-name">
-                                                    <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?></div>
+                                                    <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>
+                                                </div>
                                                 <div class="employee-role">
-                                                    <?php echo htmlspecialchars($row['industry'], ENT_QUOTES); ?></div>
+                                                    <?php echo htmlspecialchars($row['industry'], ENT_QUOTES); ?>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="timeline-cell" role="cell">
                                             <div class="timeline-text">
-                                                <?php echo htmlspecialchars($row['timeline'], ENT_QUOTES); ?></div>
+                                                <?php echo htmlspecialchars($row['timeline'], ENT_QUOTES); ?>
+                                            </div>
                                             <div class="timeline-bar"><span
                                                     style="width: <?php echo (int) $row['progress']; ?>%; background: var(--primary);"></span>
                                             </div>

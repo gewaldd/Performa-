@@ -107,7 +107,7 @@ $recommendation = 'Complete the customer service refresher module';
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">Next review in 14 days</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">◌</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 

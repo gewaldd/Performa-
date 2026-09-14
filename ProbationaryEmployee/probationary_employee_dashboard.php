@@ -53,15 +53,36 @@ $acknowledgements = [
     ['month' => 'February 2026', 'status' => 'Acknowledged', 'timestamp' => '2026-03-07 10:15'],
 ];
 
+$profile = array_merge($profile, $_SESSION['probationary_profile'] ?? []);
+$acknowledgements = $_SESSION['probationary_acknowledgements'] ?? $acknowledgements;
 $profileUpdated = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
     $profile['fullName'] = trim($_POST['fullName'] ?? $profile['fullName']);
     $profile['email'] = trim($_POST['email'] ?? $profile['email']);
     $profile['phone'] = trim($_POST['phone'] ?? $profile['phone']);
-    $profile['office'] = trim($_POST['office'] ?? $profile['office']);
     $profile['emergencyContact'] = trim($_POST['emergencyContact'] ?? $profile['emergencyContact']);
+    $_SESSION['probationary_profile'] = $profile;
     $profileUpdated = true;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])) {
+    $requestedMonth = trim($_POST['acknowledgeSummary']);
+    foreach ($acknowledgements as &$acknowledgement) {
+        if ($acknowledgement['month'] === $requestedMonth && $acknowledgement['status'] === 'Pending') {
+            $acknowledgement['status'] = 'Acknowledged';
+            $acknowledgement['timestamp'] = date('Y-m-d H:i');
+            break;
+        }
+    }
+    unset($acknowledgement);
+    $_SESSION['probationary_acknowledgements'] = $acknowledgements;
+}
+
+$acknowledgedCount = count(array_filter($acknowledgements, static fn(array $ack): bool => $ack['status'] === 'Acknowledged'));
+$pendingAcknowledgementCount = count($acknowledgements) - $acknowledgedCount;
+$summaryMetrics[1]['value'] = $acknowledgedCount . '/' . count($acknowledgements);
+$summaryMetrics[1]['badge'] = $pendingAcknowledgementCount > 0 ? 'Pending' : 'Complete';
+$summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'positive';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,11 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                 </div>
 
                 <nav class="nav" aria-label="Primary">
-                    <a class="nav-item active" href="#dashboard"><span>Overview</span></a>
-                    <a class="nav-item" href="#profile"><span>Profile</span></a>
-                    <a class="nav-item" href="#performance"><span>Performance</span></a>
-                    <a class="nav-item" href="#acknowledgements"><span>Acknowledgements</span></a>
-                    <a class="nav-item" href="#notifications"><span>Notifications</span></a>
+                    <a class="nav-item active" href="#dashboard" data-section="dashboard"
+                        aria-current="page"><span>Overview</span></a>
+                    <a class="nav-item" href="#profile" data-section="profile"><span>Profile</span></a>
+                    <a class="nav-item" href="#performance" data-section="performance"><span>Performance</span></a>
+                    <a class="nav-item" href="#acknowledgements"
+                        data-section="acknowledgements"><span>Acknowledgements</span></a>
+                    <a class="nav-item" href="#notifications"
+                        data-section="notifications"><span>Notifications</span></a>
                 </nav>
             </div>
 
@@ -101,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                     <div class="profile-name"><?php echo htmlspecialchars($profile['fullName'], ENT_QUOTES); ?></div>
                     <div class="profile-role">Probationary Employee</div>
                 </div>
+                <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
             </div>
         </aside>
 
@@ -112,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                 </label>
                 <div class="topbar-actions">
                     <div class="deadline-pill">Next review in 53 days</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">🔔</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 
@@ -137,8 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                 <?php endforeach; ?>
             </section>
 
-            <section class="content-grid">
-                <div class="panel" id="profile">
+            <section class="content-grid" data-tab-group>
+                <div class="panel tab-section" id="profile" data-tab-section="profile">
                     <div class="panel-header">
                         <div>
                             <h2>Profile</h2>
@@ -154,23 +179,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                         <div class="form-grid">
                             <div class="field-group">
                                 <label for="fullName">Full Name</label>
-                                <input id="fullName" name="fullName" type="text" value="<?php echo htmlspecialchars($profile['fullName'], ENT_QUOTES); ?>" />
+                                <input id="fullName" name="fullName" type="text"
+                                    value="<?php echo htmlspecialchars($profile['fullName'], ENT_QUOTES); ?>" />
                             </div>
                             <div class="field-group">
                                 <label for="email">Email</label>
-                                <input id="email" name="email" type="email" value="<?php echo htmlspecialchars($profile['email'], ENT_QUOTES); ?>" />
+                                <input id="email" name="email" type="email"
+                                    value="<?php echo htmlspecialchars($profile['email'], ENT_QUOTES); ?>" />
                             </div>
                             <div class="field-group">
                                 <label for="phone">Phone</label>
-                                <input id="phone" name="phone" type="tel" value="<?php echo htmlspecialchars($profile['phone'], ENT_QUOTES); ?>" />
+                                <input id="phone" name="phone" type="tel"
+                                    value="<?php echo htmlspecialchars($profile['phone'], ENT_QUOTES); ?>" />
                             </div>
                             <div class="field-group">
                                 <label for="office">Office / Location</label>
-                                <input id="office" name="office" type="text" value="<?php echo htmlspecialchars($profile['office'], ENT_QUOTES); ?>" />
+                                <input id="office" type="text"
+                                    value="<?php echo htmlspecialchars($profile['office'], ENT_QUOTES); ?>" readonly />
                             </div>
                             <div class="field-group field-full">
                                 <label for="emergencyContact">Emergency Contact</label>
-                                <input id="emergencyContact" name="emergencyContact" type="text" value="<?php echo htmlspecialchars($profile['emergencyContact'], ENT_QUOTES); ?>" />
+                                <input id="emergencyContact" name="emergencyContact" type="text"
+                                    value="<?php echo htmlspecialchars($profile['emergencyContact'], ENT_QUOTES); ?>" />
                             </div>
                         </div>
 
@@ -190,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                     </form>
                 </div>
 
-                <div class="panel" id="performance">
+                <div class="panel tab-section" id="performance" data-tab-section="performance">
                     <div class="panel-header">
                         <div>
                             <h2>Performance Summary</h2>
@@ -233,8 +263,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                 </div>
             </section>
 
-            <section class="content-grid">
-                <div class="panel" id="acknowledgements">
+            <section class="content-grid" data-tab-group>
+                <div class="panel tab-section" id="acknowledgements" data-tab-section="acknowledgements">
                     <div class="panel-header">
                         <div>
                             <h2>Acknowledgements</h2>
@@ -253,14 +283,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                             <div class="ack-row">
                                 <span><?php echo htmlspecialchars($ack['month'], ENT_QUOTES); ?></span>
                                 <span class="ack-status"><?php echo htmlspecialchars($ack['status'], ENT_QUOTES); ?></span>
-                                <span class="ack-timestamp"><?php echo $ack['timestamp'] ? htmlspecialchars($ack['timestamp'], ENT_QUOTES) : 'Not yet'; ?></span>
-                                <button class="acknowledge-button<?php echo $ack['status'] !== 'Pending' ? ' acknowledged' : ''; ?>" type="button"<?php echo $ack['status'] !== 'Pending' ? ' disabled' : ''; ?>><?php echo $ack['status'] === 'Pending' ? 'Acknowledge' : 'Acknowledged'; ?></button>
+                                <span
+                                    class="ack-timestamp"><?php echo $ack['timestamp'] ? htmlspecialchars($ack['timestamp'], ENT_QUOTES) : 'Not yet'; ?></span>
+                                <?php if ($ack['status'] === 'Pending'): ?>
+                                    <form method="post">
+                                        <button class="acknowledge-button" type="submit" name="acknowledgeSummary"
+                                            value="<?php echo htmlspecialchars($ack['month'], ENT_QUOTES); ?>">Acknowledge</button>
+                                    </form>
+                                <?php else: ?>
+                                    <button class="acknowledge-button acknowledged" type="button" disabled>Acknowledged</button>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
 
-                <aside class="insight-card" id="notifications">
+                <aside class="insight-card tab-section" id="notifications" data-tab-section="notifications">
                     <div class="insight-badge">Notifications</div>
                     <h2>System alerts</h2>
                     <p>Read-only reminders and updates from the employer/system side.</p>
@@ -277,7 +315,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
                         <?php endforeach; ?>
                     </ul>
 
-                    <p class="microcopy">Only your own probationary alerts are shown here � no other employees are visible.</p>
+                    <p class="microcopy">Only your own probationary alerts are shown here - no other employees are
+                        visible.</p>
                 </aside>
             </section>
         </main>

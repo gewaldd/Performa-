@@ -32,6 +32,7 @@ $kpiTemplateLibrary = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performa | System Settings</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
   <style>
     .settings-form {
       display: grid;
@@ -150,7 +151,8 @@ $kpiTemplateLibrary = [
         <div class="panel-header">
           <div>
             <h2>KPI Template Library</h2>
-            <p>Read-only view of the pre-built industry KPI templates. Editing happens in the Employer's KPI Configuration page.</p>
+            <p>Read-only view of the pre-built industry KPI templates. Editing happens in the Employer's KPI
+              Configuration page.</p>
           </div>
         </div>
         <div class="table-wrap">

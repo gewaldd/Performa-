@@ -195,8 +195,8 @@ if (
       $requestedReportType,
       $reportTypes
     )
-      ? $requestedReportType
-      : 'monthly_summary';
+    ? $requestedReportType
+    : 'monthly_summary';
 
   $emp = null;
 
@@ -343,20 +343,20 @@ $iconCycle = [
 foreach ($reportDocs as $index => $reportDoc) {
   $generatedTimestamp =
     !empty(
+    $reportDoc['generatedAt']
+  )
+    ? strtotime(
       $reportDoc['generatedAt']
     )
-      ? strtotime(
-          $reportDoc['generatedAt']
-        )
-      : false;
+    : false;
 
   $generatedDate =
     $generatedTimestamp
-      ? date(
-          'M j, Y',
-          $generatedTimestamp
-        )
-      : '';
+    ? date(
+      'M j, Y',
+      $generatedTimestamp
+    )
+    : '';
 
   $reportId =
     (string) (
@@ -384,8 +384,8 @@ foreach ($reportDocs as $index => $reportDoc) {
 
     'meta' =>
       $generatedDate !== ''
-        ? 'Generated on ' . $generatedDate
-        : 'Generation date unavailable',
+      ? 'Generated on ' . $generatedDate
+      : 'Generation date unavailable',
 
     'iconClass' =>
       $iconCycle[
@@ -448,38 +448,22 @@ $currentQuarter =
 <head>
   <meta charset="UTF-8" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Performa | Employee Reports</title>
 
-  <meta
-    name="description"
-    content="Create and manage individual performance assessments."
-  />
+  <meta name="description" content="Create and manage individual performance assessments." />
 
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
 
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
-  <link
-    rel="stylesheet"
-    href="styles.css"
-  />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -492,19 +476,13 @@ $currentQuarter =
     );
     ?>
 
-    <main
-      class="main reports-page"
-      id="reports"
-    >
+    <main class="main reports-page" id="reports">
 
       <header class="topbar reports-topbar">
 
         <div class="reports-period">
 
-          <span
-            class="deadline-icon"
-            aria-hidden="true"
-          >
+          <span class="deadline-icon" aria-hidden="true">
             <?php
             echo $icons['calendar'];
             ?>
@@ -522,11 +500,7 @@ $currentQuarter =
 
         <div class="topbar-actions">
 
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Notifications"
-          >
+          <button class="icon-button" type="button" aria-label="Notifications">
             <span aria-hidden="true">
               <?php
               echo $icons['bell'];
@@ -534,11 +508,7 @@ $currentQuarter =
             </span>
           </button>
 
-          <a
-            class="ghost-button"
-            href="../logout.php"
-            aria-label="Sign out"
-          >
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
             Sign out
           </a>
 
@@ -566,9 +536,7 @@ $currentQuarter =
 
         <div
           class="alert alert-<?php echo $genMessageType === 'success' ? 'success' : ($genMessageType === 'error' ? 'error' : 'info'); ?> reports-message"
-          role="status"
-          aria-live="polite"
-        >
+          role="status" aria-live="polite">
           <?php
           echo htmlspecialchars(
             $genMessage,
@@ -579,10 +547,7 @@ $currentQuarter =
 
       <?php endif; ?>
 
-      <section
-        class="report-panel reports-generation-panel"
-        aria-labelledby="generateReportTitle"
-      >
+      <section class="report-panel reports-generation-panel" aria-labelledby="generateReportTitle">
 
         <div class="reports-generation-head">
 
@@ -604,43 +569,27 @@ $currentQuarter =
 
         <?php else: ?>
 
-          <form
-            method="post"
-            class="report-form-row reports-form-row reports-generation-form"
-          >
+          <form method="post" class="report-form-row reports-form-row reports-generation-form">
 
             <div class="form-group">
 
-              <label
-                class="field-label"
-                for="employee"
-              >
+              <label class="field-label" for="employee">
                 Employee
               </label>
 
               <div class="employee-select">
 
-                <span
-                  class="employee-select-icon"
-                  aria-hidden="true"
-                >
+                <span class="employee-select-icon" aria-hidden="true">
                   <?php
                   echo $icons['user'];
                   ?>
                 </span>
 
-                <select
-                  id="employee"
-                  class="perform-select employee-select-control"
-                  name="employee"
-                  required
-                >
+                <select id="employee" class="perform-select employee-select-control" name="employee" required>
 
                   <?php foreach ($employeesList as $emp): ?>
 
-                    <option
-                      value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>"
-                    >
+                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>">
                       <?php
                       echo htmlspecialchars(
                         $emp['name'],
@@ -653,10 +602,7 @@ $currentQuarter =
 
                 </select>
 
-                <span
-                  class="employee-select-chevron"
-                  aria-hidden="true"
-                >
+                <span class="employee-select-chevron" aria-hidden="true">
                   <?php
                   echo $icons['chevron-down'];
                   ?>
@@ -668,36 +614,23 @@ $currentQuarter =
 
             <div class="form-group">
 
-              <label
-                class="field-label"
-                for="report_type"
-              >
+              <label class="field-label" for="report_type">
                 Report Type
               </label>
 
               <div class="employee-select">
 
-                <span
-                  class="employee-select-icon"
-                  aria-hidden="true"
-                >
+                <span class="employee-select-icon" aria-hidden="true">
                   <?php
                   echo $icons['file'];
                   ?>
                 </span>
 
-                <select
-                  id="report_type"
-                  class="perform-select employee-select-control"
-                  name="report_type"
-                  required
-                >
+                <select id="report_type" class="perform-select employee-select-control" name="report_type" required>
 
                   <?php foreach ($reportTypes as $key => $label): ?>
 
-                    <option
-                      value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"
-                    >
+                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>">
                       <?php
                       echo htmlspecialchars(
                         $label,
@@ -710,10 +643,7 @@ $currentQuarter =
 
                 </select>
 
-                <span
-                  class="employee-select-chevron"
-                  aria-hidden="true"
-                >
+                <span class="employee-select-chevron" aria-hidden="true">
                   <?php
                   echo $icons['chevron-down'];
                   ?>
@@ -723,16 +653,9 @@ $currentQuarter =
 
             </div>
 
-            <input
-              type="hidden"
-              name="action"
-              value="generate_report"
-            />
+            <input type="hidden" name="action" value="generate_report" />
 
-            <button
-              class="btn-primary"
-              type="submit"
-            >
+            <button class="btn-primary" type="submit">
               <span aria-hidden="true">
                 <?php
                 echo $icons['plus'];
@@ -783,10 +706,7 @@ $currentQuarter =
 
               <article class="report-item">
 
-                <div
-                  class="file-icon <?php echo htmlspecialchars($report['iconClass'], ENT_QUOTES); ?>"
-                  aria-hidden="true"
-                >
+                <div class="file-icon <?php echo htmlspecialchars($report['iconClass'], ENT_QUOTES); ?>" aria-hidden="true">
                   <?php
                   echo $icons['file'];
                   ?>
@@ -816,10 +736,7 @@ $currentQuarter =
 
                 <div class="report-actions">
 
-                  <a
-                    class="btn-outline"
-                    href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1"
-                  >
+                  <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1">
                     <span aria-hidden="true">
                       <?php
                       echo $icons['download'];
@@ -828,10 +745,7 @@ $currentQuarter =
                     Download PDF
                   </a>
 
-                  <a
-                    class="btn-outline"
-                    href="report_view.php?id=<?php echo urlencode($report['id']); ?>"
-                  >
+                  <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>">
                     <span aria-hidden="true">
                       <?php
                       echo $icons['file'];
@@ -854,33 +768,23 @@ $currentQuarter =
 
       <?php if ($topContributors): ?>
 
-        <section
-          class="reports-contributors"
-          aria-labelledby="contributorsTitle"
-        >
+        <section class="reports-contributors" aria-labelledby="contributorsTitle">
 
           <div>
-            <h2
-              id="contributorsTitle"
-              class="contributors-label"
-            >
+            <h2 id="contributorsTitle" class="contributors-label">
               Top contributors this period
             </h2>
           </div>
 
           <div class="contributors-content">
 
-            <div
-              class="contributors-avatars"
-              aria-hidden="true"
-            >
+            <div class="contributors-avatars" aria-hidden="true">
 
               <?php foreach ($topContributors as $index => $name): ?>
 
-                <div
-                  class="contributors-avatar"
-                  style="background-image:url('https://ui-avatars.com/api/?name=<?php echo urlencode($name); ?>&background=2f6df6&color=fff&size=64');"
-                ></div>
+                <div class="contributors-avatar"
+                  style="background-image:url('https://ui-avatars.com/api/?name=<?php echo urlencode($name); ?>&background=2f6df6&color=fff&size=64');">
+                </div>
 
               <?php endforeach; ?>
 
@@ -933,4 +837,5 @@ $currentQuarter =
   <script src="script.js"></script>
 
 </body>
+
 </html>

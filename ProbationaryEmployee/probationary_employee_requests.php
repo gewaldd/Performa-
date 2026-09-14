@@ -68,7 +68,7 @@ $recommendation = 'Send a quick note to HR about the shift request timeline.';
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">2 requests updated this week</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">◌</button>
+                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>
 
@@ -114,15 +114,19 @@ $recommendation = 'Send a quick note to HR about the shift request timeline.';
                                     data-search="<?php echo htmlspecialchars(strtolower($request['name'] . ' ' . $request['category'] . ' ' . $request['status']), ENT_QUOTES); ?>"
                                     data-filter="<?php echo htmlspecialchars($request['statusKey'], ENT_QUOTES); ?>">
                                     <div class="employee-cell" role="cell">
-                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);"></div>
+                                        <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);">
+                                        </div>
                                         <div>
-                                            <div class="employee-name"><?php echo htmlspecialchars($request['name'], ENT_QUOTES); ?></div>
-                                            <div class="employee-role"><?php echo htmlspecialchars($request['category'], ENT_QUOTES); ?></div>
+                                            <div class="employee-name">
+                                                <?php echo htmlspecialchars($request['name'], ENT_QUOTES); ?></div>
+                                            <div class="employee-role">
+                                                <?php echo htmlspecialchars($request['category'], ENT_QUOTES); ?></div>
                                         </div>
                                     </div>
 
                                     <div class="timeline-cell" role="cell">
-                                        <div class="timeline-text"><?php echo htmlspecialchars($request['timeline'], ENT_QUOTES); ?></div>
+                                        <div class="timeline-text">
+                                            <?php echo htmlspecialchars($request['timeline'], ENT_QUOTES); ?></div>
                                     </div>
 
                                     <div class="score-cell" role="cell">
@@ -130,7 +134,8 @@ $recommendation = 'Send a quick note to HR about the shift request timeline.';
                                     </div>
 
                                     <div class="status-cell" role="cell">
-                                        <span class="status-pill <?php echo htmlspecialchars($request['statusClass'], ENT_QUOTES); ?>">
+                                        <span
+                                            class="status-pill <?php echo htmlspecialchars($request['statusClass'], ENT_QUOTES); ?>">
                                             <?php echo htmlspecialchars($request['status'], ENT_QUOTES); ?>
                                         </span>
                                     </div>
@@ -154,8 +159,9 @@ $recommendation = 'Send a quick note to HR about the shift request timeline.';
 
                     <button class="primary-button" id="assignCourseButton" type="button"
                         data-completed-label="Acknowledged"
-                        data-confirm-text="Your request review status has been updated." >Acknowledge Status</button>
-                    <p class="microcopy">Requests show you the current workflow status and what to follow up on next.</p>
+                        data-confirm-text="Your request review status has been updated.">Acknowledge Status</button>
+                    <p class="microcopy">Requests show you the current workflow status and what to follow up on next.
+                    </p>
                 </aside>
             </section>
         </main>

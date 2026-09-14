@@ -119,9 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Performa | Add Employee</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -138,27 +140,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="settings-panel">
                 <?php if ($message): ?>
-                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>">
+                        <?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
                 <?php endif; ?>
 
                 <form method="post" novalidate>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="name">Full name <span class="required-mark">*</span></label>
-                            <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES); ?>" required />
+                            <input id="name" name="name" type="text"
+                                value="<?php echo htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES); ?>" required />
                         </div>
                         <div class="form-group">
                             <label for="email">Email <span class="required-mark">*</span></label>
-                            <input id="email" name="email" type="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES); ?>" required />
+                            <input id="email" name="email" type="email"
+                                value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES); ?>" required />
                         </div>
                         <div class="form-group">
                             <label for="department">Department <span class="required-mark">*</span></label>
-                            <input id="department" name="department" type="text" value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>" placeholder="e.g. Customer Success" required />
+                            <input id="department" name="department" type="text"
+                                value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>"
+                                placeholder="e.g. Customer Success" required />
                         </div>
                         <div class="form-group">
                             <label for="role">Role <span class="required-mark">*</span></label>
                             <select id="role" class="perform-select" name="role" required>
-                                <option value="" disabled <?php echo empty($_POST['role']) ? 'selected' : ''; ?>>Select role</option>
+                                <option value="" disabled <?php echo empty($_POST['role']) ? 'selected' : ''; ?>>Select
+                                    role</option>
                                 <option value="probationary" <?php echo ($_POST['role'] ?? '') === 'probationary' ? 'selected' : ''; ?>>Probationary Employee</option>
                                 <option value="supervisor" <?php echo ($_POST['role'] ?? '') === 'supervisor' ? 'selected' : ''; ?>>Supervisor</option>
                             </select>
@@ -167,14 +175,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="industry">Industry (for KPI template)</label>
                             <select id="industry" class="perform-select" name="industry">
                                 <?php foreach (kpi_templates() as $key => $tpl): ?>
-                                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>" <?php echo ($_POST['industry'] ?? '') === $key ? 'selected' : ''; ?>><?php echo htmlspecialchars($tpl['label'], ENT_QUOTES); ?></option>
+                                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>" <?php echo ($_POST['industry'] ?? '') === $key ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($tpl['label'], ENT_QUOTES); ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <span class="field-hint">Only applies to probationary employees.</span>
                         </div>
                         <div class="form-group" id="hireDateField" aria-hidden="false">
                             <label for="hireDate">Hire Date <span class="required-mark">*</span></label>
-                            <input id="hireDate" name="hireDate" type="date" value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
+                            <input id="hireDate" name="hireDate" type="date"
+                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
                             <span class="field-hint">Only applies to probationary employees.</span>
                         </div>
                         <div class="form-group" id="supervisorField" aria-hidden="false">
@@ -182,14 +192,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <select id="supervisorId" class="perform-select" name="supervisorId">
                                 <option value="">— No supervisor assigned yet —</option>
                                 <?php foreach ($supervisors as $s): ?>
-                                    <option value="<?php echo htmlspecialchars($s['uid'], ENT_QUOTES); ?>" <?php echo ($_POST['supervisorId'] ?? '') === $s['uid'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($s['name'], ENT_QUOTES); ?></option>
+                                    <option value="<?php echo htmlspecialchars($s['uid'], ENT_QUOTES); ?>" <?php echo ($_POST['supervisorId'] ?? '') === $s['uid'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($s['name'], ENT_QUOTES); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <span class="field-hint">Only applies to probationary employees. <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
+                            <span class="field-hint">Only applies to probationary employees.
+                                <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
                         </div>
                         <div class="form-group">
                             <label for="password">Temporary password (optional)</label>
-                            <input id="password" name="password" type="text" placeholder="Auto-generated if left blank" />
+                            <input id="password" name="password" type="text"
+                                placeholder="Auto-generated if left blank" />
                         </div>
                     </div>
 

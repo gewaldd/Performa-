@@ -144,8 +144,11 @@ $profileAvatarUrl =
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body class="settings-page-body">
@@ -160,21 +163,13 @@ $profileAvatarUrl =
         <div class="topbar-spacer" aria-hidden="true"></div>
 
         <div class="topbar-actions">
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Notifications"
-          >
+          <button class="icon-button" type="button" aria-label="Notifications">
             <span aria-hidden="true">
               <?php echo $icons['bell']; ?>
             </span>
           </button>
 
-          <a
-            class="ghost-button"
-            href="../logout.php"
-            aria-label="Sign out"
-          >
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
             Sign out
           </a>
         </div>
@@ -188,11 +183,8 @@ $profileAvatarUrl =
       </header>
 
       <?php if ($message): ?>
-        <div
-          class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"
-          role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>"
-          aria-live="polite"
-        >
+        <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"
+          role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>" aria-live="polite">
           <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
         </div>
       <?php endif; ?>
@@ -208,10 +200,8 @@ $profileAvatarUrl =
 
         <div class="profile-photo-row">
           <div class="profile-photo-frame">
-            <img
-              src="<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>"
-              alt="Profile photo for <?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>"
-            />
+            <img src="<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>"
+              alt="Profile photo for <?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" />
           </div>
 
           <div class="profile-photo-info">
@@ -227,68 +217,39 @@ $profileAvatarUrl =
 
             <div class="form-group">
               <label for="fullName">Full Name</label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>"
-                autocomplete="name"
-                maxlength="120"
-                required
-              />
+              <input id="fullName" name="fullName" type="text"
+                value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" autocomplete="name" maxlength="120"
+                required />
             </div>
 
             <div class="form-group">
               <label for="email">Email Address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value="<?php echo htmlspecialchars($profileEmail, ENT_QUOTES); ?>"
-                autocomplete="email"
-                maxlength="254"
-                required
-              />
+              <input id="email" name="email" type="email"
+                value="<?php echo htmlspecialchars($profileEmail, ENT_QUOTES); ?>" autocomplete="email" maxlength="254"
+                required />
             </div>
 
             <div class="form-group locked">
               <label for="role">Role</label>
-              <input
-                id="role"
-                type="text"
-                value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>"
-                disabled
-                aria-disabled="true"
-              />
+              <input id="role" type="text" value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>"
+                disabled aria-disabled="true" />
 
-              <span
-                class="lock-icon"
-                aria-hidden="true"
-              >
+              <span class="lock-icon" aria-hidden="true">
                 <?php echo $icons['lock']; ?>
               </span>
             </div>
 
             <div class="form-group">
               <label for="department">Department</label>
-              <input
-                id="department"
-                name="department"
-                type="text"
-                value="<?php echo htmlspecialchars($profileDepartment, ENT_QUOTES); ?>"
-                autocomplete="organization"
-                maxlength="120"
-                placeholder="e.g. Human Resources"
-              />
+              <input id="department" name="department" type="text"
+                value="<?php echo htmlspecialchars($profileDepartment, ENT_QUOTES); ?>" autocomplete="organization"
+                maxlength="120" placeholder="e.g. Human Resources" />
             </div>
 
           </div>
 
           <div class="form-actions">
-            <button
-              class="btn-primary"
-              type="submit"
-            >
+            <button class="btn-primary" type="submit">
               Save Changes
             </button>
           </div>
@@ -312,37 +273,20 @@ $profileAvatarUrl =
 
             <div class="form-group">
               <label for="newPassword">New Password</label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                autocomplete="new-password"
-                minlength="8"
-                required
-                placeholder="At least 8 characters"
-              />
+              <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8"
+                required placeholder="At least 8 characters" />
             </div>
 
             <div class="form-group">
               <label for="confirmPassword">Confirm New Password</label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autocomplete="new-password"
-                minlength="8"
-                required
-                placeholder="Repeat password"
-              />
+              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
+                minlength="8" required placeholder="Repeat password" />
             </div>
 
           </div>
 
           <div class="form-actions">
-            <button
-              class="btn-primary"
-              type="submit"
-            >
+            <button class="btn-primary" type="submit">
               Update Password
             </button>
           </div>
@@ -353,10 +297,7 @@ $profileAvatarUrl =
       <section class="settings-card-row settings-account-actions" aria-label="Account actions">
 
         <article class="settings-card tone-blue settings-disabled-card">
-          <span
-            class="settings-card-icon"
-            aria-hidden="true"
-          >
+          <span class="settings-card-icon" aria-hidden="true">
             <?php echo $icons['shield']; ?>
           </span>
 
@@ -365,21 +306,13 @@ $profileAvatarUrl =
             <span>Coming soon, not yet available.</span>
           </div>
 
-          <button
-            class="settings-card-action"
-            type="button"
-            disabled
-            aria-disabled="true"
-          >
+          <button class="settings-card-action" type="button" disabled aria-disabled="true">
             Enable
           </button>
         </article>
 
         <article class="settings-card tone-red">
-          <span
-            class="settings-card-icon"
-            aria-hidden="true"
-          >
+          <span class="settings-card-icon" aria-hidden="true">
             <?php echo $icons['trash']; ?>
           </span>
 
@@ -388,21 +321,11 @@ $profileAvatarUrl =
             <span>Disables your login. An admin can reactivate it later.</span>
           </div>
 
-          <form
-            method="post"
-            class="settings-card-form"
-            data-confirm="Deactivate your account? You will be signed out immediately."
-          >
-            <input
-              type="hidden"
-              name="action"
-              value="deactivate_account"
-            />
+          <form method="post" class="settings-card-form"
+            data-confirm="Deactivate your account? You will be signed out immediately.">
+            <input type="hidden" name="action" value="deactivate_account" />
 
-            <button
-              class="settings-card-action"
-              type="submit"
-            >
+            <button class="settings-card-action" type="submit">
               Deactivate
             </button>
           </form>
@@ -422,4 +345,5 @@ $profileAvatarUrl =
   <script src="script.js"></script>
 
 </body>
+
 </html>

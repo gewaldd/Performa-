@@ -83,9 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   <title>Performa | Rate Employee</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -94,7 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     <main class="main" style="max-width:640px;margin:0 auto;">
       <div class="page-header">
         <div>
-          <a href="kpis.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to KPIs</a>
+          <a href="kpis.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to
+            KPIs</a>
           <h1>Weekly Performance Rating</h1>
           <p>Score this week's KPIs for a probationary employee.</p>
         </div>
@@ -125,15 +128,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
           <form method="post">
             <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
-            <p style="color:var(--muted);margin-bottom:12px;">Industry template: <strong style="color:var(--text);"><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
+            <p style="color:var(--muted);margin-bottom:12px;">Industry template: <strong
+                style="color:var(--text);"><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
             <div class="form-grid">
               <?php foreach ($template['kpis'] as $kpi): ?>
                 <div class="form-group">
                   <label for="score_<?php echo $kpi['key']; ?>">
-                    <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> (target <?php echo number_format($kpi['target'], 1); ?>)
+                    <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> (target
+                    <?php echo number_format($kpi['target'], 1); ?>)
                   </label>
-                  <input id="score_<?php echo $kpi['key']; ?>" name="score_<?php echo $kpi['key']; ?>" type="number"
-                    min="1" max="5" step="0.1" required />
+                  <input id="score_<?php echo $kpi['key']; ?>" name="score_<?php echo $kpi['key']; ?>" type="number" min="1"
+                    max="5" step="0.1" required />
                 </div>
               <?php endforeach; ?>
             </div>

@@ -30,6 +30,7 @@ $recentActivity = [
   <title>Performa | Admin Dashboard</title>
   <meta name="description" content="Admin overview of system-wide user accounts and activity." />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>

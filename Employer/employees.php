@@ -73,12 +73,12 @@ function display_role_label(?string $role): string
 
   return $raw !== ''
     ? ucwords(
-        str_replace(
-          '_',
-          ' ',
-          $raw
-        )
+      str_replace(
+        '_',
+        ' ',
+        $raw
       )
+    )
     : 'Employee';
 }
 
@@ -120,9 +120,9 @@ $cacheTTL = 20;
 
 $cacheAvailable =
   isset(
-    $_SESSION[$cacheKey],
-    $_SESSION[$cacheTimeKey]
-  ) &&
+  $_SESSION[$cacheKey],
+  $_SESSION[$cacheTimeKey]
+) &&
   (time() - (int) $_SESSION[$cacheTimeKey] < $cacheTTL) &&
   !isset($_GET['created']);
 
@@ -132,8 +132,8 @@ if ($cacheAvailable) {
     is_array(
       $_SESSION[$cacheKey]
     )
-      ? $_SESSION[$cacheKey]
-      : [];
+    ? $_SESSION[$cacheKey]
+    : [];
 
 } else {
 
@@ -165,10 +165,10 @@ if ($cacheAvailable) {
         urlencode(
           strtolower(
             $doc['email']
-              ?? (
-                $doc['name']
-                ?? 'user'
-              )
+            ?? (
+              $doc['name']
+              ?? 'user'
+            )
           )
         );
 
@@ -224,16 +224,16 @@ if ($cacheAvailable) {
 
         'type' =>
           $roleKey === 'probationary'
-            ? 'Probationary'
-            : 'Regular',
+          ? 'Probationary'
+          : 'Regular',
 
         'status' =>
           $status,
 
         'statusClass' =>
           $status === 'Disabled'
-            ? 'status-danger'
-            : 'status-good',
+          ? 'status-danger'
+          : 'status-good',
       ];
     }
 
@@ -278,40 +278,24 @@ sort($departments);
 
   <meta charset="UTF-8" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>
     Performa | Employees
   </title>
 
-  <meta
-    name="description"
-    content="Manage and organize your workforce directory."
-  />
+  <meta name="description" content="Manage and organize your workforce directory." />
 
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
 
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
-  <link
-    rel="stylesheet"
-    href="styles.css"
-  />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../ui-refresh.css" />
 
 </head>
 
@@ -329,40 +313,25 @@ sort($departments);
 
       <header class="topbar">
 
-        <label
-          class="search-bar"
-          for="employeeSearch"
-        >
+        <label class="search-bar" for="employeeSearch">
 
           <span class="sr-only">
             Search employees and departments
           </span>
 
-          <span
-            class="search-icon"
-            aria-hidden="true"
-          >
+          <span class="search-icon" aria-hidden="true">
             <?php
             echo $icons['search'];
             ?>
           </span>
 
-          <input
-            type="search"
-            id="employeeSearch"
-            placeholder="Search employees, departments..."
-            autocomplete="off"
-          />
+          <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
 
         </label>
 
         <div class="topbar-actions">
 
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Messages"
-          >
+          <button class="icon-button" type="button" aria-label="Messages">
             <span aria-hidden="true">
               <?php
               echo $icons['mail'];
@@ -370,11 +339,7 @@ sort($departments);
             </span>
           </button>
 
-          <a
-            class="ghost-button"
-            href="../logout.php"
-            aria-label="Sign out"
-          >
+          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
             Sign out
           </a>
 
@@ -396,10 +361,7 @@ sort($departments);
 
         </div>
 
-        <a
-          class="btn-primary"
-          href="add_employee.php"
-        >
+        <a class="btn-primary" href="add_employee.php">
           <span aria-hidden="true">
             <?php
             echo $icons['plus'];
@@ -413,11 +375,7 @@ sort($departments);
 
       <?php if (isset($_GET['created'])): ?>
 
-        <div
-          class="alert-banner alert-success"
-          role="status"
-          aria-live="polite"
-        >
+        <div class="alert-banner alert-success" role="status" aria-live="polite">
 
           Account created for
           <strong>
@@ -433,13 +391,13 @@ sort($departments);
 
             Temporary password:
             <code>
-              <?php
-              echo htmlspecialchars(
-                $_GET['temp_password'],
-                ENT_QUOTES
-              );
-              ?>
-            </code>
+                  <?php
+                  echo htmlspecialchars(
+                    $_GET['temp_password'],
+                    ENT_QUOTES
+                  );
+                  ?>
+                </code>
 
           <?php endif; ?>
 
@@ -457,10 +415,7 @@ sort($departments);
               Department:
             </span>
 
-            <select
-              id="deptFilter"
-              class="perform-select perform-select--filter"
-            >
+            <select id="deptFilter" class="perform-select perform-select--filter">
 
               <option value="">
                 All Departments
@@ -468,9 +423,7 @@ sort($departments);
 
               <?php foreach ($departments as $dept): ?>
 
-                <option
-                  value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>"
-                >
+                <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>">
                   <?php
                   echo htmlspecialchars(
                     $dept,
@@ -491,10 +444,7 @@ sort($departments);
               Status:
             </span>
 
-            <select
-              id="statusFilter"
-              class="perform-select perform-select--filter"
-            >
+            <select id="statusFilter" class="perform-select perform-select--filter">
 
               <option value="">
                 All Statuses
@@ -518,10 +468,7 @@ sort($departments);
               Type:
             </span>
 
-            <select
-              id="typeFilter"
-              class="perform-select perform-select--filter"
-            >
+            <select id="typeFilter" class="perform-select perform-select--filter">
 
               <option value="">
                 All Types
@@ -543,21 +490,12 @@ sort($departments);
 
         <div class="filter-actions">
 
-          <button
-            class="reset-button"
-            type="button"
-            id="resetFiltersBtn"
-          >
+          <button class="reset-button" type="button" id="resetFiltersBtn">
             Reset
           </button>
 
-          <button
-            class="icon-button-square"
-            type="button"
-            id="exportDirectoryBtn"
-            aria-label="Export employee directory"
-            title="Export employee directory"
-          >
+          <button class="icon-button-square" type="button" id="exportDirectoryBtn"
+            aria-label="Export employee directory" title="Export employee directory">
             <span aria-hidden="true">
               <?php
               echo $icons['download'];
@@ -569,10 +507,7 @@ sort($departments);
 
       </div>
 
-      <section
-        class="directory-panel"
-        aria-label="Employee directory"
-      >
+      <section class="directory-panel" aria-label="Employee directory">
 
         <div class="directory-head">
 
@@ -619,47 +554,39 @@ sort($departments);
 
             <?php foreach ($directory as $person): ?>
 
-              <div
-                class="directory-row"
-                data-search="<?php
-                echo htmlspecialchars(
-                  strtolower(
-                    $person['name'] .
-                    ' ' .
-                    $person['email'] .
-                    ' ' .
-                    $person['dept']
-                  ),
-                  ENT_QUOTES
-                );
-                ?>"
-                data-dept="<?php
-                echo htmlspecialchars(
-                  $person['dept'],
-                  ENT_QUOTES
-                );
-                ?>"
-                data-status="<?php
-                echo htmlspecialchars(
-                  $person['status'],
-                  ENT_QUOTES
-                );
-                ?>"
-                data-type="<?php
-                echo htmlspecialchars(
-                  $person['type'],
-                  ENT_QUOTES
-                );
-                ?>"
-              >
+              <div class="directory-row" data-search="<?php
+              echo htmlspecialchars(
+                strtolower(
+                  $person['name'] .
+                  ' ' .
+                  $person['email'] .
+                  ' ' .
+                  $person['dept']
+                ),
+                ENT_QUOTES
+              );
+              ?>" data-dept="<?php
+              echo htmlspecialchars(
+                $person['dept'],
+                ENT_QUOTES
+              );
+              ?>" data-status="<?php
+              echo htmlspecialchars(
+                $person['status'],
+                ENT_QUOTES
+              );
+              ?>" data-type="<?php
+              echo htmlspecialchars(
+                $person['type'],
+                ENT_QUOTES
+              );
+              ?>">
 
                 <div class="employee-cell">
 
-                  <div
-                    class="avatar"
+                  <div class="avatar"
                     style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');"
-                    aria-hidden="true"
-                  ></div>
+                    aria-hidden="true"></div>
 
                   <div>
 
@@ -702,14 +629,12 @@ sort($departments);
 
                 <div data-label="Department">
 
-                  <span
-                    class="dept-pill <?php
-                    echo htmlspecialchars(
-                      $person['deptClass'],
-                      ENT_QUOTES
-                    );
-                    ?>"
-                  >
+                  <span class="dept-pill <?php
+                  echo htmlspecialchars(
+                    $person['deptClass'],
+                    ENT_QUOTES
+                  );
+                  ?>">
 
                     <?php
                     echo htmlspecialchars(
@@ -735,14 +660,12 @@ sort($departments);
 
                 <div data-label="Status">
 
-                  <span
-                    class="status-pill <?php
-                    echo htmlspecialchars(
-                      $person['statusClass'],
-                      ENT_QUOTES
-                    );
-                    ?>"
-                  >
+                  <span class="status-pill <?php
+                  echo htmlspecialchars(
+                    $person['statusClass'],
+                    ENT_QUOTES
+                  );
+                  ?>">
 
                     <?php
                     echo htmlspecialchars(
@@ -757,12 +680,9 @@ sort($departments);
 
                 <div data-label="Actions">
 
-                  <a
-                    class="icon-button-square"
-                    href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>"
+                  <a class="icon-button-square" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>"
                     aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>"
-                    title="Manage employee"
-                  >
+                    title="Manage employee">
 
                     <span aria-hidden="true">
                       <?php
@@ -784,10 +704,7 @@ sort($departments);
 
         <div class="pagination-bar">
 
-          <span
-            id="paginationSummary"
-            aria-live="polite"
-          >
+          <span id="paginationSummary" aria-live="polite">
 
             Showing
             <strong>
@@ -810,25 +727,14 @@ sort($departments);
 
           <div class="page-buttons">
 
-            <button
-              class="page-btn"
-              type="button"
-              id="prevPageBtn"
-            >
+            <button class="page-btn" type="button" id="prevPageBtn">
               Previous
             </button>
 
-            <span
-              id="pageIndicator"
-              style="align-self:center;font-size:13px;color:var(--muted);"
-              aria-live="polite"
-            ></span>
+            <span id="pageIndicator" style="align-self:center;font-size:13px;color:var(--muted);"
+              aria-live="polite"></span>
 
-            <button
-              class="page-btn"
-              type="button"
-              id="nextPageBtn"
-            >
+            <button class="page-btn" type="button" id="nextPageBtn">
               Next
             </button>
 
