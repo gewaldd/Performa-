@@ -398,7 +398,35 @@ body::before {
 
 .panel-actions {
   display: flex;
+  align-items: flex-end;
+  flex-direction: column;
   gap: 8px;
+}
+
+.request-form {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(100px, 0.8fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 360px;
+}
+
+.request-input {
+  width: 132px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(27, 39, 62, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.request-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.12);
 }
 
 .ghost-button,
@@ -693,6 +721,17 @@ body::before {
   font-size: 12px;
 }
 
+.request-message {
+  margin: 0 18px 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(22, 167, 109, 0.2);
+  border-radius: 10px;
+  background: rgba(22, 167, 109, 0.08);
+  color: var(--positive);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .section-anchor {
   display: block;
   height: 1px;
@@ -958,8 +997,23 @@ body::before {
   }
 
   .topbar-actions,
-  .panel-actions {
+  .panel-actions,
+  .request-form {
     justify-content: flex-start;
+  }
+
+  .panel-actions {
+    align-items: stretch;
+  }
+
+  .request-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .request-input {
+    flex: 1 1 150px;
+    width: auto;
   }
 
   .table-toolbar,

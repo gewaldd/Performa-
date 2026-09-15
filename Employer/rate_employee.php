@@ -68,6 +68,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       'ratedBy' => $_SESSION['uid'],
       'scores' => $scores,
     ]);
+    firestore_write_document('Acknowledgements', $selectedUid . '_' . date('Y-m'), [
+      'employeeUid' => $selectedUid,
+      'month' => date('F Y'),
+      'status' => 'Pending',
+      'timestamp' => null,
+      'createdAt' => date('c'),
+    ]);
+    firestore_write_document('notifications', $selectedUid . '_' . date('Y-m') . '_summary', [
+      'employeeUid' => $selectedUid,
+      'title' => 'Performance summary ready',
+      'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
+      'type' => 'info',
+      'createdAt' => date('c'),
+    ]);
+    firestore_write_document('Feedback', $selectedUid . '_' . date('Y-m') . '_employer', [
+      'employeeUid' => $selectedUid,
+      'sender' => $_SESSION['name'] ?? 'Employer',
+      'role' => 'Employer',
+      'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
+      'status' => 'Received',
+      'createdAt' => date('c'),
+    ]);
     $message = 'Rating saved for ' . htmlspecialchars($selectedEmployee['name']) . '.';
   } catch (\Throwable $e) {
     $message = 'Failed to save rating: ' . $e->getMessage();

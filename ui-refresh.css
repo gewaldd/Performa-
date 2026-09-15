@@ -166,16 +166,57 @@ textarea:focus,
 .ghost-button,
 .acknowledge-button,
 .btn-primary,
-.btn-outline-primary {
+.btn-outline-primary,
+.btn-cancel,
+.logout-link,
+.icon-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-border);
   border-radius: 7px;
   box-shadow: none;
   background-image: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .primary-button,
-.btn-primary { background: var(--ui-blue); border-color: var(--ui-blue); }
+.btn-primary { background: var(--ui-blue); border-color: var(--ui-blue); color: #fff; }
 .primary-button:hover,
-.btn-primary:hover { background: var(--ui-blue-dark); border-color: var(--ui-blue-dark); }
+.btn-primary:hover { background: var(--ui-blue-dark); border-color: var(--ui-blue-dark); color: #fff; }
+
+.ghost-button,
+.btn-outline-primary,
+.btn-cancel,
+.logout-link,
+.icon-button,
+.acknowledge-button {
+  background: #fff;
+  color: var(--ui-text);
+}
+
+.ghost-button:hover,
+.btn-outline-primary:hover,
+.btn-cancel:hover,
+.logout-link:hover,
+.icon-button:hover,
+.acknowledge-button:hover {
+  background: var(--ui-soft);
+  border-color: #c7d2df;
+  color: var(--ui-blue-dark);
+}
+
+.logout-link {
+  margin-left: auto;
+}
 
 .insight-card {
   background: #fff;

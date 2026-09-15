@@ -77,6 +77,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_regularization') 
   }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_feedback') {
+  $feedbackMessage = trim((string) ($_POST['feedbackMessage'] ?? ''));
+  if ($feedbackMessage === '') {
+    $message = 'Please enter feedback before saving.';
+    $messageTone = 'error';
+  } else {
+    try {
+      firestore_write_document('Feedback', $uid . '_' . time(), [
+        'employeeUid' => $uid,
+        'sender' => $_SESSION['name'] ?? 'Employer',
+        'role' => 'Employer',
+        'message' => $feedbackMessage,
+        'status' => 'Received',
+        'createdAt' => date('c'),
+      ]);
+      $message = 'Feedback shared with the probationary employee.';
+      $messageTone = 'success';
+    } catch (Throwable $e) {
+      $message = 'Failed to save feedback: ' . $e->getMessage();
+      $messageTone = 'error';
+    }
+  }
+}
+
 $profile = firestore_get_document('Users', $uid);
 if (!$profile) {
   header('Location: employees.php');
@@ -213,8 +237,26 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <p>Average score: <strong><?php echo number_format($summary['score'], 1); ?></strong> / 5.0 (template target avg
               <?php echo number_format($summary['targetAvg'], 1); ?>)
               &middot; <?php echo $summary['ratingCount']; ?> rating<?php echo $summary['ratingCount'] === 1 ? '' : 's'; ?>
-              on file</p>
+              on file
+            </p>
           <?php endif; ?>
+
+          <hr class="section-divider" />
+
+          <h4 class="settings-subhead">Employer Feedback</h4>
+          <p style="color:var(--muted);">Share feedback that will appear on the employee's Feedback page.</p>
+          <form method="post">
+            <input type="hidden" name="action" value="save_feedback" />
+            <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
+            <div class="form-group">
+              <label for="feedbackMessage">Feedback</label>
+              <textarea id="feedbackMessage" name="feedbackMessage" rows="4"
+                placeholder="Write feedback for this employee..." required></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit">Share Feedback</button>
+            </div>
+          </form>
 
           <hr class="section-divider" />
 
@@ -224,13 +266,14 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
               Current decision: <strong
                 style="color:var(--text);"><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
               <?php if (!empty($profile['regularizationDecidedAt'])): ?> &middot;
-                <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?>    <?php endif; ?>
+                <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?>     <?php endif; ?>
               <?php if (!empty($profile['regularizationDecidedBy'])): ?> by
-                <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?>    <?php endif; ?>
+                <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?>     <?php endif; ?>
             </p>
             <?php if (!empty($profile['regularizationNotes'])): ?>
               <p style="color:var(--muted);">Notes:
-                <?php echo htmlspecialchars($profile['regularizationNotes'], ENT_QUOTES); ?></p>
+                <?php echo htmlspecialchars($profile['regularizationNotes'], ENT_QUOTES); ?>
+              </p>
             <?php endif; ?>
           <?php endif; ?>
 

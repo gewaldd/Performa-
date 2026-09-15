@@ -1,76 +1,157 @@
 <?php
-session_start();
+require_once __DIR__ . '/data.php';
 
-$currentUserUid = $_SESSION['uid'] ?? 'probationary-uid-123';
-$userRole = $_SESSION['role'] ?? 'probationary_employee';
-
-if ($userRole !== 'probationary_employee') {
-    http_response_code(403);
-    echo 'Access denied. This page is for probationary employees only.';
-    exit;
-}
-
+$currentUserUid = probationary_uid();
+$user = probationary_user();
 $profile = [
-    'fullName' => 'Maria Clara',
-    'email' => 'maria.clara@example.com',
-    'phone' => '+63 912 345 6789',
-    'office' => 'Branch 4B',
-    'mentor' => 'Maria Santos',
-    'emergencyContact' => 'Jose Clara',
+    'fullName' => $user['name'] ?? '',
+    'email' => $user['email'] ?? '',
+    'phone' => $user['phone'] ?? '',
+    'office' => $user['office'] ?? $user['location'] ?? '',
+    'mentor' => $user['supervisorName'] ?? '',
+    'emergencyContact' => $user['emergencyContact'] ?? '',
 ];
 
 $readonlyInfo = [
-    ['label' => 'Job Role', 'value' => 'Customer Support Specialist'],
-    ['label' => 'Hire Date', 'value' => 'Jan 12, 2025'],
-    ['label' => 'KPI Group', 'value' => 'Customer Satisfaction'],
+    ['label' => 'Job Role', 'value' => probationary_role_label($user)],
+    ['label' => 'Hire Date', 'value' => probationary_date($user['hireDate'] ?? null, 'Not recorded')],
+    ['label' => 'KPI Group', 'value' => $user['industry'] ?? $user['department'] ?? 'Not assigned'],
 ];
 
+$evaluationDocuments = probationary_owned_documents('evaluations');
+$ratingDocuments = probationary_owned_documents('Ratings');
+$latestEvaluation = $evaluationDocuments[0] ?? $ratingDocuments[0] ?? [];
+$latestScore = probationary_evaluation_score($latestEvaluation);
+$acknowledgements = probationary_owned_documents('Acknowledgements');
+$acknowledgementIds = array_fill_keys(array_map(static fn(array $ack): string => (string) ($ack['uid'] ?? ''), $acknowledgements), true);
+foreach ($ratingDocuments as $rating) {
+    $ratedAt = (string) ($rating['ratedAt'] ?? $rating['createdAt'] ?? '');
+    $ratedTimestamp = $ratedAt ? strtotime($ratedAt) : false;
+    if (!$ratedTimestamp) {
+        continue;
+    }
+    $acknowledgementId = $currentUserUid . '_' . date('Y-m', $ratedTimestamp);
+    if (isset($acknowledgementIds[$acknowledgementId])) {
+        continue;
+    }
+    $acknowledgement = [
+        'uid' => $acknowledgementId,
+        'employeeUid' => $currentUserUid,
+        'month' => date('F Y', $ratedTimestamp),
+        'status' => 'Pending',
+        'timestamp' => null,
+    ];
+    try {
+        firestore_write_document('Acknowledgements', $acknowledgementId, $acknowledgement + ['createdAt' => date('c')]);
+        $acknowledgements[] = $acknowledgement;
+        $acknowledgementIds[$acknowledgementId] = true;
+    } catch (Throwable $e) {
+    }
+
+    $feedbackId = $currentUserUid . '_' . date('Y-m', $ratedTimestamp) . '_supervisor';
+    $existingFeedbackIds = array_fill_keys(array_map(static fn(array $feedback): string => (string) ($feedback['uid'] ?? ''), probationary_owned_documents('Feedback')), true);
+    if (!isset($existingFeedbackIds[$feedbackId])) {
+        try {
+            firestore_write_document('Feedback', $feedbackId, [
+                'employeeUid' => $currentUserUid,
+                'sender' => ($rating['ratedByRole'] ?? '') === 'supervisor' ? 'Supervisor' : 'Employer',
+                'role' => ($rating['ratedByRole'] ?? '') === 'supervisor' ? 'Supervisor' : 'Employer',
+                'message' => 'Your ' . date('F Y', $ratedTimestamp) . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
+                'status' => 'Received',
+                'createdAt' => date('c', $ratedTimestamp),
+            ]);
+        } catch (Throwable $e) {
+        }
+    }
+}
 $summaryMetrics = [
-    ['label' => 'Current KPI Score', 'value' => '4.4', 'badge' => 'Stable', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
-    ['label' => 'Acknowledgements', 'value' => '1/3', 'badge' => 'Pending', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
-    ['label' => 'Onboarding Progress', 'value' => '76', 'suffix' => '%', 'badge' => 'Good', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
+    ['label' => 'Current KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Acknowledgements', 'value' => '0/' . count($acknowledgements), 'badge' => 'Pending', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
+    ['label' => 'Onboarding Progress', 'value' => (string) ($user['onboardingProgress'] ?? 0), 'suffix' => '%', 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
 ];
 
-$monthlyTrend = [
-    ['month' => 'Jan', 'score' => '4.2', 'change' => '+0.1'],
-    ['month' => 'Feb', 'score' => '4.4', 'change' => '+0.2'],
-    ['month' => 'Mar', 'score' => '4.3', 'change' => '-0.1'],
-];
+$monthlyTrend = [];
+$previousScore = null;
+foreach (array_reverse(array_merge($evaluationDocuments, $ratingDocuments)) as $evaluation) {
+    $score = probationary_evaluation_score($evaluation);
+    if ($score === null || $score <= 0)
+        continue;
+    $monthlyTrend[] = ['month' => date('M', strtotime((string) ($evaluation['createdAt'] ?? $evaluation['ratedAt'] ?? 'now'))), 'score' => number_format($score, 1), 'change' => $previousScore === null ? '-' : sprintf('%+.1f', $score - $previousScore)];
+    $previousScore = $score;
+}
 
-$feedbackItems = [
-    ['source' => 'Leadership Review', 'text' => 'Your monthly score looks positive; continue to focus on response time.', 'date' => 'Apr 28'],
-    ['source' => 'Training Coordinator', 'text' => 'Your coaching session is scheduled for next week.', 'date' => 'Apr 20'],
-];
+$feedbackItems = [];
+foreach (probationary_owned_documents('Feedback') as $feedback) {
+    $feedbackItems[] = ['source' => $feedback['sender'] ?? $feedback['ratedByName'] ?? 'Supervisor', 'text' => $feedback['message'] ?? $feedback['notes'] ?? '', 'date' => probationary_date($feedback['createdAt'] ?? null)];
+}
 
-$notifications = [
-    ['title' => 'April performance summary ready', 'detail' => 'Your April performance summary has been published and is available for acknowledgement.', 'date' => 'May 10', 'type' => 'info'],
-    ['title' => 'Reminder: probation check-in', 'detail' => 'Your next check-in is scheduled in 5 days with your supervisor.', 'date' => 'May 8', 'type' => 'reminder'],
-];
-
-$acknowledgements = [
-    ['month' => 'April 2026', 'status' => 'Pending', 'timestamp' => null],
-    ['month' => 'March 2026', 'status' => 'Acknowledged', 'timestamp' => '2026-04-05 14:23'],
-    ['month' => 'February 2026', 'status' => 'Acknowledged', 'timestamp' => '2026-03-07 10:15'],
-];
-
-$profile = array_merge($profile, $_SESSION['probationary_profile'] ?? []);
-$acknowledgements = $_SESSION['probationary_acknowledgements'] ?? $acknowledgements;
+$notifications = [];
+foreach (probationary_owned_documents('notifications') as $notification) {
+    $notifications[] = ['title' => $notification['title'] ?? 'Notification', 'detail' => $notification['detail'] ?? $notification['message'] ?? '', 'date' => probationary_date($notification['createdAt'] ?? null), 'type' => $notification['type'] ?? 'info'];
+}
+$notificationIds = array_fill_keys(array_map(static fn(array $notification): string => (string) ($notification['uid'] ?? ''), probationary_owned_documents('notifications')), true);
+foreach ($ratingDocuments as $rating) {
+    $ratedAt = (string) ($rating['ratedAt'] ?? $rating['createdAt'] ?? '');
+    $ratedTimestamp = $ratedAt ? strtotime($ratedAt) : false;
+    if (!$ratedTimestamp) {
+        continue;
+    }
+    $notificationId = $currentUserUid . '_' . date('Y-m', $ratedTimestamp) . '_summary';
+    if (isset($notificationIds[$notificationId])) {
+        continue;
+    }
+    $notification = [
+        'uid' => $notificationId,
+        'employeeUid' => $currentUserUid,
+        'title' => 'Performance summary ready',
+        'detail' => 'Your ' . date('F Y', $ratedTimestamp) . ' performance summary is available for acknowledgement.',
+        'type' => 'info',
+        'createdAt' => date('c', $ratedTimestamp),
+    ];
+    try {
+        firestore_write_document('notifications', $notificationId, $notification);
+        $notifications[] = ['title' => $notification['title'], 'detail' => $notification['detail'], 'date' => probationary_date($notification['createdAt']), 'type' => $notification['type']];
+        $notificationIds[$notificationId] = true;
+    } catch (Throwable $e) {
+    }
+}
 $profileUpdated = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
     $profile['fullName'] = trim($_POST['fullName'] ?? $profile['fullName']);
     $profile['email'] = trim($_POST['email'] ?? $profile['email']);
     $profile['phone'] = trim($_POST['phone'] ?? $profile['phone']);
     $profile['emergencyContact'] = trim($_POST['emergencyContact'] ?? $profile['emergencyContact']);
-    $_SESSION['probationary_profile'] = $profile;
-    $profileUpdated = true;
+    try {
+        firestore_write_document('Users', $currentUserUid, ['name' => $profile['fullName'], 'email' => $profile['email'], 'phone' => $profile['phone'], 'emergencyContact' => $profile['emergencyContact']]);
+        $profileUpdated = true;
+    } catch (Throwable $e) {
+        $profileUpdated = false;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])) {
     $requestedMonth = trim($_POST['acknowledgeSummary']);
+    $requestedAcknowledgementId = trim((string) ($_POST['acknowledgementId'] ?? ''));
     foreach ($acknowledgements as &$acknowledgement) {
         if ($acknowledgement['month'] === $requestedMonth && $acknowledgement['status'] === 'Pending') {
-            $acknowledgement['status'] = 'Acknowledged';
-            $acknowledgement['timestamp'] = date('Y-m-d H:i');
+            $acknowledgedAt = date('c');
+            $monthTimestamp = strtotime('1 ' . $requestedMonth) ?: time();
+            $acknowledgementId = $requestedAcknowledgementId !== ''
+                ? $requestedAcknowledgementId
+                : (string) ($acknowledgement['uid'] ?? ($currentUserUid . '_' . date('Y-m', $monthTimestamp)));
+            try {
+                $acknowledgementData = ['employeeUid' => $currentUserUid, 'month' => $requestedMonth, 'status' => 'Acknowledged', 'timestamp' => $acknowledgedAt];
+                firestore_write_document('Acknowledgements', $acknowledgementId, $acknowledgementData);
+                $savedAcknowledgement = firestore_get_document('Acknowledgements', $acknowledgementId);
+                if (($savedAcknowledgement['status'] ?? '') !== 'Acknowledged' || empty($savedAcknowledgement['timestamp'])) {
+                    throw new RuntimeException('Firestore did not confirm the acknowledgement update.');
+                }
+                $acknowledgement['status'] = 'Acknowledged';
+                $acknowledgement['timestamp'] = $acknowledgedAt;
+                $acknowledgement['uid'] = $acknowledgementId;
+            } catch (Throwable $e) {
+                error_log('Unable to save acknowledgement: ' . $e->getMessage());
+            }
             break;
         }
     }
@@ -93,6 +174,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
     <title>Performa | Probationary Employee</title>
     <meta name="description" content="Probationary employee page for KPI review and acknowledgement." />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -172,7 +254,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                     </div>
 
                     <?php if ($profileUpdated): ?>
-                        <div class="alert-banner">Profile updated locally. Firestore sync will be added later.</div>
+                        <div class="alert-banner">Profile updated.</div>
                     <?php endif; ?>
 
                     <form class="profile-form" method="post">
@@ -287,6 +369,8 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                                     class="ack-timestamp"><?php echo $ack['timestamp'] ? htmlspecialchars($ack['timestamp'], ENT_QUOTES) : 'Not yet'; ?></span>
                                 <?php if ($ack['status'] === 'Pending'): ?>
                                     <form method="post">
+                                        <input type="hidden" name="acknowledgementId"
+                                            value="<?php echo htmlspecialchars($ack['uid'] ?? '', ENT_QUOTES); ?>" />
                                         <button class="acknowledge-button" type="submit" name="acknowledgeSummary"
                                             value="<?php echo htmlspecialchars($ack['month'], ENT_QUOTES); ?>">Acknowledge</button>
                                     </form>
@@ -327,7 +411,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
         <span>Plain PHP surface view only</span>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 
 </html>

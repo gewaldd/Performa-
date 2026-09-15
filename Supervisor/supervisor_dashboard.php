@@ -122,6 +122,7 @@ $totalAssigned = count($employees);
                 <div>
                     <div class="profile-name"><?php echo htmlspecialchars($supervisorName, ENT_QUOTES); ?></div>
                     <div class="profile-role">Shift Supervisor</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>

@@ -1,21 +1,33 @@
 <?php
+require_once __DIR__ . '/data.php';
+
+$user = probationary_user();
+$feedbackDocuments = probationary_owned_documents('Feedback');
+$evaluationDocuments = probationary_owned_documents('evaluations');
 $navItems = [
     ['label' => 'Overview', 'href' => 'probationary_employee_workstream.php', 'active' => false],
     ['label' => 'My Goals', 'href' => 'probationary_employee_goals.php', 'active' => false],
     ['label' => 'Feedback', 'href' => 'probationary_employee_feedback.php', 'active' => true],
-    ['label' => 'Requests', 'href' => 'probationary_employee_requests.php', 'active' => false],
     ['label' => 'Profile', 'href' => 'probationary_employee_profile.php', 'active' => false],
 ];
 
-$feedbackEntries = [
-    ['sender' => 'Maria Santos', 'role' => 'Team Lead', 'message' => 'Your communication across the support team has improved. Keep pushing your follow-up rate up.', 'date' => 'May 12', 'status' => 'Received', 'statusClass' => 'status-good', 'rating' => 5],
-    ['sender' => 'Ken Lopez', 'role' => 'Supervisor', 'message' => 'Please update the weekly report sooner so the manager review has enough time.', 'date' => 'May 9', 'status' => 'Action Required', 'statusClass' => 'status-warning', 'rating' => 4],
-    ['sender' => 'HR Team', 'role' => 'HR', 'message' => 'Your training completion is on track. Please confirm your next mentor check-in slot.', 'date' => 'May 4', 'status' => 'Pending', 'statusClass' => 'status-ready', 'rating' => 4],
-];
+$feedbackEntries = array_map(static function (array $entry): array {
+    $status = $entry['status'] ?? 'Received';
+    $statusKey = strtolower(str_replace(' ', '-', (string) $status));
+    return [
+        'sender' => $entry['sender'] ?? $entry['ratedByName'] ?? 'Supervisor',
+        'role' => $entry['role'] ?? $entry['ratedByRole'] ?? 'Supervisor',
+        'message' => $entry['message'] ?? $entry['notes'] ?? 'Performance feedback recorded.',
+        'date' => probationary_date($entry['createdAt'] ?? $entry['ratedAt'] ?? null),
+        'status' => $status,
+        'statusClass' => $statusKey === 'received' ? 'status-good' : ($statusKey === 'action-required' ? 'status-warning' : 'status-ready'),
+        'rating' => (int) ($entry['rating'] ?? $entry['score'] ?? 0),
+    ];
+}, array_merge($feedbackDocuments, $evaluationDocuments));
 
 $insightTitle = 'Feedback Summary';
-$insightText = 'Most comments are positive, with the highest focus on timeliness and proactive updates.';
-$recommendation = 'Reply to the supervisor note and confirm your mentor check-in.';
+$insightText = $feedbackEntries ? 'Your latest feedback is available for review.' : 'No feedback has been recorded yet.';
+$recommendation = 'Review the latest feedback with your supervisor.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,8 +36,9 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Feedback</title>
-    <meta name="description" content="Employee feedback page for review history and manager comments." />
+    <meta name="description" content="Probationary employee feedback page for review history and manager comments." />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -36,7 +49,7 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
                     <div class="brand-mark">P</div>
                     <div>
                         <div class="brand-name">Performa</div>
-                        <div class="brand-subtitle">Employee Feedback</div>
+                        <div class="brand-subtitle">Probationary Employee Feedback</div>
                     </div>
                 </div>
 
@@ -53,8 +66,11 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
             <div class="sidebar-footer">
                 <div class="profile-avatar">JD</div>
                 <div>
-                    <div class="profile-name">Juan Dela Cruz</div>
-                    <div class="profile-role">Employee</div>
+                    <div class="profile-name">
+                        <?php echo htmlspecialchars($user['name'] ?? $user['email'] ?? '', ENT_QUOTES); ?>
+                    </div>
+                    <div class="profile-role">Probationary Employee</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>
@@ -119,15 +135,18 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
                                         </div>
                                         <div>
                                             <div class="employee-name">
-                                                <?php echo htmlspecialchars($entry['sender'], ENT_QUOTES); ?></div>
+                                                <?php echo htmlspecialchars($entry['sender'], ENT_QUOTES); ?>
+                                            </div>
                                             <div class="employee-role">
-                                                <?php echo htmlspecialchars($entry['role'], ENT_QUOTES); ?></div>
+                                                <?php echo htmlspecialchars($entry['role'], ENT_QUOTES); ?>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="timeline-cell" role="cell">
                                         <div class="timeline-text">
-                                            <?php echo htmlspecialchars($entry['message'], ENT_QUOTES); ?></div>
+                                            <?php echo htmlspecialchars($entry['message'], ENT_QUOTES); ?>
+                                        </div>
                                     </div>
 
                                     <div class="score-cell" role="cell">
@@ -146,7 +165,7 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
                         </div>
                     </div>
 
-                    <a class="view-more" href="probationary_employee_requests.php">View Requests →</a>
+                    <a class="view-more" href="probationary_employee_profile.php">View Profile →</a>
                 </div>
 
                 <aside class="insight-card">
@@ -170,7 +189,7 @@ $recommendation = 'Reply to the supervisor note and confirm your mentor check-in
     </div>
 
     <footer class="site-footer">
-        <span>Performa employee feedback page</span>
+        <span>Performa probationary employee feedback page</span>
         <span>PHP and CSS implementation</span>
     </footer>
 

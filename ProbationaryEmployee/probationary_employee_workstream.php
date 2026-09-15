@@ -1,60 +1,45 @@
 <?php
+require_once __DIR__ . '/data.php';
+
+$user = probationary_user();
+$workstreamDocuments = probationary_owned_documents('workstream');
+$goalDocuments = probationary_owned_documents('goals');
+$evaluationDocuments = array_merge(probationary_owned_documents('evaluations'), probationary_owned_documents('Ratings'));
+$latestEvaluation = $evaluationDocuments[0] ?? [];
+$latestScore = probationary_evaluation_score($latestEvaluation);
 $navItems = [
     ['label' => 'Overview', 'href' => '#dashboard', 'active' => true],
     ['label' => 'My Goals', 'href' => '#goals', 'active' => false],
     ['label' => 'Feedback', 'href' => '#feedback', 'active' => false],
-    ['label' => 'Requests', 'href' => '#requests', 'active' => false],
     ['label' => 'Profile', 'href' => '#profile', 'active' => false],
 ];
 
 $metrics = [
-    ['label' => 'Tasks Completed', 'value' => '18', 'badge' => '+4 this week', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
-    ['label' => 'KPI Score', 'value' => '4.6', 'suffix' => '/ 5.0', 'badge' => 'Strong', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
-    ['label' => 'Pending Feedback', 'value' => '3', 'badge' => 'Needs response', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '✎'],
+    ['label' => 'Tasks Completed', 'value' => (string) count(array_filter(array_merge($workstreamDocuments, $goalDocuments), static fn(array $item): bool => strtolower((string) ($item['status'] ?? '')) === 'completed')), 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
+    ['label' => 'KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'suffix' => '/ 5.0', 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Pending Feedback', 'value' => (string) count(array_filter(probationary_owned_documents('Feedback'), static fn(array $item): bool => strtolower((string) ($item['status'] ?? '')) === 'pending')), 'badge' => 'Needs response', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '✎'],
 ];
 
-$items = [
-    [
-        'name' => 'Weekly Sales Report',
-        'category' => 'Finance',
-        'timeline' => 'Due in 2 days',
-        'progress' => 82,
-        'score' => 4.7,
-        'stars' => 5,
-        'status' => 'On Track',
-        'statusClass' => 'status-good',
-        'statusKey' => 'on-track',
-        'progressColor' => '#2f6df6',
-    ],
-    [
-        'name' => 'Customer Follow-up Log',
-        'category' => 'Operations',
-        'timeline' => 'Review today',
-        'progress' => 64,
-        'score' => 4.2,
-        'stars' => 4,
-        'status' => 'In Progress',
-        'statusClass' => 'status-warning',
-        'statusKey' => 'in-progress',
-        'progressColor' => '#f0a11b',
-    ],
-    [
-        'name' => 'Improvement Plan',
-        'category' => 'Development',
-        'timeline' => 'Next check-in next week',
-        'progress' => 45,
-        'score' => 4.0,
-        'stars' => 4,
-        'status' => 'Assigned',
-        'statusClass' => 'status-ready',
-        'statusKey' => 'assigned',
-        'progressColor' => '#16a76d',
-    ],
-];
+$items = array_map(static function (array $item): array {
+    $status = ucwords(str_replace('-', ' ', (string) ($item['status'] ?? 'Assigned')));
+    $statusKey = strtolower(str_replace(' ', '-', $status));
+    return [
+        'name' => $item['name'] ?? $item['title'] ?? 'Workstream item',
+        'category' => $item['category'] ?? 'General',
+        'timeline' => $item['timeline'] ?? ($item['dueDate'] ?? 'No due date'),
+        'progress' => (int) ($item['progress'] ?? 0),
+        'score' => (float) ($item['score'] ?? 0),
+        'stars' => max(0, min(5, (int) round((float) ($item['score'] ?? 0)))),
+        'status' => $status,
+        'statusClass' => $statusKey === 'on-track' || $statusKey === 'completed' ? 'status-good' : ($statusKey === 'in-progress' ? 'status-warning' : 'status-ready'),
+        'statusKey' => $statusKey,
+        'progressColor' => $statusKey === 'in-progress' ? '#f0a11b' : '#2f6df6',
+    ];
+}, array_merge($workstreamDocuments, $goalDocuments));
 
 $insightTitle = 'Performance Snapshot';
-$insightText = 'You are meeting expectations. Focus on consistency, faster follow-through, and keeping feedback cycles active.';
-$recommendation = 'Complete the customer service refresher module';
+$insightText = $latestEvaluation['notes'] ?? ($items ? 'Your current workstream is shown below.' : 'No workstream items have been assigned yet.');
+$recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigned work item.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,9 +47,11 @@ $recommendation = 'Complete the customer service refresher module';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Performa | Employee Dashboard</title>
-    <meta name="description" content="Employee dashboard for tracking tasks, feedback, and performance goals." />
+    <title>Performa | Probationary Employee Dashboard</title>
+    <meta name="description"
+        content="Probationary employee dashboard for tracking tasks, feedback, and performance goals." />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -75,7 +62,7 @@ $recommendation = 'Complete the customer service refresher module';
                     <div class="brand-mark">P</div>
                     <div>
                         <div class="brand-name">Performa</div>
-                        <div class="brand-subtitle">Employee Dashboard</div>
+                        <div class="brand-subtitle">Probationary Employee</div>
                     </div>
                 </div>
 
@@ -92,8 +79,11 @@ $recommendation = 'Complete the customer service refresher module';
             <div class="sidebar-footer">
                 <div class="profile-avatar">JD</div>
                 <div>
-                    <div class="profile-name">Juan Dela Cruz</div>
-                    <div class="profile-role">Employee</div>
+                    <div class="profile-name">
+                        <?php echo htmlspecialchars($user['name'] ?? $user['email'] ?? '', ENT_QUOTES); ?>
+                    </div>
+                    <div class="profile-role">Probationary Employee</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>
@@ -112,7 +102,7 @@ $recommendation = 'Complete the customer service refresher module';
             </header>
 
             <section class="hero">
-                <p class="eyebrow">Employee Overview</p>
+                <p class="eyebrow">Probationary Employee Overview</p>
                 <h1>Track your tasks, feedback, and growth goals in one place.</h1>
             </section>
 
@@ -236,7 +226,7 @@ $recommendation = 'Complete the customer service refresher module';
     </div>
 
     <footer class="site-footer">
-        <span>Performa employee dashboard prototype</span>
+        <span>Performa probationary employee dashboard</span>
         <span>PHP-ready for Hostinger deployment</span>
     </footer>
 

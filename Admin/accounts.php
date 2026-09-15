@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/../auth.php';
+
+require_login();
+require_role('admin');
+
 $navItems = [
   ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'active' => false],
   ['label' => 'User Accounts', 'href' => 'accounts.php', 'active' => true],
@@ -6,6 +11,49 @@ $navItems = [
 ];
 
 require_once __DIR__ . '/../firebase_init.php';
+
+$accountMessage = '';
+$accountMessageType = 'info';
+$resetPasswordPopup = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $action = $_POST['action'] ?? '';
+  $uid = trim((string) ($_POST['uid'] ?? ''));
+
+  if ($uid === '' || !in_array($action, ['reset_password', 'toggle_status'], true)) {
+    $accountMessage = 'Invalid account action.';
+    $accountMessageType = 'error';
+  } else {
+    try {
+      $account = firestore_get_document('Users', $uid);
+      if (!$account) {
+        throw new RuntimeException('User account was not found.');
+      }
+
+      if ($action === 'reset_password') {
+        $temporaryPassword = bin2hex(random_bytes(6));
+        identitytoolkit_update_password($uid, $temporaryPassword);
+        $resetPasswordPopup = [
+          'name' => $account['name'] ?? $account['email'] ?? 'user',
+          'password' => $temporaryPassword,
+        ];
+        $accountMessageType = 'success';
+      } else {
+        if ($uid === ($_SESSION['uid'] ?? '')) {
+          throw new RuntimeException('You cannot deactivate your own admin account.');
+        }
+        $currentlyDisabled = strtolower((string) ($account['status'] ?? 'Active')) === 'disabled';
+        identitytoolkit_disable_user($uid, !$currentlyDisabled);
+        $account['status'] = $currentlyDisabled ? 'Active' : 'Disabled';
+        firestore_write_document('Users', $uid, $account);
+        $accountMessage = $currentlyDisabled ? 'Account reactivated.' : 'Account deactivated.';
+        $accountMessageType = 'success';
+      }
+    } catch (Throwable $e) {
+      $accountMessage = $e->getMessage();
+      $accountMessageType = 'error';
+    }
+  }
+}
 
 // Load users from Firestore; fall back to an empty list on error.
 $accounts = [];
@@ -36,6 +84,7 @@ try {
       'roleKey' => $roleKey,
       'status' => $status,
       'statusClass' => $statusClass,
+      'disabled' => strtolower($status) === 'disabled',
       'uid' => $d['uid'] ?? null,
     ];
   }
@@ -96,6 +145,63 @@ try {
       display: flex;
       gap: 8px;
     }
+
+    .password-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.42);
+    }
+
+    .password-modal[hidden] {
+      display: none;
+    }
+
+    .password-dialog {
+      width: min(100%, 420px);
+      padding: 26px;
+      border: 1px solid var(--ui-border);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    }
+
+    .password-dialog h2 {
+      margin: 0 0 8px;
+      color: var(--ui-text);
+      font-size: 1.25rem;
+    }
+
+    .password-dialog p {
+      margin: 0 0 18px;
+      color: var(--ui-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .temporary-password {
+      display: block;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      border: 1px solid #cfe0f5;
+      border-radius: 9px;
+      background: #f2f7fd;
+      color: var(--ui-blue-dark);
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-align: center;
+      user-select: all;
+    }
+
+    .password-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
   </style>
 </head>
 
@@ -135,6 +241,12 @@ try {
         <p class="eyebrow">User Accounts</p>
         <h1>Create and manage accounts for every role in the system.</h1>
       </section>
+
+      <?php if ($accountMessage && $resetPasswordPopup === null): ?>
+        <div class="alert alert-<?php echo htmlspecialchars($accountMessageType, ENT_QUOTES); ?>" role="status">
+          <?php echo htmlspecialchars($accountMessage, ENT_QUOTES); ?>
+        </div>
+      <?php endif; ?>
 
       <section class="panel" style="padding-top:18px;">
         <div class="panel-header">
@@ -176,8 +288,19 @@ try {
                   class="status-pill <?php echo htmlspecialchars($account['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($account['status'], ENT_QUOTES); ?></span>
               </div>
               <div class="row-actions">
-                <button class="ghost-button" type="button">Reset Password</button>
-                <button class="ghost-button" type="button">Deactivate</button>
+                <?php if (!empty($account['uid'])): ?>
+                  <form method="post">
+                    <input type="hidden" name="action" value="reset_password" />
+                    <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />
+                    <button class="ghost-button" type="submit">Reset Password</button>
+                  </form>
+                  <form method="post">
+                    <input type="hidden" name="action" value="toggle_status" />
+                    <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />
+                    <button class="ghost-button"
+                      type="submit"><?php echo $account['disabled'] ? 'Reactivate' : 'Deactivate'; ?></button>
+                  </form>
+                <?php endif; ?>
               </div>
             </div>
           <?php endforeach; ?>
@@ -204,8 +327,33 @@ try {
     <span>System-level access · Account &amp; configuration management</span>
   </footer>
 
+  <?php if ($resetPasswordPopup !== null): ?>
+    <div class="password-modal" id="passwordModal" role="presentation">
+      <section class="password-dialog" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+        <h2 id="passwordModalTitle">Password reset successful</h2>
+        <p>A temporary password has been generated for
+          <?php echo htmlspecialchars($resetPasswordPopup['name'], ENT_QUOTES); ?>.</p>
+        <span
+          class="temporary-password"><?php echo htmlspecialchars($resetPasswordPopup['password'], ENT_QUOTES); ?></span>
+        <div class="password-dialog-actions">
+          <button class="primary-button" type="button" id="closePasswordModal">Done</button>
+        </div>
+      </section>
+    </div>
+  <?php endif; ?>
+
   <script src="script.js"></script>
   <script src="accounts-script.js"></script>
+  <?php if ($resetPasswordPopup !== null): ?>
+    <script>
+      const passwordModal = document.getElementById('passwordModal');
+      const closePasswordModal = document.getElementById('closePasswordModal');
+      closePasswordModal?.addEventListener('click', () => passwordModal?.setAttribute('hidden', ''));
+      passwordModal?.addEventListener('click', (event) => {
+        if (event.target === passwordModal) passwordModal.setAttribute('hidden', '');
+      });
+    </script>
+  <?php endif; ?>
 </body>
 
 </html>

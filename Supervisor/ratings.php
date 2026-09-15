@@ -72,6 +72,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                 'ratedByRole' => 'supervisor',
                 'scores' => $scores,
             ]);
+            firestore_write_document('Acknowledgements', $selectedEmployee['uid'] . '_' . date('Y-m'), [
+                'employeeUid' => $selectedEmployee['uid'],
+                'month' => date('F Y'),
+                'status' => 'Pending',
+                'timestamp' => null,
+                'createdAt' => date('c'),
+            ]);
+            firestore_write_document('notifications', $selectedEmployee['uid'] . '_' . date('Y-m') . '_summary', [
+                'employeeUid' => $selectedEmployee['uid'],
+                'title' => 'Performance summary ready',
+                'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
+                'type' => 'info',
+                'createdAt' => date('c'),
+            ]);
+            firestore_write_document('Feedback', $selectedEmployee['uid'] . '_' . date('Y-m') . '_supervisor', [
+                'employeeUid' => $selectedEmployee['uid'],
+                'sender' => $supervisorName,
+                'role' => 'Supervisor',
+                'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
+                'status' => 'Received',
+                'createdAt' => date('c'),
+            ]);
             $message = 'Rating submitted successfully and saved to the database.';
         } catch (\Throwable $e) {
             $message = 'Failed to save rating: ' . $e->getMessage();
@@ -160,6 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                 <div>
                     <div class="profile-name"><?php echo htmlspecialchars($supervisorName, ENT_QUOTES); ?></div>
                     <div class="profile-role">Shift Supervisor</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>
@@ -252,6 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         </main>
     </div>
     <script src="script.js"></script>
+    <script type="module" src="ratings-script.js"></script>
 </body>
 
 </html>

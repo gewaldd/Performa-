@@ -17,7 +17,7 @@ function applyFilters() {
   });
 }
 
-const navItems = Array.from(document.querySelectorAll(".nav-item"));
+const navItems = Array.from(document.querySelectorAll(".nav-item[data-section]"));
 const tabSections = Array.from(document.querySelectorAll("[data-tab-section]"));
 const tabGroups = Array.from(document.querySelectorAll("[data-tab-group]"));
 const validTabs = new Set(["dashboard", ...tabSections.map((section) => section.dataset.tabSection)]);
@@ -51,6 +51,9 @@ function setActiveSection(sectionId, updateHash = true) {
 
 navItems.forEach((item) => {
   item.addEventListener("click", (event) => {
+    if (item.dataset.external === "true") {
+      return;
+    }
     event.preventDefault();
     setActiveSection(item.dataset.section);
   });
@@ -84,30 +87,5 @@ if (assignButton && recommendationTitle) {
     assignButton.disabled = true;
   });
 }
-
-const acknowledgementButtons = Array.from(document.querySelectorAll('.acknowledge-button'));
-acknowledgementButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    if (button.disabled) {
-      return;
-    }
-
-    const row = button.closest('.ack-row');
-    if (row) {
-      const status = row.querySelector('.ack-status');
-      const timestamp = row.querySelector('.ack-timestamp');
-      if (status) {
-        status.textContent = 'Acknowledged';
-      }
-      if (timestamp) {
-        const now = new Date();
-        timestamp.textContent = now.toLocaleString();
-      }
-      button.textContent = 'Acknowledged';
-      button.disabled = true;
-      button.classList.add('acknowledged');
-    }
-  });
-});
 
 if (rows.length > 0) applyFilters();

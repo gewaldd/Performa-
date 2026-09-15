@@ -1,3 +1,20 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getFirestore, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD44yfH2zeaGMh8icQol4XamDJGQ_h0XBE",
+  authDomain: "performa-36cc9.firebaseapp.com",
+  projectId: "performa-36cc9",
+  storageBucket: "performa-36cc9.firebasestorage.app",
+  messagingSenderId: "349595710839",
+  appId: "1:349595710839:web:6839edb20b31fd760a9d72",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 // ── Star rating interaction ────────────────────────────────────────
 const starInputs = Array.from(document.querySelectorAll(".star-input"));
 
@@ -21,7 +38,8 @@ const ratingForm = document.getElementById("ratingForm");
 const saveConfirmation = document.getElementById("saveConfirmation");
 const submitRatingBtn = document.getElementById("submitRatingBtn");
 
-ratingForm.addEventListener("submit", (event) => {
+if (ratingForm) {
+ratingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const employeeId = document.getElementById("employeeSelect").value;
@@ -43,35 +61,25 @@ ratingForm.addEventListener("submit", (event) => {
   submitRatingBtn.disabled = true;
   submitRatingBtn.textContent = "Submitting...";
 
-  // ── TODO(firebase): replace this block with a real Firestore write ──
-  //
-  // import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-  //
-  // addDoc(collection(db, "evaluations"), {
-  //   employeeId,
-  //   weekEnding,
-  //   notes,
-  //   kpiScores,
-  //   ratedBy: auth.currentUser.uid,
-  //   ratedByRole: "supervisor",
-  //   createdAt: serverTimestamp(),
-  // })
-  //   .then(() => {
-  //     saveConfirmation.classList.add("visible");
-  //     ratingForm.reset();
-  //     submitRatingBtn.disabled = false;
-  //     submitRatingBtn.textContent = "Submit Rating";
-  //   })
-  //   .catch((error) => {
-  //     alert("Something went wrong saving this rating. Please try again.");
-  //     submitRatingBtn.disabled = false;
-  //     submitRatingBtn.textContent = "Submit Rating";
-  //   });
-
-  // ── Temporary stand-in so the UI is demoable before Firebase is wired ──
-  setTimeout(() => {
+  try {
+    await addDoc(collection(db, "evaluations"), {
+      employeeId,
+      weekEnding,
+      notes,
+      kpiScores,
+      ratedBy: auth.currentUser?.uid || document.body.dataset.uid || null,
+      ratedByRole: "supervisor",
+      createdAt: serverTimestamp(),
+    });
     saveConfirmation.classList.add("visible");
+    ratingForm.reset();
     submitRatingBtn.disabled = false;
     submitRatingBtn.textContent = "Submit Rating";
-  }, 500);
+  } catch (error) {
+    console.error("Failed to save evaluation", error);
+    alert("Something went wrong saving this rating. Please try again.");
+    submitRatingBtn.disabled = false;
+    submitRatingBtn.textContent = "Submit Rating";
+  }
 });
+}

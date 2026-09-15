@@ -91,7 +91,10 @@ function login_user(array $user): void
 function require_login(): void
 {
     if (empty($_SESSION['uid'])) {
-        header('Location: /login.php');
+        $scriptPath = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        $appPath = dirname(dirname($scriptPath));
+        $appPath = $appPath === '/' ? '' : rtrim($appPath, '/');
+        header('Location: ' . $appPath . '/login.php');
         exit;
     }
 }

@@ -1,60 +1,46 @@
 <?php
+require_once __DIR__ . '/data.php';
+
+$user = probationary_user();
+$goalDocuments = probationary_owned_documents('goals');
+$evaluationDocuments = array_merge(probationary_owned_documents('evaluations'), probationary_owned_documents('Ratings'));
 $navItems = [
     ['label' => 'Overview', 'href' => 'probationary_employee_workstream.php', 'active' => false],
     ['label' => 'My Goals', 'href' => 'probationary_employee_goals.php', 'active' => true],
     ['label' => 'Feedback', 'href' => 'probationary_employee_feedback.php', 'active' => false],
-    ['label' => 'Requests', 'href' => 'probationary_employee_requests.php', 'active' => false],
     ['label' => 'Profile', 'href' => 'probationary_employee_profile.php', 'active' => false],
 ];
 
+$goalProgress = $goalDocuments ? array_sum(array_map(static fn(array $goal): float => (float) ($goal['progress'] ?? 0), $goalDocuments)) / count($goalDocuments) : 0;
+$openGoals = count(array_filter($goalDocuments, static fn(array $goal): bool => strtolower((string) ($goal['status'] ?? '')) !== 'completed'));
+$latestEvaluation = $evaluationDocuments[0] ?? [];
+$latestScore = probationary_evaluation_score($latestEvaluation);
 $metrics = [
-    ['label' => 'Goal Completion', 'value' => '76', 'suffix' => '%', 'badge' => 'On track', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '↗'],
-    ['label' => 'Tasks Open', 'value' => '9', 'badge' => '4 overdue', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⚠'],
-    ['label' => 'KPI Score', 'value' => '4.5', 'suffix' => '/ 5.0', 'badge' => 'Strong', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Goal Completion', 'value' => (string) round($goalProgress), 'suffix' => '%', 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '↗'],
+    ['label' => 'Tasks Open', 'value' => (string) $openGoals, 'badge' => 'Open', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⚠'],
+    ['label' => 'KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'suffix' => '/ 5.0', 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
 ];
 
-$goals = [
-    [
-        'name' => 'Finish quarterly review presentation',
-        'category' => 'Reporting',
-        'timeline' => 'Due in 3 days',
-        'progress' => 88,
-        'score' => 4.2,
-        'stars' => 4,
-        'status' => 'On Track',
-        'statusClass' => 'status-good',
-        'statusKey' => 'on-track',
-        'progressColor' => '#16a76d',
-    ],
-    [
-        'name' => 'Submit customer feedback audit',
-        'category' => 'Quality',
-        'timeline' => 'Due tomorrow',
-        'progress' => 52,
-        'score' => 3.8,
-        'stars' => 4,
-        'status' => 'Needs Focus',
-        'statusClass' => 'status-warning',
-        'statusKey' => 'needs-focus',
-        'progressColor' => '#f0a11b',
-    ],
-    [
-        'name' => 'Complete new onboarding module',
-        'category' => 'Training',
-        'timeline' => 'Due next week',
-        'progress' => 64,
-        'score' => 4.1,
-        'stars' => 4,
-        'status' => 'In Progress',
-        'statusClass' => 'status-ready',
-        'statusKey' => 'in-progress',
-        'progressColor' => '#2f6df6',
-    ],
-];
+$goals = array_map(static function (array $goal): array {
+    $status = ucwords(str_replace('-', ' ', (string) ($goal['status'] ?? 'In Progress')));
+    $statusKey = strtolower(str_replace(' ', '-', $status));
+    return [
+        'name' => $goal['name'] ?? $goal['title'] ?? 'Untitled goal',
+        'category' => $goal['category'] ?? 'General',
+        'timeline' => $goal['timeline'] ?? (!empty($goal['dueDate']) ? 'Due ' . probationary_date($goal['dueDate']) : 'No due date'),
+        'progress' => (int) ($goal['progress'] ?? 0),
+        'score' => (float) ($goal['score'] ?? 0),
+        'stars' => max(0, min(5, (int) round((float) ($goal['score'] ?? 0)))),
+        'status' => $status,
+        'statusClass' => $statusKey === 'on-track' || $statusKey === 'completed' ? 'status-good' : ($statusKey === 'needs-focus' ? 'status-warning' : 'status-ready'),
+        'statusKey' => $statusKey,
+        'progressColor' => $statusKey === 'needs-focus' ? '#f0a11b' : '#16a76d',
+    ];
+}, $goalDocuments);
 
 $insightTitle = 'Goal Focus';
-$insightText = 'Prioritize the presentation and customer audit first, then close the onboarding module with coach support.';
-$recommendation = 'Schedule a quick alignment with your supervisor before Friday.';
+$insightText = $goalDocuments ? 'Your current goals and progress are shown below.' : 'No goals have been assigned yet.';
+$recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals with your supervisor.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,8 +49,10 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | My Goals</title>
-    <meta name="description" content="Employee goals page for tracking task progress and goal completion." />
+    <meta name="description"
+        content="Probationary employee goals page for tracking task progress and goal completion." />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -75,7 +63,7 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
                     <div class="brand-mark">P</div>
                     <div>
                         <div class="brand-name">Performa</div>
-                        <div class="brand-subtitle">Employee Goals</div>
+                        <div class="brand-subtitle">Probationary Employee Goals</div>
                     </div>
                 </div>
 
@@ -92,8 +80,11 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
             <div class="sidebar-footer">
                 <div class="profile-avatar">JD</div>
                 <div>
-                    <div class="profile-name">Juan Dela Cruz</div>
-                    <div class="profile-role">Employee</div>
+                    <div class="profile-name">
+                        <?php echo htmlspecialchars($user['name'] ?? $user['email'] ?? '', ENT_QUOTES); ?>
+                    </div>
+                    <div class="profile-role">Probationary Employee</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>
@@ -173,15 +164,18 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
                                         </div>
                                         <div>
                                             <div class="employee-name">
-                                                <?php echo htmlspecialchars($goal['name'], ENT_QUOTES); ?></div>
+                                                <?php echo htmlspecialchars($goal['name'], ENT_QUOTES); ?>
+                                            </div>
                                             <div class="employee-role">
-                                                <?php echo htmlspecialchars($goal['category'], ENT_QUOTES); ?></div>
+                                                <?php echo htmlspecialchars($goal['category'], ENT_QUOTES); ?>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="timeline-cell" role="cell">
                                         <div class="timeline-text">
-                                            <?php echo htmlspecialchars($goal['timeline'], ENT_QUOTES); ?></div>
+                                            <?php echo htmlspecialchars($goal['timeline'], ENT_QUOTES); ?>
+                                        </div>
                                         <div class="timeline-bar">
                                             <span
                                                 style="width: <?php echo (int) $goal['progress']; ?>%; background: <?php echo htmlspecialchars($goal['progressColor'], ENT_QUOTES); ?>;"></span>
@@ -231,7 +225,7 @@ $recommendation = 'Schedule a quick alignment with your supervisor before Friday
     </div>
 
     <footer class="site-footer">
-        <span>Performa employee goals page</span>
+        <span>Performa probationary employee goals page</span>
         <span>PHP and CSS implementation</span>
     </footer>
 

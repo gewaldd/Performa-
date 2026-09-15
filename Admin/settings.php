@@ -1,28 +1,47 @@
 <?php
+require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../firebase_init.php';
+
+require_login();
+require_role('admin');
+
 $navItems = [
   ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'active' => false],
   ['label' => 'User Accounts', 'href' => 'accounts.php', 'active' => false],
   ['label' => 'System Settings', 'href' => 'settings.php', 'active' => true],
 ];
 
-// TODO(firebase): replace with a single `systemSettings` doc in Firestore.
 $deadlineSettings = [
   'probationPeriodDays' => 180,
   'alertAt1' => 150,
   'alertAt2' => 165,
   'alertAt3' => 178,
 ];
+try {
+  $storedDeadlineSettings = firestore_get_document('systemSettings', 'deadlineTracker');
+  if (is_array($storedDeadlineSettings)) {
+    $deadlineSettings = array_merge($deadlineSettings, $storedDeadlineSettings);
+  }
+} catch (Throwable $e) {
+  // Keep the documented defaults when Firestore is unavailable.
+}
 
-// TODO(firebase): replace with the `kpiTemplates` collection (read-only
-// list here — actual editing of templates stays in the Employer's
-// KPI Configuration page; Admin only sees which templates exist).
 $kpiTemplateLibrary = [
-  ['industry' => 'Retail', 'kpiCount' => 5],
-  ['industry' => 'BPO', 'kpiCount' => 6],
-  ['industry' => 'Food Service', 'kpiCount' => 4],
-  ['industry' => 'Logistics', 'kpiCount' => 5],
-  ['industry' => 'Construction', 'kpiCount' => 5],
 ];
+try {
+  foreach (firestore_list_documents('kpiTemplates') as $template) {
+    $kpis = $template['kpis'] ?? [];
+    $kpiTemplateLibrary[] = [
+      'industry' => $template['label'] ?? $template['industry'] ?? 'Unnamed',
+      'kpiCount' => is_array($kpis) ? count($kpis) : (int) ($template['kpiCount'] ?? 0),
+    ];
+  }
+} catch (Throwable $e) {
+  // Leave the library empty when Firestore is unavailable.
+}
+if (!$kpiTemplateLibrary) {
+  $kpiTemplateLibrary = [['industry' => 'No templates found', 'kpiCount' => 0]];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -176,7 +195,7 @@ $kpiTemplateLibrary = [
   </footer>
 
   <script src="script.js"></script>
-  <script src="settings-script.js"></script>
+  <script type="module" src="settings-script.js"></script>
 </body>
 
 </html>

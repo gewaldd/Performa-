@@ -37,7 +37,8 @@ function employer_render_shell(string $active): void
       </div>
       <nav class="nav" aria-label="Primary">
         <?php foreach ($items as $item): ?>
-          <a class="nav-item<?php echo $item['key'] === $active ? ' active' : ''; ?>" href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>"<?php echo $item['key'] === $active ? ' aria-current="page"' : ''; ?>>
+          <a class="nav-item<?php echo $item['key'] === $active ? ' active' : ''; ?>"
+            href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>" <?php echo $item['key'] === $active ? ' aria-current="page"' : ''; ?>>
             <span class="nav-icon"><?php echo employer_layout_icon($item['icon']); ?></span>
             <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
           </a>
@@ -45,7 +46,9 @@ function employer_render_shell(string $active): void
       </nav>
     </div>
     <div class="sidebar-footer">
-      <div class="profile-avatar" style="background-image: url('<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>');" aria-hidden="true"></div>
+      <div class="profile-avatar"
+        style="background-image: url('<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>');"
+        aria-hidden="true"></div>
       <div>
         <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
         <div class="profile-role"><?php echo htmlspecialchars($profileRole, ENT_QUOTES); ?></div>

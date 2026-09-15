@@ -1,25 +1,54 @@
 <?php
+require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../firebase_init.php';
+
+require_login();
+require_role('admin');
+
 $navItems = [
   ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'active' => true],
   ['label' => 'User Accounts', 'href' => 'accounts.php', 'active' => false],
   ['label' => 'System Settings', 'href' => 'settings.php', 'active' => false],
 ];
 
-// TODO(firebase): replace with counts from a Firestore query on the Users collection.
+$users = [];
+$auditLog = [];
+try {
+  $users = firestore_list_documents('Users');
+  $auditLog = firestore_list_documents('auditLog');
+} catch (Throwable $e) {
+  $users = is_array($users) ? $users : [];
+  $auditLog = is_array($auditLog) ? $auditLog : [];
+}
+
+$roleCounts = ['employer' => 0, 'supervisor' => 0, 'probationary' => 0];
+foreach ($users as $user) {
+  $role = strtolower((string) ($user['role'] ?? ''));
+  if (strpos($role, 'probation') !== false) {
+    $roleCounts['probationary']++;
+  } elseif (strpos($role, 'employ') !== false) {
+    $roleCounts['employer']++;
+  } elseif (strpos($role, 'supervis') !== false) {
+    $roleCounts['supervisor']++;
+  }
+}
+
 $metrics = [
-  ['label' => 'Total Employer Accounts', 'value' => '1', 'badge' => 'Active', 'tone' => 'neutral', 'variant' => 'warm', 'icon' => '◔'],
-  ['label' => 'Total Supervisor Accounts', 'value' => '3', 'badge' => 'Active', 'tone' => 'neutral', 'variant' => 'gold', 'icon' => '◔'],
-  ['label' => 'Total Probationary Accounts', 'value' => '10', 'badge' => 'Active', 'tone' => 'positive', 'variant' => 'mint', 'icon' => '▣'],
+  ['label' => 'Total Employer Accounts', 'value' => (string) $roleCounts['employer'], 'badge' => 'Active', 'tone' => 'neutral', 'variant' => 'warm', 'icon' => '◔'],
+  ['label' => 'Total Supervisor Accounts', 'value' => (string) $roleCounts['supervisor'], 'badge' => 'Active', 'tone' => 'neutral', 'variant' => 'gold', 'icon' => '◔'],
+  ['label' => 'Total Probationary Accounts', 'value' => (string) $roleCounts['probationary'], 'badge' => 'Active', 'tone' => 'positive', 'variant' => 'mint', 'icon' => '▣'],
 ];
 
-// TODO(firebase): replace with the most recent entries from an
-// `auditLog` collection (write an entry whenever an account is
-// created/deactivated or a system setting is changed).
-$recentActivity = [
-  ['action' => 'Account created', 'detail' => 'Supervisor account for Sofia Panganiban', 'when' => '2 hours ago'],
-  ['action' => 'KPI template updated', 'detail' => 'Retail industry template edited by Employer', 'when' => '5 hours ago'],
-  ['action' => 'Account deactivated', 'detail' => 'Probationary account for a completed hire', 'when' => 'Yesterday'],
-];
+usort($auditLog, static fn(array $a, array $b): int => strcmp((string) ($b['createdAt'] ?? $b['timestamp'] ?? ''), (string) ($a['createdAt'] ?? $a['timestamp'] ?? '')));
+$recentActivity = array_map(static function (array $entry): array {
+  $when = $entry['createdAt'] ?? $entry['timestamp'] ?? $entry['when'] ?? '';
+  $time = $when ? strtotime((string) $when) : false;
+  return [
+    'action' => $entry['action'] ?? $entry['event'] ?? 'System activity',
+    'detail' => $entry['detail'] ?? $entry['description'] ?? $entry['message'] ?? '',
+    'when' => $time ? date('M j, Y g:i A', $time) : (string) $when,
+  ];
+}, array_slice($auditLog, 0, 10));
 ?>
 <!DOCTYPE html>
 <html lang="en">

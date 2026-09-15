@@ -1,30 +1,36 @@
 <?php
+require_once __DIR__ . '/data.php';
+
+$user = probationary_user();
+$evaluations = probationary_owned_documents('evaluations');
+$ratings = probationary_owned_documents('Ratings');
+$latestEvaluation = $evaluations[0] ?? $ratings[0] ?? [];
+$latestScore = probationary_evaluation_score($latestEvaluation);
 $navItems = [
     ['label' => 'Overview', 'href' => 'probationary_employee_workstream.php', 'active' => false],
     ['label' => 'My Goals', 'href' => 'probationary_employee_goals.php', 'active' => false],
     ['label' => 'Feedback', 'href' => 'probationary_employee_feedback.php', 'active' => false],
-    ['label' => 'Requests', 'href' => 'probationary_employee_requests.php', 'active' => false],
     ['label' => 'Profile', 'href' => 'probationary_employee_profile.php', 'active' => true],
 ];
 
 $profileDetails = [
-    ['label' => 'Name', 'value' => 'Juan Dela Cruz'],
-    ['label' => 'Role', 'value' => 'Employee'],
-    ['label' => 'Team', 'value' => 'Customer Success'],
-    ['label' => 'Manager', 'value' => 'Maria Santos'],
-    ['label' => 'Location', 'value' => 'Office 4B'],
-    ['label' => 'Email', 'value' => 'juan.delacruz@example.com'],
+    ['label' => 'Name', 'value' => $user['name'] ?? $user['email'] ?? ''],
+    ['label' => 'Role', 'value' => probationary_role_label($user)],
+    ['label' => 'Team', 'value' => $user['department'] ?? ''],
+    ['label' => 'Manager', 'value' => $user['supervisorName'] ?? ''],
+    ['label' => 'Location', 'value' => $user['office'] ?? $user['location'] ?? ''],
+    ['label' => 'Email', 'value' => $user['email'] ?? ''],
 ];
 
 $summary = [
-    ['label' => 'Performance Score', 'value' => '4.6', 'badge' => 'Strong', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
-    ['label' => 'Goals On Track', 'value' => '3', 'badge' => 'Out of 4', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
-    ['label' => 'Review Date', 'value' => 'Jun 18', 'badge' => '12 days left', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
+    ['label' => 'Performance Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Goals On Track', 'value' => (string) count(array_filter(probationary_owned_documents('goals'), static fn(array $goal): bool => strtolower((string) ($goal['status'] ?? '')) === 'on track')), 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
+    ['label' => 'Review Date', 'value' => probationary_date($user['reviewDate'] ?? null, 'Not scheduled'), 'badge' => 'Upcoming', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
 ];
 
 $insightTitle = 'Profile Snapshot';
-$insightText = 'Your work is consistent, and your next checkpoint is approaching. Keep communication strong with your manager.';
-$recommendation = 'Review your responsibilities and update your daily focus list.';
+$insightText = $latestEvaluation['notes'] ?? 'No performance insight has been recorded yet.';
+$recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role information current.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,8 +39,10 @@ $recommendation = 'Review your responsibilities and update your daily focus list
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Profile</title>
-    <meta name="description" content="Employee profile page for viewing personal and performance information." />
+    <meta name="description"
+        content="Probationary employee profile page for viewing personal and performance information." />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../ui-refresh.css" />
 </head>
 
 <body>
@@ -45,7 +53,7 @@ $recommendation = 'Review your responsibilities and update your daily focus list
                     <div class="brand-mark">P</div>
                     <div>
                         <div class="brand-name">Performa</div>
-                        <div class="brand-subtitle">Employee Profile</div>
+                        <div class="brand-subtitle">Probationary Employee Profile</div>
                     </div>
                 </div>
 
@@ -62,8 +70,11 @@ $recommendation = 'Review your responsibilities and update your daily focus list
             <div class="sidebar-footer">
                 <div class="profile-avatar">JD</div>
                 <div>
-                    <div class="profile-name">Juan Dela Cruz</div>
-                    <div class="profile-role">Employee</div>
+                    <div class="profile-name">
+                        <?php echo htmlspecialchars($user['name'] ?? $user['email'] ?? '', ENT_QUOTES); ?>
+                    </div>
+                    <div class="profile-role">Probationary Employee</div>
+                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
                 </div>
             </div>
         </aside>
@@ -122,7 +133,8 @@ $recommendation = 'Review your responsibilities and update your daily focus list
                                     </div>
                                     <div>
                                         <div class="employee-name">
-                                            <?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?></div>
+                                            <?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="timeline-cell">
@@ -156,7 +168,7 @@ $recommendation = 'Review your responsibilities and update your daily focus list
     </div>
 
     <footer class="site-footer">
-        <span>Performa employee profile page</span>
+        <span>Performa probationary employee profile page</span>
         <span>PHP and CSS implementation</span>
     </footer>
 

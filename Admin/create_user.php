@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../kpi_templates.php';
 
 require_login();
 require_role('admin');
@@ -11,22 +12,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $role = $_POST['role'] ?? '';
+    $industry = trim((string) ($_POST['industry'] ?? 'retail'));
     $password = trim($_POST['password'] ?? '');
 
     if (!$name || !$email || !$role) {
         $message = 'Name, email and role are required.';
+    } elseif ($role === 'probationary_employee' && !array_key_exists($industry, kpi_templates())) {
+        $message = 'Please select a valid industry for the probationary employee.';
     } else {
         if (!$password)
             $password = bin2hex(random_bytes(6));
         try {
             $uid = identitytoolkit_create_user($name, $email, $password);
-            firestore_write_document('Users', $uid, [
+            $userData = [
                 'name' => $name,
                 'email' => $email,
                 'role' => $role,
                 'createdAt' => date('c'),
                 'createdBy' => $_SESSION['uid'] ?? null,
-            ]);
+            ];
+            if ($role === 'probationary_employee') {
+                $userData['industry'] = $industry;
+            }
+            firestore_write_document('Users', $uid, $userData);
 
             $message = "User created for $name. Temporary password: $password";
             $message_type = 'success';
@@ -200,6 +208,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="password">Temporary password (optional)</label>
                             <input id="password" name="password" type="text" />
                         </div>
+                        <div class="form-row full-width" id="industryRow" hidden>
+                            <label for="industry">Industry for KPI template</label>
+                            <select id="industry" name="industry">
+                                <?php foreach (kpi_templates() as $key => $template): ?>
+                                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>"
+                                        <?php echo ($_POST['industry'] ?? 'retail') === $key ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span style="color:var(--muted);font-size:12px;">Used for the employee's KPI template.</span>
+                        </div>
                         <div class="full-width" style="margin-top:6px;">
                             <button class="primary-button" type="submit">Create account</button>
                         </div>
@@ -208,6 +228,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </main>
     </div>
+    <script>
+        const roleField = document.getElementById('role');
+        const industryRow = document.getElementById('industryRow');
+        const industryField = document.getElementById('industry');
+
+        function syncIndustryField() {
+            const isProbationary = roleField.value === 'probationary_employee';
+            industryRow.hidden = !isProbationary;
+            industryField.disabled = !isProbationary;
+        }
+
+        roleField.addEventListener('change', syncIndustryField);
+        syncIndustryField();
+    </script>
 </body>
 
 </html>
