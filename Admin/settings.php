@@ -1,9 +1,42 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../kpi_templates.php';
 
 require_login();
 require_role('admin');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  header('Content-Type: application/json; charset=utf-8');
+
+  $probationPeriodDays = filter_input(INPUT_POST, 'probationPeriodDays', FILTER_VALIDATE_INT);
+  $alertAt1 = filter_input(INPUT_POST, 'alertAt1', FILTER_VALIDATE_INT);
+  $alertAt2 = filter_input(INPUT_POST, 'alertAt2', FILTER_VALIDATE_INT);
+  $alertAt3 = filter_input(INPUT_POST, 'alertAt3', FILTER_VALIDATE_INT);
+
+  if ($probationPeriodDays === false || $alertAt1 === false || $alertAt2 === false || $alertAt3 === false
+    || $probationPeriodDays <= 0 || $alertAt1 <= 0 || $alertAt2 <= 0 || $alertAt3 <= 0
+    || $alertAt1 >= $alertAt2 || $alertAt2 >= $alertAt3 || $alertAt3 > $probationPeriodDays) {
+    http_response_code(422);
+    echo json_encode(['error' => 'Enter valid alert days in ascending order within the probation period.']);
+    exit;
+  }
+
+  try {
+    firestore_write_document('systemSettings', 'deadlineTracker', [
+      'probationPeriodDays' => $probationPeriodDays,
+      'alertAt1' => $alertAt1,
+      'alertAt2' => $alertAt2,
+      'alertAt3' => $alertAt3,
+      'updatedAt' => date('c'),
+    ]);
+    echo json_encode(['success' => true]);
+  } catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => $e->getMessage()]);
+  }
+  exit;
+}
 
 $navItems = [
   ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'active' => false],
@@ -26,8 +59,7 @@ try {
   // Keep the documented defaults when Firestore is unavailable.
 }
 
-$kpiTemplateLibrary = [
-];
+$kpiTemplateLibrary = [];
 try {
   foreach (firestore_list_documents('kpiTemplates') as $template) {
     $kpis = $template['kpis'] ?? [];
@@ -40,7 +72,22 @@ try {
   // Leave the library empty when Firestore is unavailable.
 }
 if (!$kpiTemplateLibrary) {
-  $kpiTemplateLibrary = [['industry' => 'No templates found', 'kpiCount' => 0]];
+  foreach (kpi_templates() as $template) {
+    $kpiCount = count($template['kpis']);
+    $industryKey = strtolower(str_replace(' ', '_', $template['label']));
+    try {
+      $customTemplate = firestore_get_document('CustomKpis', $industryKey);
+      if (!empty($customTemplate['kpis']) && is_array($customTemplate['kpis'])) {
+        $kpiCount += count($customTemplate['kpis']);
+      }
+    } catch (Throwable $e) {
+      // Keep the built-in KPI count when custom KPI data is unavailable.
+    }
+    $kpiTemplateLibrary[] = [
+      'industry' => $template['label'],
+      'kpiCount' => $kpiCount,
+    ];
+  }
 }
 ?>
 <!DOCTYPE html>

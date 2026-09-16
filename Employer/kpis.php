@@ -190,7 +190,16 @@ if (
       )
     );
 
-  if ($newName !== '') {
+  if ($newName === '') {
+    $kpiMessage = 'Enter a KPI name.';
+    $kpiMessageType = 'error';
+  } elseif (!array_key_exists($industryForKpi, kpi_templates())) {
+    $kpiMessage = 'The selected KPI industry is invalid.';
+    $kpiMessageType = 'error';
+  } elseif ($newTarget < 1.0 || $newTarget > 5.0) {
+    $kpiMessage = 'The target score must be between 1 and 5.';
+    $kpiMessageType = 'error';
+  } else {
     try {
       add_custom_kpi(
         $industryForKpi,
@@ -215,7 +224,7 @@ if (
       );
 
       $kpiMessage =
-        'The KPI could not be added. Please try again.';
+        'The KPI could not be added: ' . $e->getMessage();
 
       $kpiMessageType = 'error';
     }
