@@ -46,10 +46,11 @@ $ratings = probationary_owned_documents('Ratings');
 $latestEvaluation = $evaluations[0] ?? $ratings[0] ?? [];
 $latestScore = probationary_evaluation_score($latestEvaluation);
 $navItems = [
-    ['label' => 'Overview', 'href' => 'probationary_employee_workstream.php', 'active' => false],
-    ['label' => 'My Goals', 'href' => 'probationary_employee_goals.php', 'active' => false],
-    ['label' => 'Feedback', 'href' => 'probationary_employee_feedback.php', 'active' => false],
+    ['label' => 'Overview', 'href' => 'probationary_employee_dashboard.php', 'active' => false],
     ['label' => 'Profile', 'href' => 'probationary_employee_profile.php', 'active' => true],
+    ['label' => 'Performance', 'href' => 'probationary_employee_dashboard.php#performance', 'active' => false],
+    ['label' => 'Acknowledgements', 'href' => 'probationary_employee_dashboard.php#acknowledgements', 'active' => false],
+    ['label' => 'Notifications', 'href' => 'probationary_employee_dashboard.php#notifications', 'active' => false],
 ];
 
 $profileDetails = [

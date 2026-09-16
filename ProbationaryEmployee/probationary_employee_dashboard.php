@@ -117,20 +117,6 @@ foreach ($ratingDocuments as $rating) {
     } catch (Throwable $e) {
     }
 }
-$profileUpdated = false;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
-    $profile['fullName'] = trim($_POST['fullName'] ?? $profile['fullName']);
-    $profile['email'] = trim($_POST['email'] ?? $profile['email']);
-    $profile['phone'] = trim($_POST['phone'] ?? $profile['phone']);
-    $profile['address'] = trim($_POST['address'] ?? $profile['address']);
-    $profile['emergencyContact'] = trim($_POST['emergencyContact'] ?? $profile['emergencyContact']);
-    try {
-        firestore_write_document('Users', $currentUserUid, ['name' => $profile['fullName'], 'email' => $profile['email'], 'phone' => $profile['phone'], 'address' => $profile['address'], 'emergencyContact' => $profile['emergencyContact']]);
-        $profileUpdated = true;
-    } catch (Throwable $e) {
-        $profileUpdated = false;
-    }
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])) {
     $requestedMonth = trim($_POST['acknowledgeSummary']);
@@ -195,7 +181,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                 <nav class="nav" aria-label="Primary">
                     <a class="nav-item active" href="#dashboard" data-section="dashboard"
                         aria-current="page"><span>Overview</span></a>
-                    <a class="nav-item" href="#profile" data-section="profile"><span>Profile</span></a>
+                    <a class="nav-item" href="probationary_employee_profile.php"><span>Profile</span></a>
                     <a class="nav-item" href="#performance" data-section="performance"><span>Performance</span></a>
                     <a class="nav-item" href="#acknowledgements"
                         data-section="acknowledgements"><span>Acknowledgements</span></a>
@@ -253,58 +239,23 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                 <div class="panel tab-section" id="profile" data-tab-section="profile">
                     <div class="panel-header">
                         <div>
-                            <h2>Profile</h2>
-                            <p>Update your contact details. Employer-managed data is displayed as read-only.</p>
+                            <h2>Profile Overview</h2>
+                            <p>Employer-managed details for your probationary employment.</p>
                         </div>
                     </div>
 
-                    <?php if ($profileUpdated): ?>
-                        <div class="alert-banner">Profile updated.</div>
-                    <?php endif; ?>
-
-                    <form class="profile-form" method="post">
-                        <div class="form-grid">
-                            <div class="field-group">
-                                <label for="fullName">Full Name</label>
-                                <input id="fullName" name="fullName" type="text"
-                                    value="<?php echo htmlspecialchars($profile['fullName'], ENT_QUOTES); ?>" />
-                            </div>
-                            <div class="field-group">
-                                <label for="email">Email</label>
-                                <input id="email" name="email" type="email"
-                                    value="<?php echo htmlspecialchars($profile['email'], ENT_QUOTES); ?>" />
-                            </div>
-                            <div class="field-group">
-                                <label for="phone">Phone</label>
-                                <input id="phone" name="phone" type="tel"
-                                    value="<?php echo htmlspecialchars($profile['phone'], ENT_QUOTES); ?>" />
-                            </div>
-                            <div class="field-group">
-                                <label for="address">Address</label>
-                                <input id="address" name="address" type="text"
-                                    value="<?php echo htmlspecialchars($profile['address'], ENT_QUOTES); ?>" />
-                            </div>
-                            <div class="field-group field-full">
-                                <label for="emergencyContact">Emergency Contact</label>
-                                <input id="emergencyContact" name="emergencyContact" type="text"
-                                    value="<?php echo htmlspecialchars($profile['emergencyContact'], ENT_QUOTES); ?>" />
-                            </div>
+                    <div class="profile-footer">
+                        <div class="readonly-panel">
+                            <h3>Employer-managed data</h3>
+                            <?php foreach ($readonlyInfo as $info): ?>
+                                <div class="readonly-row">
+                                    <span><?php echo htmlspecialchars($info['label'], ENT_QUOTES); ?></span>
+                                    <strong><?php echo htmlspecialchars($info['value'], ENT_QUOTES); ?></strong>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
 
-                        <div class="profile-footer">
-                            <div class="readonly-panel">
-                                <h3>Employer-managed data</h3>
-                                <?php foreach ($readonlyInfo as $info): ?>
-                                    <div class="readonly-row">
-                                        <span><?php echo htmlspecialchars($info['label'], ENT_QUOTES); ?></span>
-                                        <strong><?php echo htmlspecialchars($info['value'], ENT_QUOTES); ?></strong>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-
-                            <button class="primary-button" type="submit" name="saveProfile">Save changes</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="panel tab-section" id="performance" data-tab-section="performance">
