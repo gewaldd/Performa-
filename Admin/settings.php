@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../audit_log.php';
 
 require_login();
 require_role('admin');
@@ -30,6 +31,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'alertAt3' => $alertAt3,
       'updatedAt' => date('c'),
     ]);
+    record_audit_event(
+      'System settings updated',
+      sprintf('%s updated the probation deadline and alert thresholds.', $_SESSION['name'] ?? 'System Admin'),
+      [
+        'probationPeriodDays' => $probationPeriodDays,
+        'alertAt1' => $alertAt1,
+        'alertAt2' => $alertAt2,
+        'alertAt3' => $alertAt3,
+      ]
+    );
     echo json_encode(['success' => true]);
   } catch (Throwable $e) {
     http_response_code(500);

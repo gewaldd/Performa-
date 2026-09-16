@@ -134,14 +134,20 @@ $recentActivity = array_map(static function (array $entry): array {
           </div>
           <div class="table-wrap">
             <div class="table-head"><span>Action</span><span>Detail</span><span>When</span><span></span></div>
-            <?php foreach ($recentActivity as $entry): ?>
-              <div class="table-row" style="grid-template-columns: 1fr 2fr 0.7fr 0.3fr;">
-                <div class="employee-name"><?php echo htmlspecialchars($entry['action'], ENT_QUOTES); ?></div>
-                <div class="employee-role"><?php echo htmlspecialchars($entry['detail'], ENT_QUOTES); ?></div>
-                <div class="timeline-text"><?php echo htmlspecialchars($entry['when'], ENT_QUOTES); ?></div>
-                <div></div>
+            <?php if (!$recentActivity): ?>
+              <div class="table-row" style="grid-template-columns: 1fr;">
+                <div class="employee-role">No system changes have been recorded yet.</div>
               </div>
-            <?php endforeach; ?>
+            <?php else: ?>
+              <?php foreach ($recentActivity as $entry): ?>
+                <div class="table-row" style="grid-template-columns: 1fr 2fr 0.7fr 0.3fr;">
+                  <div class="employee-name"><?php echo htmlspecialchars($entry['action'], ENT_QUOTES); ?></div>
+                  <div class="employee-role"><?php echo htmlspecialchars($entry['detail'], ENT_QUOTES); ?></div>
+                  <div class="timeline-text"><?php echo htmlspecialchars($entry['when'], ENT_QUOTES); ?></div>
+                  <div></div>
+                </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
         </div>
       </section>

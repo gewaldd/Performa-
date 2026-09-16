@@ -11,6 +11,7 @@ $navItems = [
 ];
 
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../audit_log.php';
 
 $accountMessage = '';
 $accountMessageType = 'info';
@@ -36,6 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $account['probationPeriodDays'] = $probationDays;
         firestore_write_document('Users', $uid, $account);
+        record_audit_event(
+          'Probation period updated',
+          sprintf('%s changed %s\'s probation period to %d days.', $_SESSION['name'] ?? 'System Admin', $account['name'] ?? $account['email'] ?? 'an employee', $probationDays),
+          ['targetUid' => $uid, 'probationPeriodDays' => $probationDays]
+        );
         $probationDaysPopup = [
           'name' => $account['name'] ?? $account['email'] ?? 'employee',
           'days' => $probationDays,
@@ -56,6 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($action === 'reset_password') {
         $temporaryPassword = bin2hex(random_bytes(6));
         identitytoolkit_update_password($uid, $temporaryPassword);
+        record_audit_event(
+          'Password reset',
+          sprintf('%s reset the password for %s.', $_SESSION['name'] ?? 'System Admin', $account['name'] ?? $account['email'] ?? 'a user'),
+          ['targetUid' => $uid]
+        );
         $resetPasswordPopup = [
           'name' => $account['name'] ?? $account['email'] ?? 'user',
           'password' => $temporaryPassword,
@@ -69,6 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         identitytoolkit_disable_user($uid, !$currentlyDisabled);
         $account['status'] = $currentlyDisabled ? 'Active' : 'Disabled';
         firestore_write_document('Users', $uid, $account);
+        record_audit_event(
+          $currentlyDisabled ? 'Account reactivated' : 'Account deactivated',
+          sprintf('%s %s the account for %s.', $_SESSION['name'] ?? 'System Admin', $currentlyDisabled ? 'reactivated' : 'deactivated', $account['name'] ?? $account['email'] ?? 'a user'),
+          ['targetUid' => $uid, 'status' => $account['status']]
+        );
         $accountMessage = $currentlyDisabled ? 'Account reactivated.' : 'Account deactivated.';
         $accountMessageType = 'success';
       }

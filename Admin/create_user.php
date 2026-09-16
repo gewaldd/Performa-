@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../audit_log.php';
 
 require_login();
 require_role('admin');
@@ -35,6 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $userData['industry'] = $industry;
             }
             firestore_write_document('Users', $uid, $userData);
+            record_audit_event(
+                'User account created',
+                sprintf('%s created a %s account for %s.', $_SESSION['name'] ?? 'System Admin', $role, $name),
+                ['targetUid' => $uid, 'targetRole' => $role]
+            );
 
             $message = "User created for $name. Temporary password: $password";
             $message_type = 'success';
