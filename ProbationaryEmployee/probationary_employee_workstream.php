@@ -2,6 +2,7 @@
 require_once __DIR__ . '/data.php';
 
 $user = probationary_user();
+$timeline = probationary_timeline($user);
 $workstreamDocuments = probationary_owned_documents('workstream');
 $goalDocuments = probationary_owned_documents('goals');
 $evaluationDocuments = array_merge(probationary_owned_documents('evaluations'), probationary_owned_documents('Ratings'));
@@ -96,7 +97,9 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                 </label>
 
                 <div class="topbar-actions">
-                    <div class="deadline-pill">Next review in 14 days</div>
+                    <div class="deadline-pill">
+                        <?php echo $timeline['daysRemaining']; ?> days remaining
+                    </div>
                     <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>

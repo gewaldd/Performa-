@@ -21,6 +21,20 @@ function probationary_user(): array
     }
 }
 
+function probationary_timeline(array $user): array
+{
+    $periodDays = max(1, (int) ($user['probationPeriodDays'] ?? 180));
+    $hireDate = (string) ($user['hireDate'] ?? $user['createdAt'] ?? '');
+    $hireTimestamp = $hireDate ? strtotime($hireDate) : false;
+    $daysSinceHire = $hireTimestamp ? max(0, (int) floor((time() - $hireTimestamp) / 86400)) : 0;
+
+    return [
+        'periodDays' => $periodDays,
+        'daysSinceHire' => $daysSinceHire,
+        'daysRemaining' => $hireTimestamp ? max(0, $periodDays - $daysSinceHire) : $periodDays,
+    ];
+}
+
 function probationary_collection(string $collection): array
 {
     try {

@@ -3,6 +3,7 @@ require_once __DIR__ . '/data.php';
 
 $currentUserUid = probationary_uid();
 $user = probationary_user();
+$timeline = probationary_timeline($user);
 $profile = [
     'fullName' => $user['name'] ?? '',
     'email' => $user['email'] ?? '',
@@ -16,6 +17,7 @@ $readonlyInfo = [
     ['label' => 'Job Role', 'value' => probationary_role_label($user)],
     ['label' => 'Hire Date', 'value' => probationary_date($user['hireDate'] ?? null, 'Not recorded')],
     ['label' => 'KPI Group', 'value' => $user['industry'] ?? $user['department'] ?? 'Not assigned'],
+    ['label' => 'Probation Period', 'value' => $timeline['periodDays'] . ' days'],
 ];
 
 $evaluationDocuments = probationary_owned_documents('evaluations');
@@ -218,7 +220,9 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                     <input id="dashboardSearch" type="search" placeholder="Search summaries, notifications..." />
                 </label>
                 <div class="topbar-actions">
-                    <div class="deadline-pill">Next review in 53 days</div>
+                    <div class="deadline-pill">
+                        <?php echo $timeline['daysRemaining']; ?> days remaining
+                    </div>
                     <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
                 </div>
             </header>

@@ -28,6 +28,7 @@ try {
                 'email' => $doc['email'] ?? '',
                 'industry' => $doc['industry'] ?? 'retail',
                 'hireDate' => $doc['hireDate'] ?? '',
+                'createdAt' => $doc['createdAt'] ?? '',
                 'probationPeriodDays' => (int) ($doc['probationPeriodDays'] ?? 180),
             ];
         }
@@ -106,12 +107,13 @@ try {
                             $daysLeft = null;
                             $timelineText = 'No hire date on file';
                             $progress = 0;
-                            if (!empty($emp['hireDate'])) {
+                            $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
+                            $startDate = $emp['hireDate'] ?: $emp['createdAt'];
+                            if (!empty($startDate)) {
                                 try {
-                                    $hire = new DateTime($emp['hireDate']);
+                                    $hire = new DateTime($startDate);
                                     $today = new DateTime('today');
                                     $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
-                                    $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
                                     $daysLeft = max(0, $probationPeriodDays - $daysIn);
                                     $timelineText = "Day {$daysIn} · {$daysLeft} days left";
                                     $progress = min(100, (int) round(($daysIn / $probationPeriodDays) * 100));

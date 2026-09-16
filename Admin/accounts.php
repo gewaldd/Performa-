@@ -15,11 +15,12 @@ require_once __DIR__ . '/../firebase_init.php';
 $accountMessage = '';
 $accountMessageType = 'info';
 $resetPasswordPopup = null;
+$probationDaysPopup = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
   $uid = trim((string) ($_POST['uid'] ?? ''));
 
-  if ($uid === '' || !in_array($action, ['reset_password', 'toggle_status'], true)) {
+  if ($uid === '' || !in_array($action, ['reset_password', 'toggle_status', 'set_probation_days'], true)) {
     $accountMessage = 'Invalid account action.';
     $accountMessageType = 'error';
   } elseif ($action === 'set_probation_days') {
@@ -35,7 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $account['probationPeriodDays'] = $probationDays;
         firestore_write_document('Users', $uid, $account);
-        $accountMessage = 'Probation period updated.';
+        $probationDaysPopup = [
+          'name' => $account['name'] ?? $account['email'] ?? 'employee',
+          'days' => $probationDays,
+        ];
         $accountMessageType = 'success';
       } catch (Throwable $e) {
         $accountMessage = $e->getMessage();
@@ -373,6 +377,20 @@ try {
     </div>
   <?php endif; ?>
 
+  <?php if ($probationDaysPopup !== null): ?>
+    <div class="password-modal" id="probationDaysModal" role="presentation">
+      <section class="password-dialog" role="dialog" aria-modal="true" aria-labelledby="probationDaysModalTitle">
+        <h2 id="probationDaysModalTitle">Probation period updated</h2>
+        <p>The probation period for
+          <?php echo htmlspecialchars($probationDaysPopup['name'], ENT_QUOTES); ?> has been saved.</p>
+        <span class="temporary-password"><?php echo (int) $probationDaysPopup['days']; ?> days</span>
+        <div class="password-dialog-actions">
+          <button class="primary-button" type="button" id="closeProbationDaysModal">Done</button>
+        </div>
+      </section>
+    </div>
+  <?php endif; ?>
+
   <script src="script.js"></script>
   <script src="accounts-script.js"></script>
   <?php if ($resetPasswordPopup !== null): ?>
@@ -382,6 +400,16 @@ try {
       closePasswordModal?.addEventListener('click', () => passwordModal?.setAttribute('hidden', ''));
       passwordModal?.addEventListener('click', (event) => {
         if (event.target === passwordModal) passwordModal.setAttribute('hidden', '');
+      });
+    </script>
+  <?php endif; ?>
+  <?php if ($probationDaysPopup !== null): ?>
+    <script>
+      const probationDaysModal = document.getElementById('probationDaysModal');
+      const closeProbationDaysModal = document.getElementById('closeProbationDaysModal');
+      closeProbationDaysModal?.addEventListener('click', () => probationDaysModal?.setAttribute('hidden', ''));
+      probationDaysModal?.addEventListener('click', (event) => {
+        if (event.target === probationDaysModal) probationDaysModal.setAttribute('hidden', '');
       });
     </script>
   <?php endif; ?>

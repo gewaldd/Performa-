@@ -30,6 +30,7 @@ try {
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
                 'industry' => $doc['industry'] ?? 'retail',
                 'hireDate' => $doc['hireDate'] ?? '',
+                'createdAt' => $doc['createdAt'] ?? '',
                 'probationPeriodDays' => (int) ($doc['probationPeriodDays'] ?? 180),
             ];
         }
@@ -55,9 +56,10 @@ foreach ($employees as $emp) {
 
     $daysLeft = null;
     $daysIn = null;
-    if (!empty($emp['hireDate'])) {
+    $startDate = $emp['hireDate'] ?: $emp['createdAt'];
+    if (!empty($startDate)) {
         try {
-            $hire = new DateTime($emp['hireDate']);
+            $hire = new DateTime($startDate);
             $today = new DateTime('today');
             $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
             $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
