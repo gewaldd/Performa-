@@ -1146,7 +1146,7 @@ $insightScore =
                                                 ?>
                                             </span>
 
-                                            <a href="evaluate.php?uid=<?php echo urlencode($employee['uid']); ?>"
+                                            <a href="rate_employee.php?employee=<?php echo urlencode($employee['uid']); ?>"
                                                 class="eval-btn" title="Evaluate Employee"
                                                 aria-label="Evaluate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>">
                                                 <?php echo $icons['target']; ?>
