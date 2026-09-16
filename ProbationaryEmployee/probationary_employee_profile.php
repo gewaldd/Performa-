@@ -62,15 +62,6 @@ $profileDetails = [
     ['label' => 'Email', 'value' => $profile['email'] ?: ($user['email'] ?? '')],
 ];
 
-$summary = [
-    ['label' => 'Performance Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
-    ['label' => 'Goals On Track', 'value' => (string) count(array_filter(probationary_owned_documents('goals'), static fn(array $goal): bool => strtolower((string) ($goal['status'] ?? '')) === 'on track')), 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
-    ['label' => 'Review Date', 'value' => probationary_date($user['reviewDate'] ?? null, 'Not scheduled'), 'badge' => 'Upcoming', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
-];
-
-$insightTitle = 'Profile Snapshot';
-$insightText = $latestEvaluation['notes'] ?? 'No performance insight has been recorded yet.';
-$recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role information current.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -137,23 +128,8 @@ $recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role 
                 <h1>See your employee details, performance snapshot, and upcoming review plan.</h1>
             </section>
 
-            <section class="metrics" aria-label="Profile summary metrics">
-                <?php foreach ($summary as $metric): ?>
-                    <article class="metric-card <?php echo htmlspecialchars($metric['variant'], ENT_QUOTES); ?>">
-                        <div class="metric-icon"><?php echo htmlspecialchars($metric['icon'], ENT_QUOTES); ?></div>
-                        <div class="metric-meta">
-                            <span><?php echo htmlspecialchars($metric['label'], ENT_QUOTES); ?></span>
-                            <strong><?php echo htmlspecialchars($metric['value'], ENT_QUOTES); ?></strong>
-                        </div>
-                        <div class="metric-badge <?php echo htmlspecialchars($metric['tone'], ENT_QUOTES); ?>">
-                            <?php echo htmlspecialchars($metric['badge'], ENT_QUOTES); ?>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </section>
-
             <section class="content-grid">
-                <div class="panel evaluations">
+                <div class="panel evaluations" style="grid-column: 1 / -1;">
                     <div class="panel-header">
                         <div>
                             <h2>Personal Details</h2>
@@ -212,21 +188,6 @@ $recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role 
                     <a class="view-more" href="probationary_employee_goals.php">Back to Goals →</a>
                 </div>
 
-                <aside class="insight-card">
-                    <div class="insight-badge">AI INSIGHT</div>
-                    <h2><?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?></h2>
-                    <p><?php echo htmlspecialchars($insightText, ENT_QUOTES); ?></p>
-
-                    <div class="recommendation-box">
-                        <div class="recommendation-label">Recommended Action</div>
-                        <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
-                    </div>
-
-                    <button class="primary-button" id="assignCourseButton" type="submit" form="profileForm"
-                        data-completed-label="Updated" data-confirm-text="Your profile action has been noted.">Update Profile</button>
-                    <p class="microcopy">Use this page to keep your employee information accurate and aligned with your
-                        role.</p>
-                </aside>
             </section>
         </main>
     </div>

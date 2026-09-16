@@ -24,6 +24,14 @@ $evaluationDocuments = probationary_owned_documents('evaluations');
 $ratingDocuments = probationary_owned_documents('Ratings');
 $latestEvaluation = $evaluationDocuments[0] ?? $ratingDocuments[0] ?? [];
 $latestScore = probationary_evaluation_score($latestEvaluation);
+$dashboardSummary = [
+    ['label' => 'Performance Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Goals On Track', 'value' => (string) count(array_filter(probationary_owned_documents('goals'), static fn(array $goal): bool => strtolower((string) ($goal['status'] ?? '')) === 'on track')), 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
+    ['label' => 'Review Date', 'value' => probationary_date($user['reviewDate'] ?? null, 'Not scheduled'), 'badge' => 'Upcoming', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
+];
+$dashboardInsightTitle = 'Profile Snapshot';
+$dashboardInsightText = $latestEvaluation['notes'] ?? 'No performance insight has been recorded yet.';
+$dashboardRecommendation = $user['profileRecommendation'] ?? 'Keep your contact and role information current.';
 $acknowledgements = probationary_owned_documents('Acknowledgements');
 $acknowledgementIds = array_fill_keys(array_map(static fn(array $ack): string => (string) ($ack['uid'] ?? ''), $acknowledgements), true);
 foreach ($ratingDocuments as $rating) {
@@ -220,7 +228,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
             </section>
 
             <section class="metrics" aria-label="Performance summary metrics">
-                <?php foreach ($summaryMetrics as $metric): ?>
+                <?php foreach ($dashboardSummary as $metric): ?>
                     <article class="metric-card <?php echo htmlspecialchars($metric['variant'], ENT_QUOTES); ?>">
                         <div class="metric-icon"><?php echo htmlspecialchars($metric['icon'], ENT_QUOTES); ?></div>
                         <div class="metric-meta">
@@ -257,6 +265,19 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
 
                     </div>
                 </div>
+
+                <aside class="insight-card tab-section" data-tab-section="profile">
+                    <div class="insight-badge">AI INSIGHT</div>
+                    <h2><?php echo htmlspecialchars($dashboardInsightTitle, ENT_QUOTES); ?></h2>
+                    <p><?php echo htmlspecialchars($dashboardInsightText, ENT_QUOTES); ?></p>
+
+                    <div class="recommendation-box">
+                        <div class="recommendation-label">Recommended Action</div>
+                        <strong><?php echo htmlspecialchars($dashboardRecommendation, ENT_QUOTES); ?></strong>
+                    </div>
+
+                    <p class="microcopy">Your profile insight is shown here for quick reference.</p>
+                </aside>
 
                 <div class="panel tab-section" id="performance" data-tab-section="performance">
                     <div class="panel-header">
