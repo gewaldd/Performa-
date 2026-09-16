@@ -8,7 +8,7 @@ $profile = [
     'fullName' => $user['name'] ?? '',
     'email' => $user['email'] ?? '',
     'phone' => $user['phone'] ?? '',
-    'office' => $user['office'] ?? $user['location'] ?? '',
+    'address' => $user['address'] ?? $user['office'] ?? $user['location'] ?? '',
     'mentor' => $user['supervisorName'] ?? '',
     'emergencyContact' => $user['emergencyContact'] ?? '',
 ];
@@ -122,9 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
     $profile['fullName'] = trim($_POST['fullName'] ?? $profile['fullName']);
     $profile['email'] = trim($_POST['email'] ?? $profile['email']);
     $profile['phone'] = trim($_POST['phone'] ?? $profile['phone']);
+    $profile['address'] = trim($_POST['address'] ?? $profile['address']);
     $profile['emergencyContact'] = trim($_POST['emergencyContact'] ?? $profile['emergencyContact']);
     try {
-        firestore_write_document('Users', $currentUserUid, ['name' => $profile['fullName'], 'email' => $profile['email'], 'phone' => $profile['phone'], 'emergencyContact' => $profile['emergencyContact']]);
+        firestore_write_document('Users', $currentUserUid, ['name' => $profile['fullName'], 'email' => $profile['email'], 'phone' => $profile['phone'], 'address' => $profile['address'], 'emergencyContact' => $profile['emergencyContact']]);
         $profileUpdated = true;
     } catch (Throwable $e) {
         $profileUpdated = false;
@@ -279,9 +280,9 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                                     value="<?php echo htmlspecialchars($profile['phone'], ENT_QUOTES); ?>" />
                             </div>
                             <div class="field-group">
-                                <label for="office">Office / Location</label>
-                                <input id="office" type="text"
-                                    value="<?php echo htmlspecialchars($profile['office'], ENT_QUOTES); ?>" readonly />
+                                <label for="address">Address</label>
+                                <input id="address" name="address" type="text"
+                                    value="<?php echo htmlspecialchars($profile['address'], ENT_QUOTES); ?>" />
                             </div>
                             <div class="field-group field-full">
                                 <label for="emergencyContact">Emergency Contact</label>

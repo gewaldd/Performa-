@@ -24,21 +24,29 @@ if (file_exists($envFile)) {
 function firebase_credentials_path(): string
 {
     $env = getenv('GOOGLE_APPLICATION_CREDENTIALS');
+    $projectRoot = __DIR__;
+    $candidates = [];
+
     if ($env) {
-        $candidates = [$env];
+        $candidates[] = $env;
+
         $isAbsoluteWindowsPath = strlen($env) >= 2 && ctype_alpha($env[0]) && $env[1] === ':';
         $isAbsoluteUnixPath = substr($env, 0, 1) === '/' || substr($env, 0, 2) === '\\';
         if (!$isAbsoluteWindowsPath && !$isAbsoluteUnixPath) {
-            $candidates[] = __DIR__ . '/' . ltrim($env, '\\/');
-        }
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                return $candidate;
-            }
+            $candidates[] = $projectRoot . '/' . ltrim($env, '\\/');
         }
     }
 
-    return __DIR__ . '/../firebase-service-account.json';
+    $candidates[] = $projectRoot . '/firebase-service-account.json';
+    $candidates[] = $projectRoot . '/../firebase-service-account.json';
+
+    foreach ($candidates as $candidate) {
+        if ($candidate !== '' && file_exists($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return $projectRoot . '/firebase-service-account.json';
 }
 
 function load_service_account(): array

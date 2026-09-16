@@ -1,7 +1,46 @@
 <?php
 require_once __DIR__ . '/data.php';
 
+$currentUserUid = probationary_uid();
 $user = probationary_user();
+$profileUpdated = false;
+$profile = [
+    'fullName' => $user['name'] ?? '',
+    'email' => $user['email'] ?? '',
+    'phone' => $user['phone'] ?? '',
+    'address' => $user['address'] ?? $user['office'] ?? $user['location'] ?? '',
+    'mentor' => $user['supervisorName'] ?? '',
+    'emergencyContact' => $user['emergencyContact'] ?? '',
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
+    $profile['fullName'] = trim($_POST['fullName'] ?? $profile['fullName']);
+    $profile['email'] = trim($_POST['email'] ?? $profile['email']);
+    $profile['phone'] = trim($_POST['phone'] ?? $profile['phone']);
+    $profile['address'] = trim($_POST['address'] ?? $profile['address']);
+    $profile['emergencyContact'] = trim($_POST['emergencyContact'] ?? $profile['emergencyContact']);
+
+    try {
+        firestore_write_document('Users', $currentUserUid, [
+            'name' => $profile['fullName'],
+            'email' => $profile['email'],
+            'phone' => $profile['phone'],
+            'address' => $profile['address'],
+            'emergencyContact' => $profile['emergencyContact'],
+        ]);
+        $profileUpdated = true;
+        $user = probationary_user();
+        $profile['fullName'] = $user['name'] ?? $profile['fullName'];
+        $profile['email'] = $user['email'] ?? $profile['email'];
+        $profile['phone'] = $user['phone'] ?? $profile['phone'];
+        $profile['address'] = $user['address'] ?? $user['office'] ?? $user['location'] ?? $profile['address'];
+        $profile['mentor'] = $user['supervisorName'] ?? $profile['mentor'];
+        $profile['emergencyContact'] = $user['emergencyContact'] ?? $profile['emergencyContact'];
+    } catch (Throwable $e) {
+        $profileUpdated = false;
+    }
+}
+
 $evaluations = probationary_owned_documents('evaluations');
 $ratings = probationary_owned_documents('Ratings');
 $latestEvaluation = $evaluations[0] ?? $ratings[0] ?? [];
@@ -14,12 +53,12 @@ $navItems = [
 ];
 
 $profileDetails = [
-    ['label' => 'Name', 'value' => $user['name'] ?? $user['email'] ?? ''],
+    ['label' => 'Name', 'value' => $profile['fullName'] ?: ($user['email'] ?? '')],
     ['label' => 'Role', 'value' => probationary_role_label($user)],
     ['label' => 'Team', 'value' => $user['department'] ?? ''],
-    ['label' => 'Manager', 'value' => $user['supervisorName'] ?? ''],
-    ['label' => 'Location', 'value' => $user['office'] ?? $user['location'] ?? ''],
-    ['label' => 'Email', 'value' => $user['email'] ?? ''],
+    ['label' => 'Manager', 'value' => $profile['mentor'] ?: ($user['supervisorName'] ?? '')],
+    ['label' => 'Address', 'value' => $profile['address'] ?: ($user['address'] ?? $user['office'] ?? $user['location'] ?? '')],
+    ['label' => 'Email', 'value' => $profile['email'] ?: ($user['email'] ?? '')],
 ];
 
 $summary = [
@@ -121,29 +160,53 @@ $recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role 
                         </div>
                     </div>
 
-                    <div class="table-wrap">
-                        <div class="table-head" role="row">
-                            <span>Name</span>
-                            <span>Value</span>
-                        </div>
-                        <?php foreach ($profileDetails as $detail): ?>
-                            <div class="table-row">
-                                <div class="employee-cell">
-                                    <div class="avatar" style="background: linear-gradient(135deg, #6d8cff, #2f6df6);">
-                                    </div>
-                                    <div>
-                                        <div class="employee-name">
-                                            <?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="timeline-cell">
-                                    <div class="timeline-text"><?php echo htmlspecialchars($detail['value'], ENT_QUOTES); ?>
-                                    </div>
-                                </div>
+                    <?php if ($profileUpdated): ?>
+                        <div class="alert-banner">Profile updated.</div>
+                    <?php endif; ?>
+
+                    <form id="profileForm" class="profile-form" method="post">
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="fullName">Full Name</label>
+                                <input id="fullName" name="fullName" type="text"
+                                    value="<?php echo htmlspecialchars($profile['fullName'], ENT_QUOTES); ?>" />
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                            <div class="field-group">
+                                <label for="email">Email</label>
+                                <input id="email" name="email" type="email"
+                                    value="<?php echo htmlspecialchars($profile['email'], ENT_QUOTES); ?>" />
+                            </div>
+                            <div class="field-group">
+                                <label for="phone">Phone</label>
+                                <input id="phone" name="phone" type="tel"
+                                    value="<?php echo htmlspecialchars($profile['phone'], ENT_QUOTES); ?>" />
+                            </div>
+                            <div class="field-group">
+                                <label for="address">Address</label>
+                                <input id="address" name="address" type="text"
+                                    value="<?php echo htmlspecialchars($profile['address'], ENT_QUOTES); ?>" />
+                            </div>
+                            <div class="field-group field-full">
+                                <label for="emergencyContact">Emergency Contact</label>
+                                <input id="emergencyContact" name="emergencyContact" type="text"
+                                    value="<?php echo htmlspecialchars($profile['emergencyContact'], ENT_QUOTES); ?>" />
+                            </div>
+                        </div>
+
+                        <div class="profile-footer">
+                            <div class="readonly-panel">
+                                <h3>Role Details</h3>
+                                <?php foreach ($profileDetails as $detail): ?>
+                                    <div class="readonly-row">
+                                        <span><?php echo htmlspecialchars($detail['label'], ENT_QUOTES); ?></span>
+                                        <strong><?php echo htmlspecialchars($detail['value'], ENT_QUOTES); ?></strong>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <button class="primary-button" type="submit" name="saveProfile">Save changes</button>
+                        </div>
+                    </form>
 
                     <a class="view-more" href="probationary_employee_goals.php">Back to Goals →</a>
                 </div>
@@ -158,8 +221,8 @@ $recommendation = $user['profileRecommendation'] ?? 'Keep your contact and role 
                         <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Updated"
-                        data-confirm-text="Your profile action has been noted.">Update Profile</button>
+                    <button class="primary-button" id="assignCourseButton" type="submit" form="profileForm"
+                        data-completed-label="Updated" data-confirm-text="Your profile action has been noted.">Update Profile</button>
                     <p class="microcopy">Use this page to keep your employee information accurate and aligned with your
                         role.</p>
                 </aside>
