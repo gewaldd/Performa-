@@ -30,6 +30,7 @@ try {
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
                 'industry' => $doc['industry'] ?? 'retail',
                 'hireDate' => $doc['hireDate'] ?? '',
+                'probationPeriodDays' => (int) ($doc['probationPeriodDays'] ?? 180),
             ];
         }
     }
@@ -59,7 +60,8 @@ foreach ($employees as $emp) {
             $hire = new DateTime($emp['hireDate']);
             $today = new DateTime('today');
             $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
-            $daysLeft = max(0, 180 - $daysIn);
+            $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
+            $daysLeft = max(0, $probationPeriodDays - $daysIn);
             if ($daysLeft <= 30)
                 $nearingDeadlineCount++;
         } catch (\Throwable $e) {
@@ -78,7 +80,7 @@ foreach ($employees as $emp) {
         'name' => $emp['name'],
         'industry' => ucfirst(str_replace('_', ' ', $emp['industry'])),
         'timeline' => $daysIn !== null ? "Day {$daysIn} · {$daysLeft} days left" : 'No hire date on file',
-        'progress' => $daysIn !== null ? min(100, (int) round(($daysIn / 180) * 100)) : 0,
+        'progress' => $daysIn !== null ? min(100, (int) round(($daysIn / max(1, (int) ($emp['probationPeriodDays'] ?? 180))) * 100)) : 0,
         'score' => $summary['score'],
         'status' => $statusInfo['status'],
         'statusClass' => $statusInfo['statusClass'],

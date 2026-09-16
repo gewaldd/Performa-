@@ -111,8 +111,9 @@ $roleKey = normalize_role_key($profile['role'] ?? null);
 $isProbationary = $roleKey === 'probationary';
 $createdAt = $profile['createdAt'] ?? '';
 $createdTime = $createdAt ? strtotime($createdAt) : false;
+$probationPeriodDays = max(1, (int) ($profile['probationPeriodDays'] ?? 180));
 $daysSince = $createdTime ? max(1, (int) floor((time() - $createdTime) / 86400)) : 0;
-$daysLeft = $createdTime ? max(0, 180 - $daysSince) : 0;
+$daysLeft = $createdTime ? max(0, $probationPeriodDays - $daysSince) : 0;
 
 $allRatings = [];
 try {
@@ -227,7 +228,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       <?php if ($isProbationary): ?>
         <div class="settings-panel">
           <h4 class="settings-subhead">Probation Progress</h4>
-          <p>Day <?php echo $daysSince; ?> of 180 &middot; <?php echo $daysLeft; ?> days remaining</p>
+          <p>Day <?php echo $daysSince; ?> of <?php echo $probationPeriodDays; ?> &middot; <?php echo $daysLeft; ?> days remaining</p>
 
           <h4 class="settings-subhead">Latest KPI Scores (<?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?>
             template)</h4>

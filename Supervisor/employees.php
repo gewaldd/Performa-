@@ -28,6 +28,7 @@ try {
                 'email' => $doc['email'] ?? '',
                 'industry' => $doc['industry'] ?? 'retail',
                 'hireDate' => $doc['hireDate'] ?? '',
+                'probationPeriodDays' => (int) ($doc['probationPeriodDays'] ?? 180),
             ];
         }
     }
@@ -110,9 +111,10 @@ try {
                                     $hire = new DateTime($emp['hireDate']);
                                     $today = new DateTime('today');
                                     $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
-                                    $daysLeft = max(0, 180 - $daysIn);
+                                    $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
+                                    $daysLeft = max(0, $probationPeriodDays - $daysIn);
                                     $timelineText = "Day {$daysIn} · {$daysLeft} days left";
-                                    $progress = min(100, (int) round(($daysIn / 180) * 100));
+                                    $progress = min(100, (int) round(($daysIn / $probationPeriodDays) * 100));
                                 } catch (\Throwable $e) {
                                 }
                             }

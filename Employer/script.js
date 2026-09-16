@@ -1,5 +1,5 @@
 const searchInput = document.getElementById("dashboardSearch");
-const rows = Array.from(document.querySelectorAll(".table-row"));
+const rows = Array.from(document.querySelectorAll("#evaluationRows .table-row"));
 const chips = Array.from(document.querySelectorAll(".filter-chip"));
 const exportBtn = document.getElementById("exportEvaluationsBtn");
 
@@ -11,8 +11,10 @@ function applyFilters() {
   rows.forEach((row) => {
     const rowText = row.dataset.search || "";
     const matchesSearch = !query || rowText.includes(query);
-    const matchesFilter = activeFilter === "all" || row.dataset.filter === activeFilter;
+    const rowFilter = (row.dataset.filter || "").trim().toLowerCase();
+    const matchesFilter = activeFilter === "all" || rowFilter === activeFilter;
     row.hidden = !(matchesSearch && matchesFilter);
+    row.style.display = matchesSearch && matchesFilter ? "" : "none";
   });
 }
 

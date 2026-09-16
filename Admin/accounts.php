@@ -22,6 +22,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($uid === '' || !in_array($action, ['reset_password', 'toggle_status'], true)) {
     $accountMessage = 'Invalid account action.';
     $accountMessageType = 'error';
+  } elseif ($action === 'set_probation_days') {
+    $probationDays = filter_input(INPUT_POST, 'probationPeriodDays', FILTER_VALIDATE_INT);
+    if ($probationDays === false || $probationDays < 1 || $probationDays > 3650) {
+      $accountMessage = 'Probation days must be between 1 and 3650.';
+      $accountMessageType = 'error';
+    } else {
+      try {
+        $account = firestore_get_document('Users', $uid);
+        if (!$account || strpos(strtolower((string) ($account['role'] ?? '')), 'probation') === false) {
+          throw new RuntimeException('Only probationary employee accounts can be adjusted.');
+        }
+        $account['probationPeriodDays'] = $probationDays;
+        firestore_write_document('Users', $uid, $account);
+        $accountMessage = 'Probation period updated.';
+        $accountMessageType = 'success';
+      } catch (Throwable $e) {
+        $accountMessage = $e->getMessage();
+        $accountMessageType = 'error';
+      }
+    }
   } else {
     try {
       $account = firestore_get_document('Users', $uid);
@@ -86,6 +106,7 @@ try {
       'statusClass' => $statusClass,
       'disabled' => strtolower($status) === 'disabled',
       'uid' => $d['uid'] ?? null,
+      'probationPeriodDays' => (int) ($d['probationPeriodDays'] ?? 180),
     ];
   }
 } catch (Throwable $e) {
@@ -289,6 +310,16 @@ try {
               </div>
               <div class="row-actions">
                 <?php if (!empty($account['uid'])): ?>
+                  <?php if (($account['roleKey'] ?? '') === 'probationary'): ?>
+                    <form method="post" style="display:flex;align-items:center;gap:6px;">
+                      <input type="hidden" name="action" value="set_probation_days" />
+                      <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />
+                      <input type="number" name="probationPeriodDays" min="1" max="3650"
+                        value="<?php echo (int) $account['probationPeriodDays']; ?>" required
+                        aria-label="Probation period days" style="width:76px;padding:8px;border:1px solid var(--panel-border);border-radius:8px;" />
+                      <button class="ghost-button" type="submit">Save Days</button>
+                    </form>
+                  <?php endif; ?>
                   <form method="post">
                     <input type="hidden" name="action" value="reset_password" />
                     <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />

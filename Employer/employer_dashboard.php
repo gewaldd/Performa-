@@ -216,11 +216,13 @@ if ($cacheValid) {
                 )
                 : 0;
 
+            $probationPeriodDays = max(1, (int) ($doc['probationPeriodDays'] ?? 180));
+
             $daysLeft =
                 $createdTime
                 ? max(
                     0,
-                    180 - $daysSince
+                    $probationPeriodDays - $daysSince
                 )
                 : 0;
 
@@ -229,7 +231,7 @@ if ($cacheValid) {
                 ? min(
                     100,
                     (int) round(
-                        ($daysSince / 180) *
+                        ($daysSince / $probationPeriodDays) *
                         100
                     )
                 )
@@ -357,7 +359,7 @@ if ($cacheValid) {
              * and a qualifying KPI score are ready for regularization.
              */
             if (
-                $daysSince >= 150 &&
+                $daysSince >= max(1, $probationPeriodDays - 30) &&
                 $hasScore &&
                 $score >= $targetAvg
             ) {
@@ -1327,7 +1329,7 @@ $insightScore =
 
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260916"></script>
 
 </body>
 
