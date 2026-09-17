@@ -3,6 +3,13 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../security_utils.php';
+require_once __DIR__ . '/../mailer.php';
+require_once __DIR__ . '/../audit_log.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Fetch existing supervisors so the Employer can assign one to a new probationary employee.
 $supervisors = [];
@@ -26,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $department = trim($_POST['department'] ?? '');
     $roleKey = $_POST['role'] ?? '';
     $industry = trim($_POST['industry'] ?? 'retail');
-    $password = trim($_POST['password'] ?? '');
     $hireDate = trim($_POST['hireDate'] ?? '');
     $supervisorId = trim($_POST['supervisorId'] ?? '');
 
@@ -67,8 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'An account with that email already exists.';
                 $messageTone = 'error';
             } else {
-                if (!$password)
-                    $password = 'TempPass123!';
+                // Always server-generated — no manual/typed password path.
+                // A human-chosen "temporary password" defeats the point of
+                // requiring a reset, and was previously falling back to a
+                // hardcoded TempPass123! when left blank, which is worse.
+                $password = generate_secure_password(12);
                 try {
                     $uid = identitytoolkit_create_user($name, $email, $password);
 
@@ -99,7 +108,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     firestore_write_document('Users', $uid, $newUser);
 
-                    header('Location: employees.php?created=1&name=' . urlencode($name) . '&temp_password=' . urlencode($password));
+                    // Deliver the credential by email instead of exposing it
+                    // in a redirect query string (bookmarkable, logged in
+                    // server access logs, visible in browser history).
+                    $loginUrl = app_base_url() . '/login.php';
+                    $emailSent = send_transactional_email(
+                        $email,
+                        $name,
+                        'Your Performa account is ready',
+                        welcome_email_html($name, $email, $password, $loginUrl)
+                    );
+
+                    record_audit_event(
+                        'employee_account_created',
+                        "Created {$role} account for {$name} ({$email})",
+                        ['uid' => $uid, 'role' => $role, 'emailDelivered' => $emailSent]
+                    );
+
+                    // Only ever hold the password somewhere the employer can
+                    // see it if email delivery actually failed — and even
+                    // then, a one-time session flash, never a URL param, so
+                    // it can't be bookmarked, shared by accident, or sit in
+                    // server access logs.
+                    $redirectParams = ['created' => '1', 'name' => $name, 'emailed' => $emailSent ? '1' : '0'];
+                    if (!$emailSent) {
+                        $_SESSION['reveal_once_password'] = $password;
+                        $_SESSION['reveal_once_email'] = $email;
+                    }
+
+                    header('Location: employees.php?' . http_build_query($redirectParams));
                     exit;
                 } catch (\Throwable $e) {
                     $message = 'Failed to create user: ' . $e->getMessage();
@@ -200,9 +237,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
                         </div>
                         <div class="form-group">
-                            <label for="password">Temporary password (optional)</label>
-                            <input id="password" name="password" type="text"
-                                placeholder="Auto-generated if left blank" />
+                            <span class="field-hint">A secure password is generated automatically and emailed to the
+                                new employee — there's no manual password field, they'll be asked to change it on
+                                first login.</span>
                         </div>
                     </div>
 

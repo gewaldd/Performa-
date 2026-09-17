@@ -387,17 +387,31 @@ sort($departments);
             ?>
           </strong>.
 
-          <?php if (!empty($_GET['temp_password'])): ?>
+          <?php if (!empty($_GET['emailed']) && $_GET['emailed'] === '1'): ?>
 
-            Temporary password:
+            Login credentials were emailed to them directly.
+
+          <?php elseif (!empty($_SESSION['reveal_once_password'])): ?>
+
+            The welcome email couldn't be sent, so here's the temporary password once
+            (it will not be shown again after you leave this page) — share it with
+            <strong><?php echo htmlspecialchars($_SESSION['reveal_once_email'] ?? '', ENT_QUOTES); ?></strong>
+            through a secure channel:
             <code>
                   <?php
                   echo htmlspecialchars(
-                    $_GET['temp_password'],
+                    $_SESSION['reveal_once_password'],
                     ENT_QUOTES
                   );
+                  unset($_SESSION['reveal_once_password'], $_SESSION['reveal_once_email']);
                   ?>
                 </code>
+
+          <?php else: ?>
+
+            The welcome email couldn't be sent and no password is available to display —
+            check the Brevo configuration in <code>.env</code>, then reset their password
+            from the employee's profile.
 
           <?php endif; ?>
 
