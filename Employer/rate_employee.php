@@ -102,32 +102,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performa | Rate Employee</title>
+  <?php employer_brand_head(); ?>
+  <meta name="description" content="Score this week's KPIs for a probationary employee." />
+  <title>Rate Employee · Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
   <div class="app-shell">
     <?php employer_render_shell('KPIs'); ?>
-    <main class="main" style="max-width:640px;margin:0 auto;">
+    <main class="main content-narrow">
       <div class="page-header">
-        <div>
-          <a href="kpis.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to
-            KPIs</a>
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <div class="ph-main">
+          <a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>
+          <nav class="ph-crumb" aria-label="Breadcrumb">
+            <span>KPIs</span>
+            <span aria-hidden="true">/</span>
+            <span>Rate</span>
+          </nav>
           <h1>Weekly Performance Rating</h1>
-          <p>Score this week's KPIs for a probationary employee.</p>
+          <p>Score this week's KPIs for a probationary employee. Use the slider or type a value from 1.0 to 5.0.</p>
         </div>
       </div>
 
       <div class="settings-panel">
         <?php if ($message): ?>
-          <div class="alert alert-info"><?php echo $message; ?></div>
+          <div class="alert alert-info" role="status"><?php echo $message; ?></div>
         <?php endif; ?>
 
         <?php if (!$employees): ?>
@@ -150,17 +159,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
           <form method="post">
             <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
-            <p style="color:var(--muted);margin-bottom:12px;">Industry template: <strong
-                style="color:var(--text);"><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
-            <div class="form-grid">
+            <p class="microcopy" style="margin:0 0 12px;">Industry template: <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
+            <div class="pf-rate-grid">
               <?php foreach ($template['kpis'] as $kpi): ?>
-                <div class="form-group">
-                  <label for="score_<?php echo $kpi['key']; ?>">
-                    <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> (target
-                    <?php echo number_format($kpi['target'], 1); ?>)
+                <div class="pf-rate-row">
+                  <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
+                    <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
+                    <span class="microcopy"> · target <?php echo number_format((float) $kpi['target'], 1); ?></span>
                   </label>
-                  <input id="score_<?php echo $kpi['key']; ?>" name="score_<?php echo $kpi['key']; ?>" type="number" min="1"
-                    max="5" step="0.1" required />
+                  <div class="pf-rate-controls">
+                    <input type="range" min="1" max="5" step="0.1" value="3.0" data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
+                      aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> slider" />
+                    <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" class="pf-rate-value" type="number" min="1"
+                      max="5" step="0.1" value="3.0" required />
+                  </div>
                 </div>
               <?php endforeach; ?>
             </div>
@@ -173,7 +185,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       </div>
     </main>
   </div>
-  <script src="dropdowns.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script>
+    // Slider <-> number sync (presentation only; submitted name stays score_*).
+    document.querySelectorAll('[data-rate-slider]').forEach(function (slider) {
+      var target = document.getElementById(slider.getAttribute('data-rate-slider'));
+      if (!target) return;
+      slider.addEventListener('input', function () { target.value = slider.value; });
+      target.addEventListener('input', function () {
+        var v = parseFloat(target.value);
+        if (!isNaN(v)) slider.value = Math.max(1, Math.min(5, v));
+      });
+    });
+  </script>
 </body>
 
 </html>

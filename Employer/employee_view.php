@@ -132,33 +132,40 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performa | <?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></title>
+  <?php employer_brand_head(); ?>
+  <meta name="description" content="View and manage an employee profile, probation progress, and regularization decision." />
+  <title><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?> · Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
   <div class="app-shell">
     <?php employer_render_shell('Employees'); ?>
-    <main class="main" style="max-width:760px;margin:0 auto;">
+    <main class="main content-narrow">
       <div class="page-header">
-        <div>
-          <a href="employees.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to
-            Employees</a>
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <div class="ph-main">
+          <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
+          <nav class="ph-crumb" aria-label="Breadcrumb">
+            <span>Employees</span>
+            <span aria-hidden="true">/</span>
+            <span><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></span>
+          </nav>
           <h1><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></h1>
           <p><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES); ?>
-            &middot; Status:
-            <strong
-              style="color:<?php echo $statusLabel === 'Disabled' ? '#ed5b57' : '#16a76d'; ?>;"><?php echo $statusLabel; ?></strong>
+            &middot; <span class="status-pill <?php echo $statusLabel === 'Disabled' ? 'status-danger' : 'status-good'; ?>"><?php echo htmlspecialchars($statusLabel, ENT_QUOTES); ?></span>
           </p>
         </div>
         <?php if ($isProbationary): ?>
-          <div style="display:flex;gap:8px;">
+          <div class="ph-actions">
             <a class="ghost-button" href="rate_employee.php?employee=<?php echo urlencode($uid); ?>">Rate KPIs</a>
             <a class="ghost-button" href="kpis.php?employee=<?php echo urlencode($uid); ?>">View KPI Dashboard</a>
           </div>
@@ -166,9 +173,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       </div>
 
       <?php if ($message): ?>
-        <div style="margin-bottom:16px;padding:12px;border-radius:8px;
-          background:<?php echo $messageTone === 'error' ? 'rgba(237,91,87,0.1)' : ($messageTone === 'success' ? 'rgba(22,167,109,0.1)' : 'rgba(47,109,246,0.08)'); ?>;
-          color:var(--text);"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+        <div class="alert <?php echo $messageTone === 'error' ? 'alert-error' : ($messageTone === 'success' ? 'alert-success' : 'alert-info'); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
       <?php endif; ?>
 
       <div class="settings-panel">
@@ -213,14 +218,14 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         <hr class="section-divider" />
 
         <h4 class="settings-subhead">Account Status</h4>
-        <p style="color:var(--muted);">
+        <p class="microcopy">
           <?php echo $statusLabel === 'Disabled' ? 'This account is disabled and cannot sign in.' : 'This account can sign in normally.'; ?>
         </p>
         <form method="post"
-          data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate this account? They will be signed out and unable to log in.', ENT_QUOTES); ?>">
+          data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate ' . ($profile['name'] ?? 'this account') . '? They will be signed out immediately and unable to log in.', ENT_QUOTES); ?>"<?php echo $statusLabel === 'Disabled' ? '' : ' data-confirm-danger'; ?>>
           <input type="hidden" name="action" value="toggle_status" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
-          <button class="btn-cancel"
+          <button class="<?php echo $statusLabel === 'Disabled' ? 'btn-cancel' : 'btn-danger'; ?>"
             type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
         </form>
       </div>
@@ -245,7 +250,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <hr class="section-divider" />
 
           <h4 class="settings-subhead">Employer Feedback</h4>
-          <p style="color:var(--muted);">Share feedback that will appear on the employee's Feedback page.</p>
+          <p class="microcopy">Share feedback that will appear on the employee's Feedback page.</p>
           <form method="post">
             <input type="hidden" name="action" value="save_feedback" />
             <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
@@ -263,16 +268,15 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
 
           <h4 class="settings-subhead">Regularization Recommendation</h4>
           <?php if (!empty($profile['regularizationRecommendation'])): ?>
-            <p style="color:var(--muted);">
-              Current decision: <strong
-                style="color:var(--text);"><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
+            <p class="microcopy">
+              Current decision: <strong><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
               <?php if (!empty($profile['regularizationDecidedAt'])): ?> &middot;
                 <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?>     <?php endif; ?>
               <?php if (!empty($profile['regularizationDecidedBy'])): ?> by
                 <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?>     <?php endif; ?>
             </p>
             <?php if (!empty($profile['regularizationNotes'])): ?>
-              <p style="color:var(--muted);">Notes:
+              <p class="microcopy">Notes:
                 <?php echo htmlspecialchars($profile['regularizationNotes'], ENT_QUOTES); ?>
               </p>
             <?php endif; ?>
@@ -305,8 +309,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       <?php endif; ?>
     </main>
   </div>
-  <script src="dropdowns.js"></script>
-  <script src="script.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 </body>
 
 </html>

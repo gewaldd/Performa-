@@ -18,34 +18,22 @@ $profileName = $_SESSION['name'] ?? 'Unknown User';
 $profileRole = $_SESSION['role'] ?? 'Employer';
 $profileRoleDisplay = ucwords(str_replace('_', ' ', (string) $profileRole));
 
+// Icons come from the shared library (includes/icons.php via employer_layout.php).
+// $icons stays as a thin alias so existing markup below keeps working.
 $icons = [
-    'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-
-    'users' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-
-    'target' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
-
-    'bar-chart' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-
-    'settings' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-
-    'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-
-    'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-
-    'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
-
-    'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-
-    'hourglass' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M5 22v-4a7 7 0 0 1 5-6.7A7 7 0 0 1 5 4.7V2M19 22v-4a7 7 0 0 0-5-6.7A7 7 0 0 0 19 4.7V2"/></svg>',
-
-    'trend' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-
-    'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-
-    'cap' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.66 3 3 6 3s6-1.34 6-3v-5"/></svg>',
-
-    'more' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+    'home' => employer_icon('home'),
+    'users' => employer_icon('users'),
+    'target' => employer_icon('target'),
+    'bar-chart' => employer_icon('bar-chart'),
+    'settings' => employer_icon('settings'),
+    'search' => employer_icon('search'),
+    'bell' => employer_icon('bell'),
+    'plus' => employer_icon('plus'),
+    'hourglass' => employer_icon('hourglass'),
+    'trend' => employer_icon('trend'),
+    'download' => employer_icon('download'),
+    'cap' => employer_icon('cap'),
+    'more' => employer_icon('more'),
 ];
 
 function normalize_role_key(?string $role): string
@@ -246,20 +234,6 @@ if ($cacheValid) {
                 ?? $email
                 ?? 'Unknown';
 
-            $avatarSeed =
-                urlencode(
-                    strtolower(
-                        $email !== ''
-                        ? $email
-                        : $name
-                    )
-                );
-
-            $avatar =
-                'https://ui-avatars.com/api/?name=' .
-                $avatarSeed .
-                '&background=2f6df6&color=fff&size=160';
-
             $uid =
                 $doc['uid']
                 ?? '';
@@ -330,7 +304,7 @@ if ($cacheValid) {
 
                 $accentColor =
                     $meetsTarget
-                    ? 'var(--color-info)'
+                    ? 'var(--color-success)'
                     : 'var(--color-warning)';
             } else {
                 $stars = 0;
@@ -366,7 +340,7 @@ if ($cacheValid) {
                 $status = 'Ready for Reg.';
                 $statusClass = 'status-ready';
                 $statusKey = 'ready-for-reg';
-                $accentColor = 'var(--color-info)';
+                $accentColor = '#1f2940';
             }
 
             $liveUsers[] = [
@@ -379,7 +353,7 @@ if ($cacheValid) {
                         $doc['role'] ?? null
                     ),
 
-                'avatar' => $avatar,
+                'initials' => employer_avatar_initials($name),
 
                 'day' =>
                     'Day ' . $daysSince,
@@ -664,7 +638,9 @@ $insightScore =
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Performa | Employer Dashboard</title>
+    <?php employer_brand_head(); ?>
+
+    <title>Dashboard · Performa</title>
 
     <meta name="description"
         content="Employer KPI dashboard for probationary employee evaluation and training recommendations." />
@@ -677,107 +653,8 @@ $insightScore =
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
 
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="../ui-refresh.css" />
-
-    <style>
-        .status-cell {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .eval-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-
-            width: 40px;
-            height: 40px;
-
-            flex: 0 0 40px;
-
-            border-radius: 50%;
-
-            background: var(--color-info-bg);
-            color: var(--primary);
-
-            text-decoration: none;
-
-            transition:
-                background-color 160ms ease,
-                color 160ms ease,
-                transform 120ms ease,
-                box-shadow 160ms ease;
-        }
-
-        .eval-btn:hover {
-            background: var(--primary);
-            color: #ffffff;
-
-            transform: translateY(-1px);
-
-            box-shadow:
-                0 6px 14px var(--color-info-focus-ring);
-        }
-
-        .eval-btn:active {
-            transform: translateY(0);
-        }
-
-        .eval-btn svg {
-            width: 15px;
-            height: 15px;
-        }
-
-        .insight-score-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-
-            margin-top: -4px;
-
-            color: rgba(255, 255, 255, 0.68);
-
-            font-size: 12px;
-        }
-
-        .insight-score-row strong {
-            color: #ffffff;
-        }
-
-        .sr-only {
-            position: absolute !important;
-            width: 1px !important;
-            height: 1px !important;
-            padding: 0 !important;
-            margin: -1px !important;
-            overflow: hidden !important;
-            clip: rect(0, 0, 0, 0) !important;
-            white-space: nowrap !important;
-            border: 0 !important;
-        }
-
-        .dashboard-empty {
-            padding: 42px 20px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        @media (max-width: 760px) {
-            .status-cell {
-                align-items: center;
-            }
-
-            .eval-btn {
-                width: 40px;
-                height: 40px;
-                flex-basis: 40px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
@@ -788,26 +665,32 @@ $insightScore =
 
         <main class="main" id="dashboard">
 
-            <header class="topbar">
+            <section class="page-header" aria-labelledby="dashboardTitle">
+                <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+                </button>
+                <div class="ph-main">
+                    <span class="eyebrow">Regularization cycle</span>
+                    <h1 id="dashboardTitle">Probationary Overview</h1>
+                    <p>Track and evaluate employees approaching regularization.</p>
+                </div>
+                <div class="ph-actions">
+                    <label class="search-bar">
+                        <span class="sr-only">
+                            Search employees or reports
+                        </span>
 
-                <label class="search-bar">
-                    <span class="sr-only">
-                        Search employees or reports
-                    </span>
+                        <span class="search-icon" aria-hidden="true">
+                            <?php echo $icons['search']; ?>
+                        </span>
 
-                    <span class="search-icon" aria-hidden="true">
-                        <?php echo $icons['search']; ?>
-                    </span>
-
-                    <input id="dashboardSearch" type="search" placeholder="Search employees, reports..."
-                        autocomplete="off" />
-                </label>
-
-                <div class="topbar-actions">
+                        <input id="dashboardSearch" type="search" placeholder="Search employees, reports..."
+                            autocomplete="off" />
+                    </label>
 
                     <?php if ($nearestDeadlineDays !== null): ?>
 
-                        <div class="deadline-pill">
+                        <div class="deadline-pill" title="<?php echo (int) $nearestDeadlineDays; ?> day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?> until nearest regularization deadline">
 
                             <span class="deadline-icon" aria-hidden="true">
                                 <?php echo $icons['bell']; ?>
@@ -823,41 +706,11 @@ $insightScore =
 
                     <?php endif; ?>
 
-                    <button class="icon-button" type="button" aria-label="Messages">
-                        <?php echo $icons['mail']; ?>
-                    </button>
-
-                    <a class="ghost-button" href="../logout.php" aria-label="Sign out">
-                        Sign out
-                    </a>
-
-                </div>
-
-            </header>
-
-            <section class="hero">
-
-                <div class="hero-top">
-
-                    <div>
-
-                        <h1>
-                            Probationary Overview
-                        </h1>
-
-                        <p>
-                            Track and evaluate employees approaching regularization.
-                        </p>
-
-                    </div>
-
                     <a class="btn-primary" href="add_employee.php">
                         <?php echo $icons['plus']; ?>
                         Add Employee
                     </a>
-
                 </div>
-
             </section>
 
             <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
@@ -937,6 +790,8 @@ $insightScore =
                     <div class="panel-header">
 
                         <div>
+
+                            <span class="eyebrow">Probation ledger · <?php echo (int) $probationaryCount; ?> active</span>
 
                             <h2>
                                 Active Evaluations
@@ -1031,9 +886,9 @@ $insightScore =
 
                                         <div class="employee-cell" role="cell">
 
-                                            <div class="avatar"
-                                                style="background-image:url('<?php echo htmlspecialchars($employee['avatar'], ENT_QUOTES); ?>');"
-                                                aria-hidden="true"></div>
+                                            <div class="avatar avatar-local"
+                                                title="<?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>"
+                                                aria-hidden="true"><?php echo htmlspecialchars($employee['initials'], ENT_QUOTES); ?></div>
 
                                             <div>
 
@@ -1096,44 +951,13 @@ $insightScore =
                                         </div>
 
                                         <div class="score-cell" role="cell" data-label="KPI Score">
-
-                                            <?php if ($employee['hasScore']): ?>
-
-                                                <strong class="score-value">
-                                                    <?php
-                                                    echo number_format(
-                                                        (float) $employee['score'],
-                                                        1
-                                                    );
-                                                    ?>
-                                                </strong>
-
-                                                <div class="stars" aria-hidden="true">
-                                                    <?php
-                                                    echo str_repeat(
-                                                        '★',
-                                                        (int) $employee['stars']
-                                                    );
-
-                                                    echo str_repeat(
-                                                        '☆',
-                                                        5 - (int) $employee['stars']
-                                                    );
-                                                    ?>
-                                                </div>
-
-                                            <?php else: ?>
-
-                                                <strong class="score-value" style="color:var(--muted);">
-                                                    —
-                                                </strong>
-
-                                                <div class="stars" style="color:var(--muted);">
-                                                    No Ratings Yet
-                                                </div>
-
-                                            <?php endif; ?>
-
+                                            <?php
+                                            echo employer_score_meter(
+                                                $employee['hasScore'] ? (float) $employee['score'] : null,
+                                                5.0,
+                                                isset($employee['targetAvg']) ? (float) $employee['targetAvg'] : null
+                                            );
+                                            ?>
                                         </div>
 
                                         <div class="status-cell" role="cell" data-label="Status">
@@ -1176,10 +1000,10 @@ $insightScore =
 
                     <div class="insight-top">
 
-                        <span class="insight-icon" aria-hidden="true"></span>
+                        <span class="insight-icon" aria-hidden="true"><?php echo $icons['cap']; ?></span>
 
                         <span class="insight-label">
-                            INSIGHT
+                            Supervisor note
                         </span>
 
                     </div>
@@ -1317,19 +1141,7 @@ $insightScore =
 
     </div>
 
-    <footer class="site-footer">
-
-        <span>
-            Performa employer dashboard
-        </span>
-
-        <span>
-            Powered by PHP &amp; Firebase
-        </span>
-
-    </footer>
-
-    <script src="script.js?v=20260916"></script>
+    <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 
 </body>
 

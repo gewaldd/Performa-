@@ -115,23 +115,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'deactivate_account') {
   }
 }
 
+// Shared icon library (Style A cleanup).
 $icons = [
-  'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-  'users' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-  'target' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
-  'bar-chart' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-  'settings' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-  'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  'camera' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
-  'lock' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-  'shield' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-  'trash' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  'lock' => employer_icon('settings'),
+  'shield' => employer_icon('trend'),
+  'trash' => employer_icon('download'),
 ];
 
-$profileAvatarUrl =
-  'https://ui-avatars.com/api/?name=' .
-  urlencode($profileName) .
-  '&background=2f6df6&color=fff&size=200';
+$profileInitials = employer_avatar_initials($profileName);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,7 +130,8 @@ $profileAvatarUrl =
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performa | Settings</title>
+  <?php employer_brand_head(); ?>
+  <title>Settings · Performa</title>
   <meta name="description" content="Manage your account preferences and system configurations." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -147,8 +139,8 @@ $profileAvatarUrl =
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body class="settings-page-body">
@@ -159,25 +151,17 @@ $profileAvatarUrl =
 
     <main class="main settings-page" id="settingsPage">
 
-      <header class="topbar settings-topbar">
-        <div class="topbar-spacer" aria-hidden="true"></div>
-
-        <div class="topbar-actions">
-          <button class="icon-button" type="button" aria-label="Notifications">
-            <span aria-hidden="true">
-              <?php echo $icons['bell']; ?>
-            </span>
-          </button>
-
-          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
-            Sign out
-          </a>
-        </div>
-      </header>
-
-      <header class="settings-page-header">
-        <div>
-          <h1>Settings</h1>
+      <header class="settings-page-header page-header" aria-labelledby="settingsTitle">
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <div class="ph-main">
+          <nav class="ph-crumb" aria-label="Breadcrumb">
+            <span>Settings</span>
+            <span aria-hidden="true">/</span>
+            <span>Account</span>
+          </nav>
+          <h1 id="settingsTitle">Settings</h1>
           <p>Manage your account preferences and security.</p>
         </div>
       </header>
@@ -199,14 +183,14 @@ $profileAvatarUrl =
         </div>
 
         <div class="profile-photo-row">
-          <div class="profile-photo-frame">
-            <img src="<?php echo htmlspecialchars($profileAvatarUrl, ENT_QUOTES); ?>"
-              alt="Profile photo for <?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" />
+          <div class="profile-photo-frame profile-photo-initials" role="img"
+            aria-label="Profile photo for <?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>">
+            <?php echo htmlspecialchars($profileInitials, ENT_QUOTES); ?>
           </div>
 
           <div class="profile-photo-info">
             <h3>Profile Photo</h3>
-            <p>Generated automatically from your name. Custom photo uploads aren't wired up yet.</p>
+            <p>Avatar generated automatically from your name.</p>
           </div>
         </div>
 
@@ -303,12 +287,10 @@ $profileAvatarUrl =
 
           <div class="settings-card-text">
             <strong>Two-Factor Authentication</strong>
-            <span>Coming soon, not yet available.</span>
+            <span>Not available yet.</span>
           </div>
 
-          <button class="settings-card-action" type="button" disabled aria-disabled="true">
-            Enable
-          </button>
+          <span class="status-pill status-neutral">Off</span>
         </article>
 
         <article class="settings-card tone-red">
@@ -322,10 +304,11 @@ $profileAvatarUrl =
           </div>
 
           <form method="post" class="settings-card-form"
-            data-confirm="Deactivate your account? You will be signed out immediately.">
+            data-confirm="Deactivate your account? You will be signed out immediately. An admin can reactivate it later."
+            data-confirm-danger>
             <input type="hidden" name="action" value="deactivate_account" />
 
-            <button class="settings-card-action" type="submit">
+            <button class="settings-card-action settings-card-action-danger" type="submit">
               Deactivate
             </button>
           </form>
@@ -337,12 +320,7 @@ $profileAvatarUrl =
 
   </div>
 
-  <footer class="site-footer">
-    <span>Performa employer dashboard prototype</span>
-    <span>Powered by PHP &amp; Firebase</span>
-  </footer>
-
-  <script src="script.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 
 </body>
 

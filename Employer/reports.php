@@ -15,19 +15,13 @@ $profileRoleDisplay = ucwords(
   )
 );
 
+// Shared icon library (Style A cleanup).
 $icons = [
-  'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-  'users' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-  'target' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
-  'bar-chart' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-  'settings' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 1 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-  'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  'calendar' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-  'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
-  'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-  'file' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
-  'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  'calendar' => employer_icon('hourglass'),
+  'plus' => employer_icon('plus'),
+  'download' => employer_icon('download'),
+  'file' => employer_icon('bar-chart'),
+  'user' => employer_icon('users'),
 ];
 
 $reportTypes = [
@@ -317,7 +311,6 @@ if (
    ========================================================= */
 
 $reports = [];
-$contributorCounts = [];
 
 $reportDocs =
   get_cached_collection(
@@ -393,46 +386,7 @@ foreach ($reportDocs as $index => $reportDoc) {
       ],
   ];
 
-  $contributor =
-    trim(
-      (string) (
-        $reportDoc['generatedBy']
-        ?? ''
-      )
-    );
-
-  if ($contributor !== '') {
-    $contributorCounts[
-      $contributor
-    ] =
-      (
-        $contributorCounts[
-          $contributor
-        ]
-        ?? 0
-      ) + 1;
-  }
 }
-
-arsort(
-  $contributorCounts
-);
-
-$topContributors =
-  array_slice(
-    array_keys(
-      $contributorCounts
-    ),
-    0,
-    3
-  );
-
-$otherContributorCount =
-  max(
-    0,
-    count($contributorCounts) -
-    count($topContributors)
-  );
 
 $currentQuarter =
   'Q' .
@@ -450,7 +404,9 @@ $currentQuarter =
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Performa | Employee Reports</title>
+  <?php employer_brand_head(); ?>
+
+  <title>Reports · Performa</title>
 
   <meta name="description" content="Create and manage individual performance assessments." />
 
@@ -462,8 +418,8 @@ $currentQuarter =
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
@@ -478,55 +434,45 @@ $currentQuarter =
 
     <main class="main reports-page" id="reports">
 
-      <header class="topbar reports-topbar">
+      <section class="page-header reports-page-header" aria-labelledby="reportsTitle">
 
-        <div class="reports-period">
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
 
-          <span class="deadline-icon" aria-hidden="true">
-            <?php
-            echo $icons['calendar'];
-            ?>
-          </span>
+        <div class="ph-main">
 
-          Review period:
-          <?php
-          echo htmlspecialchars(
-            $currentQuarter,
-            ENT_QUOTES
-          );
-          ?>
+          <span class="eyebrow">Documentation</span>
 
-        </div>
-
-        <div class="topbar-actions">
-
-          <button class="icon-button" type="button" aria-label="Notifications">
-            <span aria-hidden="true">
-              <?php
-              echo $icons['bell'];
-              ?>
-            </span>
-          </button>
-
-          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
-            Sign out
-          </a>
-
-        </div>
-
-      </header>
-
-      <section class="page-header reports-page-header">
-
-        <div>
-
-          <h1>
+          <h1 id="reportsTitle">
             Employee Reports
           </h1>
 
           <p>
             Create and manage individual performance assessments.
           </p>
+
+        </div>
+
+        <div class="ph-actions">
+
+          <div class="reports-period" title="Current review period">
+
+            <span class="deadline-icon" aria-hidden="true">
+              <?php
+              echo $icons['calendar'];
+              ?>
+            </span>
+
+            Review period:
+            <?php
+            echo htmlspecialchars(
+              $currentQuarter,
+              ENT_QUOTES
+            );
+            ?>
+
+          </div>
 
         </div>
 
@@ -602,12 +548,6 @@ $currentQuarter =
 
                 </select>
 
-                <span class="employee-select-chevron" aria-hidden="true">
-                  <?php
-                  echo $icons['chevron-down'];
-                  ?>
-                </span>
-
               </div>
 
             </div>
@@ -643,12 +583,6 @@ $currentQuarter =
 
                 </select>
 
-                <span class="employee-select-chevron" aria-hidden="true">
-                  <?php
-                  echo $icons['chevron-down'];
-                  ?>
-                </span>
-
               </div>
 
             </div>
@@ -670,7 +604,7 @@ $currentQuarter =
 
       </section>
 
-      <section aria-labelledby="generatedReportsTitle">
+      <section class="report-panel generated-reports-panel" aria-labelledby="generatedReportsTitle">
 
         <div class="reports-section-header">
 
@@ -766,75 +700,11 @@ $currentQuarter =
 
       </section>
 
-      <?php if ($topContributors): ?>
-
-        <section class="reports-contributors" aria-labelledby="contributorsTitle">
-
-          <div>
-            <h2 id="contributorsTitle" class="contributors-label">
-              Top contributors this period
-            </h2>
-          </div>
-
-          <div class="contributors-content">
-
-            <div class="contributors-avatars" aria-hidden="true">
-
-              <?php foreach ($topContributors as $index => $name): ?>
-
-                <div class="contributors-avatar"
-                  style="background-image:url('https://ui-avatars.com/api/?name=<?php echo urlencode($name); ?>&background=2f6df6&color=fff&size=64');">
-                </div>
-
-              <?php endforeach; ?>
-
-            </div>
-
-            <span class="contributors-summary">
-
-              <?php
-              echo htmlspecialchars(
-                $topContributors[0],
-                ENT_QUOTES
-              );
-              ?>
-
-              <?php if ($otherContributorCount > 0): ?>
-
-                &amp;
-                <?php
-                echo (int) $otherContributorCount;
-                ?>
-                other<?php echo $otherContributorCount === 1 ? '' : 's'; ?>
-
-              <?php endif; ?>
-
-            </span>
-
-          </div>
-
-        </section>
-
-      <?php endif; ?>
-
     </main>
 
   </div>
 
-  <footer class="site-footer">
-
-    <span>
-      Performa employer dashboard prototype
-    </span>
-
-    <span>
-      Powered by PHP &amp; Firebase
-    </span>
-
-  </footer>
-
-  <script src="dropdowns.js"></script>
-  <script src="script.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 
 </body>
 

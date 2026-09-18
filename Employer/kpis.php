@@ -8,22 +8,21 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
+// Shared icons (Style A cleanup). Trend glyphs replaced by employer_trend_badge().
 $icons = [
-  'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-  'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
-  'edit' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
-  'clock' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-  'user' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-  'dot' => '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="6"/></svg>',
-  'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  'search' => employer_icon('search'),
+  'plus' => employer_icon('plus'),
+  'edit' => employer_icon('settings'),
+  'clock' => employer_icon('hourglass'),
+  'user' => employer_icon('users'),
+  'dot' => employer_icon('more'),
+  'download' => employer_icon('download'),
 ];
 
 $trendGlyph = [
-  'up' => '↑↑',
-  'flat' => '↔',
-  'down' => '↓↓',
+  'up' => 'Improving',
+  'flat' => 'Steady',
+  'down' => 'Declining',
 ];
 
 $trendClass = [
@@ -484,7 +483,8 @@ foreach (
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performa | KPIs</title>
+  <?php employer_brand_head(); ?>
+  <title>KPIs · Performa</title>
   <meta name="description" content="Define and track organization-wide performance metrics." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -492,8 +492,8 @@ foreach (
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body class="kpi-page">
@@ -505,34 +505,39 @@ foreach (
 
     <main class="main">
 
-      <header class="topbar kpi-topbar" aria-label="KPI page account and utility controls">
-        <div class="topbar-actions">
-          <button class="icon-button" type="button" aria-label="Notifications">
-            <span aria-hidden="true">
-              <?php echo $icons['bell']; ?>
-            </span>
-          </button>
-
-          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
-            Sign out
-          </a>
-        </div>
-      </header>
-
-      <section class="page-header kpi-page-header">
-        <div>
-          <h1>Key Performance Indicators</h1>
+      <section class="page-header kpi-page-header" aria-labelledby="kpiTitle">
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <div class="ph-main">
+          <span class="eyebrow">Performance framework</span>
+          <h1 id="kpiTitle">Key Performance Indicators</h1>
           <p>
             Define and track organization-wide performance metrics.
           </p>
         </div>
 
-        <a class="btn-primary" href="#addKpiForm">
-          <span aria-hidden="true">
-            <?php echo $icons['plus']; ?>
-          </span>
-          Create KPI
-        </a>
+        <div class="ph-actions">
+          <label class="search-bar" for="kpiSearch">
+            <span class="sr-only">
+              Search KPIs and categories
+            </span>
+
+            <span class="search-icon" aria-hidden="true">
+              <?php echo $icons['search']; ?>
+            </span>
+
+            <input type="search" id="kpiSearch" aria-controls="performanceMetrics"
+              placeholder="Search KPIs, categories..." autocomplete="off" />
+          </label>
+
+          <a class="btn-primary" href="#addKpiForm">
+            <span aria-hidden="true">
+              <?php echo $icons['plus']; ?>
+            </span>
+            Create KPI
+          </a>
+        </div>
       </section>
 
       <?php if ($kpiMessage !== ''): ?>
@@ -548,21 +553,6 @@ foreach (
         </div>
       <?php endif; ?>
 
-      <div class="kpi-search-wrap">
-        <label class="search-bar" for="kpiSearch">
-          <span class="sr-only">
-            Search KPIs and categories
-          </span>
-
-          <span class="search-icon" aria-hidden="true">
-            <?php echo $icons['search']; ?>
-          </span>
-
-          <input type="search" id="kpiSearch" aria-controls="performanceMetrics"
-            placeholder="Search KPIs, categories..." autocomplete="off" />
-        </label>
-      </div>
-
       <section class="report-panel kpi-employee-panel">
         <div class="section-header kpi-section-header">
           <div>
@@ -572,7 +562,7 @@ foreach (
             </p>
           </div>
 
-          <button class="btn-primary" type="button" id="exportKpiBtn">
+          <button class="ghost-button" type="button" id="exportKpiBtn">
             <span aria-hidden="true">
               <?php echo $icons['download']; ?>
             </span>
@@ -606,10 +596,6 @@ foreach (
                     </option>
                   <?php endforeach; ?>
                 </select>
-
-                <span class="employee-select-chevron" aria-hidden="true">
-                  <?php echo $icons['chevron-down']; ?>
-                </span>
               </form>
 
               <a class="ghost-button kpi-rate-button"
@@ -707,54 +693,11 @@ foreach (
               </div>
 
               <div class="kpi-current" data-label="Current Score">
-                <div class="stars" aria-hidden="true">
-                  <?php
-                  echo str_repeat(
-                    '★',
-                    (int) $kpi['stars']
-                  );
-
-                  echo str_repeat(
-                    '☆',
-                    5 - (int) $kpi['stars']
-                  );
-                  ?>
-                </div>
-
-                <strong>
-                  <?php
-                  echo $kpi['hasData']
-                    ? number_format(
-                      (float) $kpi['current'],
-                      1
-                    )
-                    : '—';
-                  ?>
-                </strong>
+                <?php echo employer_score_meter($kpi['hasData'] ? (float) $kpi['current'] : null, 5.0, (float) $kpi['target']); ?>
               </div>
 
-              <div class="trend <?php echo htmlspecialchars($trendClass[$kpi['trend']], ENT_QUOTES); ?>" data-label="Trend">
-                <span aria-hidden="true">
-                  <?php
-                  echo $kpi['hasData']
-                    ? $trendGlyph[$kpi['trend']]
-                    : '—';
-                  ?>
-                </span>
-
-                <span class="sr-only">
-                  <?php
-                  if (!$kpi['hasData']) {
-                    echo 'No trend data';
-                  } elseif ($kpi['trend'] === 'up') {
-                    echo 'Improving';
-                  } elseif ($kpi['trend'] === 'down') {
-                    echo 'Declining';
-                  } else {
-                    echo 'Unchanged';
-                  }
-                  ?>
-                </span>
+              <div data-label="Trend">
+                <?php echo employer_trend_badge($kpi['trend'], (bool) $kpi['hasData']); ?>
               </div>
 
               <div data-label="Status">
@@ -769,17 +712,16 @@ foreach (
               </div>
 
               <div data-label="Actions">
-                <button class="edit-button" type="button"
+                <button class="edit-button" type="button" data-kpi-edit="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
                   aria-label="Edit target for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>"
-                  aria-controls="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>" aria-expanded="false"
-                  onclick="const form = document.getElementById(<?php echo $editFormIdJson; ?>); if (form) { form.style.display = 'flex'; form.setAttribute('aria-hidden', 'false'); this.style.display = 'none'; this.setAttribute('aria-expanded', 'true'); const input = form.querySelector('input[name=\'kpi_target\']'); if (input) { input.focus(); input.select(); } }">
+                  aria-controls="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>" aria-expanded="false">
                   <span aria-hidden="true">
                     <?php echo $icons['edit']; ?>
                   </span>
                 </button>
 
                 <form method="post" id="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
-                  style="display:none;align-items:center;gap:6px;" aria-hidden="true">
+                  class="kpi-edit-form" aria-hidden="true">
                   <input type="hidden" name="action" value="edit_kpi_target" />
 
                   <input type="hidden" name="kpi_key" value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" />
@@ -952,19 +894,8 @@ foreach (
     </main>
   </div>
 
-  <footer class="site-footer">
-    <span>
-      Performa employer dashboard prototype
-    </span>
-
-    <span>
-      Powered by PHP &amp; Firebase
-    </span>
-  </footer>
-
-  <script src="dropdowns.js"></script>
-  <script src="script.js"></script>
-  <script src="kpis.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('kpis.js'), ENT_QUOTES); ?>"></script>
 </body>
 
 </html>

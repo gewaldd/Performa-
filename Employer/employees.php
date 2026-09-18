@@ -18,30 +18,11 @@ $profileRoleDisplay = ucwords(
   )
 );
 
+// Shared icon library (Style A cleanup) — single source in includes/icons.php.
 $icons = [
-  'home' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-
-  'users' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-
-  'target' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
-
-  'bar-chart' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-
-  'settings' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-
-  'search' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-
-  'bell' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-
-  'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
-
-  'plus' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-
-  'chevron-down' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
-
-  'download' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-
-  'more-vertical' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>',
+  'search' => employer_icon('search'),
+  'plus' => employer_icon('plus'),
+  'download' => employer_icon('download'),
 ];
 
 function normalize_role_key(?string $role): string
@@ -161,17 +142,6 @@ if ($cacheAvailable) {
         continue;
       }
 
-      $avatarSeed =
-        urlencode(
-          strtolower(
-            $doc['email']
-            ?? (
-              $doc['name']
-              ?? 'user'
-            )
-          )
-        );
-
       $status =
         $doc['status']
         ?? 'Active';
@@ -205,10 +175,14 @@ if ($cacheAvailable) {
           $doc['email']
           ?? '',
 
-        'avatar' =>
-          'https://ui-avatars.com/api/?name=' .
-          $avatarSeed .
-          '&background=2f6df6&color=fff&size=160',
+        'initials' =>
+          employer_avatar_initials(
+            $doc['name']
+            ?? (
+              $doc['email']
+              ?? 'Unknown'
+            )
+          ),
 
         'role' =>
           $roleLabel,
@@ -280,8 +254,10 @@ sort($departments);
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <?php employer_brand_head(); ?>
+
   <title>
-    Performa | Employees
+    Employees · Performa
   </title>
 
   <meta name="description" content="Manage and organize your workforce directory." />
@@ -294,8 +270,8 @@ sort($departments);
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 
 </head>
 
@@ -311,47 +287,17 @@ sort($departments);
 
     <main class="main">
 
-      <header class="topbar">
+      <section class="page-header" aria-labelledby="employeesTitle">
 
-        <label class="search-bar" for="employeeSearch">
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
 
-          <span class="sr-only">
-            Search employees and departments
-          </span>
+        <div class="ph-main">
 
-          <span class="search-icon" aria-hidden="true">
-            <?php
-            echo $icons['search'];
-            ?>
-          </span>
+          <span class="eyebrow">Workforce</span>
 
-          <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
-
-        </label>
-
-        <div class="topbar-actions">
-
-          <button class="icon-button" type="button" aria-label="Messages">
-            <span aria-hidden="true">
-              <?php
-              echo $icons['mail'];
-              ?>
-            </span>
-          </button>
-
-          <a class="ghost-button" href="../logout.php" aria-label="Sign out">
-            Sign out
-          </a>
-
-        </div>
-
-      </header>
-
-      <section class="page-header">
-
-        <div>
-
-          <h1>
+          <h1 id="employeesTitle">
             Employees
           </h1>
 
@@ -361,15 +307,35 @@ sort($departments);
 
         </div>
 
-        <a class="btn-primary" href="add_employee.php">
-          <span aria-hidden="true">
-            <?php
-            echo $icons['plus'];
-            ?>
-          </span>
+        <div class="ph-actions">
 
-          Add Employee
-        </a>
+          <label class="search-bar" for="employeeSearch">
+
+            <span class="sr-only">
+              Search employees and departments
+            </span>
+
+            <span class="search-icon" aria-hidden="true">
+              <?php
+              echo $icons['search'];
+              ?>
+            </span>
+
+            <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
+
+          </label>
+
+          <a class="btn-primary" href="add_employee.php">
+            <span aria-hidden="true">
+              <?php
+              echo $icons['plus'];
+              ?>
+            </span>
+
+            Add Employee
+          </a>
+
+        </div>
 
       </section>
 
@@ -508,44 +474,44 @@ sort($departments);
             Reset
           </button>
 
-          <button class="icon-button-square" type="button" id="exportDirectoryBtn"
-            aria-label="Export employee directory" title="Export employee directory">
+          <button class="ghost-button" type="button" id="exportDirectoryBtn">
             <span aria-hidden="true">
               <?php
               echo $icons['download'];
               ?>
             </span>
+            Export
           </button>
 
         </div>
 
       </div>
 
-      <section class="directory-panel" aria-label="Employee directory">
+      <section class="directory-panel" role="table" aria-label="Employee directory">
 
-        <div class="directory-head">
+        <div class="directory-head" role="row">
 
-          <span>
+          <span role="columnheader">
             Employee
           </span>
 
-          <span>
+          <span role="columnheader">
             Role
           </span>
 
-          <span>
+          <span role="columnheader">
             Department
           </span>
 
-          <span>
+          <span role="columnheader">
             Employment Type
           </span>
 
-          <span>
+          <span role="columnheader">
             Status
           </span>
 
-          <span>
+          <span role="columnheader">
             Actions
           </span>
 
@@ -557,8 +523,12 @@ sort($departments);
 
             <p>
               No employees yet.
-              Click "Add Employee" to create the first profile.
+              Create the first profile to get started.
             </p>
+
+            <a class="btn-primary" href="add_employee.php">
+              Add Employee
+            </a>
 
           </div>
 
@@ -568,7 +538,7 @@ sort($departments);
 
             <?php foreach ($directory as $person): ?>
 
-              <div class="directory-row" data-search="<?php
+              <div class="directory-row" role="row" data-search="<?php
               echo htmlspecialchars(
                 strtolower(
                   $person['name'] .
@@ -596,11 +566,11 @@ sort($departments);
               );
               ?>">
 
-                <div class="employee-cell">
+                <div class="employee-cell" role="cell">
 
-                  <div class="avatar"
-                    style="background-image: url('<?php echo htmlspecialchars($person['avatar'], ENT_QUOTES); ?>');"
-                    aria-hidden="true"></div>
+                  <div class="avatar avatar-local"
+                    title="<?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>"
+                    aria-hidden="true"><?php echo htmlspecialchars($person['initials'], ENT_QUOTES); ?></div>
 
                   <div>
 
@@ -630,7 +600,7 @@ sort($departments);
 
                 </div>
 
-                <div data-label="Role">
+                <div class="muted-cell" role="cell" data-label="Role">
 
                   <?php
                   echo htmlspecialchars(
@@ -641,18 +611,32 @@ sort($departments);
 
                 </div>
 
-                <div data-label="Department">
+                <div role="cell" data-label="Department">
+
+                  <?php
+                  // Shorten role-derived pseudo-departments so the pill never
+                  // forces its column wide; raw value stays in title.
+                  $deptShort = $person['dept'];
+                  if (strtolower(trim($deptShort)) === 'probationary employee') {
+                    $deptShort = 'Probationary';
+                  }
+                  ?>
 
                   <span class="dept-pill <?php
                   echo htmlspecialchars(
                     $person['deptClass'],
                     ENT_QUOTES
                   );
+                  ?>" title="<?php
+                  echo htmlspecialchars(
+                    $person['dept'],
+                    ENT_QUOTES
+                  );
                   ?>">
 
                     <?php
                     echo htmlspecialchars(
-                      $person['dept'],
+                      $deptShort,
                       ENT_QUOTES
                     );
                     ?>
@@ -661,7 +645,7 @@ sort($departments);
 
                 </div>
 
-                <div data-label="Employment Type">
+                <div class="muted-cell" role="cell" data-label="Employment Type">
 
                   <?php
                   echo htmlspecialchars(
@@ -672,7 +656,7 @@ sort($departments);
 
                 </div>
 
-                <div data-label="Status">
+                <div role="cell" data-label="Status">
 
                   <span class="status-pill <?php
                   echo htmlspecialchars(
@@ -692,18 +676,11 @@ sort($departments);
 
                 </div>
 
-                <div data-label="Actions">
+                <div role="cell" data-label="Actions">
 
-                  <a class="icon-button-square" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>"
-                    aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>"
-                    title="Manage employee">
-
-                    <span aria-hidden="true">
-                      <?php
-                      echo $icons['more-vertical'];
-                      ?>
-                    </span>
-
+                  <a class="ghost-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>"
+                    aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>">
+                    View
                   </a>
 
                 </div>
@@ -712,6 +689,11 @@ sort($departments);
 
             <?php endforeach; ?>
 
+          </div>
+
+          <div id="noFilterResults" class="dashboard-empty" hidden>
+            <p>No employees match these filters.</p>
+            <button class="ghost-button" type="button" id="clearFiltersBtn">Reset filters</button>
           </div>
 
         <?php endif; ?>
@@ -745,7 +727,7 @@ sort($departments);
               Previous
             </button>
 
-            <span id="pageIndicator" style="align-self:center;font-size:13px;color:var(--muted);"
+            <span id="pageIndicator" class="page-indicator"
               aria-live="polite"></span>
 
             <button class="page-btn" type="button" id="nextPageBtn">
@@ -762,20 +744,8 @@ sort($departments);
 
   </div>
 
-  <footer class="site-footer">
-
-    <span>
-      Performa employer dashboard prototype
-    </span>
-
-    <span>
-      Powered by PHP &amp; Firebase
-    </span>
-
-  </footer>
-
-  <script src="dropdowns.js"></script>
-  <script src="employees.js"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script src="<?php echo htmlspecialchars(employer_asset('employees.js'), ENT_QUOTES); ?>"></script>
 
 </body>
 

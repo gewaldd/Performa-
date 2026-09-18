@@ -98,67 +98,7 @@
   --radius-sm: 10px;
 }
 
-/* =========================================================
-   ASYNC LOADING STATES
-   ========================================================= */
-
-/*
- * Reusable shimmer for genuinely asynchronous client-side states.
- * The dashboard PHP itself is server-rendered, so pages should only
- * apply this class while JS is actively loading or re-rendering content.
- */
-.skeleton {
-  position: relative;
-  overflow: hidden;
-
-  border-radius: 8px;
-
-  background:
-    #eef1f6;
-
-  color: transparent !important;
-
-  user-select: none;
-}
-
-.skeleton::after {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    linear-gradient(
-      90deg,
-      #eef1f6 25%,
-      #f7f9fc 50%,
-      #eef1f6 75%
-    );
-
-  background-size: 200% 100%;
-
-  animation:
-    skeleton-shimmer
-    1.35s
-    linear
-    infinite;
-}
-
-@keyframes skeleton-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-
-  to {
-    background-position: -200% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton::after {
-    animation: none;
-  }
-}
+/* Purged 2026-09: .skeleton shimmer system (zero markup/JS references). */
 
 /* =========================================================
    GLOBAL
@@ -576,129 +516,8 @@ a:focus-visible {
    TOPBAR
    ========================================================= */
 
-.topbar {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 24px;
-
-  width: 100%;
-
-  min-height: 58px;
-
-  margin:
-    0
-    0
-    22px;
-
-  padding:
-    8px
-    0;
-
-  background: transparent;
-
-  border: 0;
-
-  box-shadow: none;
-}
-
-.topbar > :first-child {
-  min-width: 0;
-
-  flex: 1 1 auto;
-}
-
-.topbar > :first-child:empty {
-  display: flex;
-
-  align-items: center;
-
-  min-height: 30px;
-}
-
-/* Contextual content for otherwise empty topbars. */
-main:has(.metrics-panel)
-  .topbar
-  > :first-child:empty::before {
-  content: "KPI workspace";
-}
-
-main:has(.report-panel)
-  .topbar
-  > :first-child:empty::before {
-  content: "Reports center";
-}
-
-main:has(.settings-panel)
-  .topbar
-  > :first-child:empty::before {
-  content: "Account & security";
-}
-
-main:has(.metrics-panel)
-  .topbar
-  > :first-child::before,
-main:has(.report-panel)
-  .topbar
-  > :first-child::before,
-main:has(.settings-panel)
-  .topbar
-  > :first-child::before {
-  color: var(--color-neutral);
-
-  font-size: 12px;
-  font-weight: 600;
-
-  letter-spacing: 0.01em;
-}
-
-.topbar .search-bar {
-  width: 320px;
-  max-width: 320px;
-
-  flex:
-    0 1
-    320px;
-}
-
-.topbar-actions {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: flex-end;
-
-  gap: 10px;
-
-  margin-left: auto;
-
-  flex: 0 0 auto;
-}
-
-.topbar-actions .icon-button {
-  width: 40px;
-  height: 40px;
-
-  flex: 0 0 40px;
-}
-
-.topbar-actions .ghost-button {
-  min-height: 40px;
-
-  padding-inline: 15px;
-}
-
-.topbar-actions .deadline-pill,
-.topbar-actions .pending-pill {
-  min-height: 40px;
-
-  padding-inline: 15px;
-
-  box-shadow: none;
-}
+/* Purged 2026-09: .topbar system incl. :empty::before content hacks,
+   .topbar-scoped search/actions/pill rules (zero .topbar* markup refs). */
 
 /* =========================================================
    SEARCH
@@ -900,49 +719,7 @@ main:has(.settings-panel)
   line-height: 1.55;
 }
 
-.hero {
-  padding:
-    14px
-    6px
-    20px;
-
-  text-align: center;
-}
-
-.hero-top {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 20px;
-
-  text-align: left;
-}
-
-.hero h1,
-.hero-top h1 {
-  margin:
-    0
-    0
-    6px;
-
-  font-size: 1.7rem;
-
-  font-weight: 700;
-}
-
-.hero p,
-.hero-top p {
-  margin: 0;
-
-  color: var(--muted);
-
-  font-size: 14px;
-
-  line-height: 1.55;
-}
+/* Purged 2026-09: .hero/.hero-top (zero markup refs; .page-header is canonical). */
 
 /* =========================================================
    BUTTONS
@@ -1730,14 +1507,7 @@ main:has(.settings-panel)
   gap: 4px;
 }
 
-.stars {
-  color: #263248;
-
-  letter-spacing: 2px;
-
-  font-size: 11px;
-}
-
+/* Purged 2026-09: .stars text glyphs (meters replaced them; zero markup refs). */
 .status-pill {
   display: inline-flex;
 
@@ -2042,72 +1812,7 @@ main:has(.settings-panel)
   cursor: pointer;
 }
 
-/* =========================================================
-   KPI
-   ========================================================= */
-
-.toolbar {
-  display: flex;
-
-  align-items: center;
-
-  gap: 14px;
-
-  padding:
-    14px
-    18px;
-
-  margin-bottom: 24px;
-
-  border:
-    1px solid
-    var(--panel-border);
-
-  border-radius:
-    var(--radius-lg);
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.92
-    );
-
-  box-shadow:
-    var(--shadow-soft);
-}
-
-.toolbar .search-bar {
-  flex: 1;
-
-  width: auto;
-  max-width: none;
-
-  box-shadow: none;
-}
-
-.toolbar--end {
-  justify-content: flex-end;
-}
-
-.toolbar--search-only {
-  padding: 0;
-
-  margin-bottom: 24px;
-
-  background: transparent;
-
-  border: 0;
-
-  box-shadow: none;
-}
-
-.toolbar--search-only .search-bar {
-  width: 100%;
-
-  max-width: none;
-}
+/* Purged 2026-09: .toolbar system (zero markup refs; only .table-toolbar exists, styled in ui-refresh.css). */
 
 .section-header {
   display: flex;

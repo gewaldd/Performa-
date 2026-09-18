@@ -1,4 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Accessible target editor (replaces inline onclick). Presentation only.
+  document.querySelectorAll("[data-kpi-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const form = document.getElementById(btn.getAttribute("data-kpi-edit"));
+      if (!form) return;
+      form.classList.add("is-open");
+      form.setAttribute("aria-hidden", "false");
+      btn.setAttribute("aria-expanded", "true");
+      btn.style.display = "none";
+      const input = form.querySelector("input[name='kpi_target']");
+      if (input) { input.focus(); input.select(); }
+    });
+  });
+
   const kpiSearchInput = document.getElementById("kpiSearch");
   const kpiRows = Array.from(document.querySelectorAll(".kpi-row"));
   const exportKpiBtn = document.getElementById("exportKpiBtn");

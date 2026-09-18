@@ -153,14 +153,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Performa | Add Employee</title>
+    <?php employer_brand_head(); ?>
+    <meta name="description" content="Create an account for a new probationary employee or supervisor." />
+    <title>Add Employee · Performa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="../ui-refresh.css" />
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
@@ -168,16 +170,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php employer_render_shell('Employees'); ?>
         <main class="main content-narrow">
             <div class="page-header">
-                <div>
+                <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+                </button>
+                <div class="ph-main">
                     <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
+                    <nav class="ph-crumb" aria-label="Breadcrumb">
+                        <span>Employees</span>
+                        <span aria-hidden="true">/</span>
+                        <span>Add</span>
+                    </nav>
                     <h1>Add Employee</h1>
-                    <p>Create an account for a new probationary employee or supervisor.</p>
+                    <p>Create a workforce account for a new probationary employee or supervisor.</p>
                 </div>
             </div>
 
             <div class="settings-panel">
                 <?php if ($message): ?>
-                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>">
+                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>">
                         <?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
                 <?php endif; ?>
 
@@ -251,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </main>
     </div>
-    <script src="dropdowns.js"></script>
+    <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
     <script>
         // Industry, Hire Date, and Assign Supervisor only matter for probationary employees.
         const roleSelect = document.getElementById('role');

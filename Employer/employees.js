@@ -1,3 +1,6 @@
+// Scoped: shares pages with script.js, so no top-level name may leak to
+// window (a `searchInput` collision here once killed this entire script).
+(() => {
 const searchInput = document.getElementById("employeeSearch");
 const deptFilter = document.getElementById("deptFilter");
 const statusFilter = document.getElementById("statusFilter");
@@ -14,29 +17,46 @@ const PAGE_SIZE = 8;
 let currentPage = 1;
 let visibleRows = allRows;
 
-function matchesFilters(row) {
-  const query = (searchInput?.value || "").trim().toLowerCase();
-  const dept = deptFilter?.value || "";
-  const status = statusFilter?.value || "";
-  const type = typeFilter?.value || "";
+// Firestore values are case/whitespace-fragile; normalize both sides so one
+// stray space or casing difference can't silently break a filter dimension.
+const normFilterValue = (v) => (v ?? "").trim().toLowerCase();
 
-  const matchesSearch = !query || (row.dataset.search || "").includes(query);
-  const matchesDept = !dept || row.dataset.dept === dept;
-  const matchesStatus = !status || row.dataset.status === status;
-  const matchesType = !type || row.dataset.type === type;
+function matchesFilters(row) {
+  const query = normFilterValue(searchInput?.value);
+  const dept = normFilterValue(deptFilter?.value);
+  const status = normFilterValue(statusFilter?.value);
+  const type = normFilterValue(typeFilter?.value);
+
+  const matchesSearch = !query || normFilterValue(row.dataset.search).includes(query);
+  const matchesDept = !dept || normFilterValue(row.dataset.dept) === dept;
+  const matchesStatus = !status || normFilterValue(row.dataset.status) === status;
+  const matchesType = !type || normFilterValue(row.dataset.type) === type;
   return matchesSearch && matchesDept && matchesStatus && matchesType;
 }
+
+const noResultsBox = document.getElementById("noFilterResults");
+const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
 function render() {
   visibleRows = allRows.filter(matchesFilters);
   const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
   if (currentPage > totalPages) currentPage = totalPages;
 
-  allRows.forEach((row) => { row.hidden = true; });
+  // Belt and suspenders: hidden carries semantics (backed by the CSS
+  // [hidden] guard) AND style.display forces the paint. Either mechanism
+  // alone suffices; together they survive any future CSS regression.
+  // Mirrors the working dashboard pattern in script.js.
+  allRows.forEach((row) => { row.hidden = true; row.style.display = "none"; });
 
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageRows = visibleRows.slice(start, start + PAGE_SIZE);
-  pageRows.forEach((row) => { row.hidden = false; });
+  pageRows.forEach((row) => { row.hidden = false; row.style.display = ""; });
+
+  // Distinct from the genuine empty-directory state (which renders instead
+  // of #directoryRows entirely): only when rows exist but none match.
+  if (noResultsBox && allRows.length > 0) {
+    noResultsBox.hidden = visibleRows.length !== 0;
+  }
 
   if (paginationSummary) {
     paginationSummary.innerHTML = `Showing <strong>${pageRows.length}</strong> of <strong>${visibleRows.length}</strong> employees`;
@@ -54,14 +74,18 @@ function render() {
   el.addEventListener("change", () => { currentPage = 1; render(); });
 });
 
+if (clearFiltersBtn) {
+  // Zero-result state reuses the exact Reset path — single source of truth.
+  clearFiltersBtn.addEventListener("click", () => { if (resetBtn) resetBtn.click(); });
+}
+
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
     [searchInput, deptFilter, statusFilter, typeFilter].forEach((el) => {
       if (!el) return;
       el.value = "";
-      // Setting .value programmatically does not fire a native change
-      // event, so dropdowns.js (which listens for "change" to refresh the
-      // visible trigger label) would otherwise leave the old label showing.
+      // Native selects: setting .value never fires change, so dispatch it
+      // for the filter listeners below.
       el.dispatchEvent(new Event("change", { bubbles: true }));
     });
     currentPage = 1;
@@ -115,3 +139,4 @@ document.querySelectorAll(".nav-item").forEach((item) => {
 });
 
 if (allRows.length > 0) render();
+})();

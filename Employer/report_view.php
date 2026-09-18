@@ -22,21 +22,16 @@ $autoPrint = $report && !empty($_GET['autoprint']);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performa | Report</title>
+  <?php employer_brand_head(); ?>
+  <meta name="description" content="View and print an employee performance report." />
+  <title>Report · Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="../ui-refresh.css" />
-  <style>
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
   <?php if ($autoPrint): ?>
     <script>
       // "Download PDF" on the Reports list opens straight into the browser's
@@ -49,30 +44,41 @@ $autoPrint = $report && !empty($_GET['autoprint']);
 <body>
   <div class="app-shell">
     <?php employer_render_shell('Reports'); ?>
-    <main class="main" style="max-width:720px;margin:0 auto;">
+    <main class="main content-narrow">
       <div class="page-header no-print">
-        <div>
-          <a href="reports.php" class="ghost-button" style="display:inline-flex;margin-bottom:12px;">&larr; Back to
-            Reports</a>
+        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <div class="ph-main">
+          <a href="reports.php" class="ghost-button back-link">&larr; Back to Reports</a>
+          <nav class="ph-crumb" aria-label="Breadcrumb">
+            <span>Reports</span>
+            <span aria-hidden="true">/</span>
+            <span>View</span>
+          </nav>
+          <h1>Report</h1>
+          <p>Review scores, targets, and documentation details before printing.</p>
         </div>
-        <button class="btn-primary" type="button" onclick="window.print()">Print / Save as PDF</button>
+        <div class="ph-actions">
+          <button class="btn-primary" type="button" data-print>Print / Save as PDF</button>
+        </div>
       </div>
 
       <?php if (!$report): ?>
         <div class="settings-panel">
-          <p>Report not found. It may have been deleted.</p>
+          <p class="microcopy" style="padding:16px 18px;">Report not found. It may have been deleted.</p>
         </div>
       <?php else: ?>
         <div class="settings-panel">
-          <h1><?php echo htmlspecialchars($report['employeeName'] ?? 'Unknown', ENT_QUOTES); ?></h1>
-          <p style="color:var(--muted);">
+          <h1 style="padding:16px 18px 0;"><?php echo htmlspecialchars($report['employeeName'] ?? 'Unknown', ENT_QUOTES); ?></h1>
+          <p class="microcopy" style="padding:0 18px;">
             <?php echo htmlspecialchars($report['reportTypeLabel'] ?? '', ENT_QUOTES); ?>
             &middot; Generated
-            <?php echo !empty($report['generatedAt']) ? date('F j, Y g:ia', strtotime($report['generatedAt'])) : ''; ?>
+            <?php echo !empty($report['generatedAt']) ? date('M j, Y g:ia', strtotime($report['generatedAt'])) : ''; ?>
             <?php if (!empty($report['generatedBy'])): ?> by
               <?php echo htmlspecialchars($report['generatedBy'], ENT_QUOTES); ?>  <?php endif; ?>
           </p>
-          <p style="color:var(--muted);">Industry template:
+          <p class="microcopy" style="padding:0 18px;">Industry template:
             <?php echo htmlspecialchars($report['templateLabel'] ?? '', ENT_QUOTES); ?></p>
 
           <hr class="section-divider" />
@@ -97,6 +103,12 @@ $autoPrint = $report && !empty($_GET['autoprint']);
       <?php endif; ?>
     </main>
   </div>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script>
+    document.querySelectorAll('[data-print]').forEach(function (btn) {
+      btn.addEventListener('click', function () { window.print(); });
+    });
+  </script>
 </body>
 
 </html>

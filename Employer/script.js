@@ -1,3 +1,8 @@
+// Whole file runs inside one IIFE: top-level const/function names here must
+// NEVER leak to window, or any later script declaring the same name
+// (e.g. employees.js `searchInput`) dies with "already been declared" and
+// none of that script runs. That exact collision broke Employees filtering.
+(() => {
 const searchInput = document.getElementById("dashboardSearch");
 const rows = Array.from(document.querySelectorAll("#evaluationRows .table-row"));
 const chips = Array.from(document.querySelectorAll(".filter-chip"));
@@ -17,6 +22,35 @@ function applyFilters() {
     row.style.display = matchesSearch && matchesFilter ? "" : "none";
   });
 }
+
+// Mobile sidebar — sole owner of the drawer toggle (custom dropdowns removed; native selects).
+(function initPfSidebar() {
+  if (window.__pfSidebarBound) return;
+  window.__pfSidebarBound = true;
+  let lastToggle = null;
+  const close = () => {
+    if (!document.body.classList.contains("sidebar-open")) return;
+    document.body.classList.remove("sidebar-open");
+    document.querySelectorAll("[data-sidebar-toggle]").forEach((t) => t.setAttribute("aria-expanded", "false"));
+    if (lastToggle && document.contains(lastToggle)) lastToggle.focus({ preventScroll: true });
+  };
+  const toggle = () => {
+    const willOpen = !document.body.classList.contains("sidebar-open");
+    document.body.classList.toggle("sidebar-open", willOpen);
+    document.querySelectorAll("[data-sidebar-toggle]").forEach((t) => t.setAttribute("aria-expanded", String(willOpen)));
+    if (!willOpen && lastToggle && document.contains(lastToggle)) lastToggle.focus({ preventScroll: true });
+  };
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-sidebar-toggle]");
+    if (openBtn) { lastToggle = openBtn; toggle(); return; }
+    if (e.target.closest("[data-sidebar-close]") || e.target.closest("[data-sidebar-backdrop]")) { close(); return; }
+    if (document.body.classList.contains("sidebar-open")) {
+      const sidebar = document.getElementById("pfSidebar");
+      if (sidebar && !e.target.closest("#pfSidebar") && !e.target.closest("[data-sidebar-toggle]")) close();
+    }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+})();
 
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", (event) => {
@@ -79,17 +113,21 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     const cancelButton = document.createElement("button");
     const confirmButton = document.createElement("button");
 
+    // Destructive forms opt in via data-confirm-danger: the dialog and its
+    // confirm button turn danger-red and the heading names the action.
+    const isDanger = form.hasAttribute("data-confirm-danger");
+
     backdrop.className = "modal-backdrop";
-    dialog.className = "confirm-dialog";
-    heading.textContent = "Please confirm";
+    dialog.className = "confirm-dialog" + (isDanger ? " confirm-danger" : "");
+    heading.textContent = isDanger ? "Are you sure?" : "Please confirm";
     message.textContent = form.dataset.confirm;
     actions.className = "confirm-dialog-actions";
     cancelButton.type = "button";
     cancelButton.className = "ghost-button";
     cancelButton.textContent = "Cancel";
     confirmButton.type = "button";
-    confirmButton.className = "btn-cancel";
-    confirmButton.textContent = "Continue";
+    confirmButton.className = isDanger ? "btn-danger" : "btn-cancel";
+    confirmButton.textContent = isDanger ? "Deactivate" : "Continue";
 
     actions.append(cancelButton, confirmButton);
     dialog.append(heading, message, actions);
@@ -115,3 +153,4 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     confirmButton.focus();
   });
 });
+})();
