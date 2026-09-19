@@ -12,6 +12,7 @@ require_role('employer');
 // Ownership helpers + forced-reset gate (same as every other Employer page).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/collection_cache.php';
+require_once __DIR__ . '/includes/roles.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -26,8 +27,7 @@ $employees = [];
 try {
   $docs = firestore_list_documents('Users');
   foreach ($docs as $doc) {
-    $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
-    if (strpos($roleKey, 'probation') !== false) {
+    if (normalize_role_key($doc['role'] ?? null) === 'probationary') {
       $employees[] = [
         'uid' => $doc['uid'] ?? '',
         'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',

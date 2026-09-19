@@ -3,6 +3,7 @@
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
@@ -28,44 +29,6 @@ $icons = [
   'plus' => employer_icon('plus'),
   'download' => employer_icon('download'),
 ];
-
-function normalize_role_key(?string $role): string
-{
-  $roleKey = strtolower(trim((string) $role));
-
-  if (strpos($roleKey, 'probation') !== false) {
-    return 'probationary';
-  }
-
-  if (strpos($roleKey, 'supervis') !== false) {
-    return 'supervisor';
-  }
-
-  if (strpos($roleKey, 'employ') !== false) {
-    return 'employer';
-  }
-
-  if (strpos($roleKey, 'admin') !== false) {
-    return 'admin';
-  }
-
-  return $roleKey;
-}
-
-function display_role_label(?string $role): string
-{
-  $raw = trim((string) $role);
-
-  return $raw !== ''
-    ? ucwords(
-      str_replace(
-        '_',
-        ' ',
-        $raw
-      )
-    )
-    : 'Employee';
-}
 
 $deptClassCycle = [
   'dept-blue',
@@ -248,7 +211,8 @@ if ($cacheAvailable) {
       $roleLabel =
         display_role_label(
           $doc['role']
-          ?? null
+          ?? null,
+          'Employee'
         );
 
       $dept =
@@ -343,9 +307,12 @@ if ($cacheAvailable) {
 $departments =
   array_values(
     array_unique(
-      array_column(
-        $directory,
-        'dept'
+      array_map(
+        'strtolower',
+        array_column(
+          $directory,
+          'dept'
+        )
       )
     )
   );
@@ -546,12 +513,33 @@ $pfPaletteJson =
                 All Departments
               </option>
 
-              <?php foreach ($departments as $dept): ?>
+              <?php foreach ($departments as $deptLower): ?>
 
-                <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>">
+                <?php
+                // Options are deduped case-insensitively above; value carries
+                // the canonical lowercase form (JS normalizes both sides the
+                // same way). Display uses the first-seen original casing.
+                $deptRaw = '';
+
+                foreach ($directory as $deptRow) {
+                  if (
+                    strtolower(
+                      trim(
+                        (string) ($deptRow['dept'] ?? '')
+                      )
+                    ) === $deptLower
+                  ) {
+                    $deptRaw = (string) ($deptRow['dept'] ?? '');
+
+                    break;
+                  }
+                }
+                ?>
+
+                <option value="<?php echo htmlspecialchars($deptLower, ENT_QUOTES); ?>">
                   <?php
                   echo htmlspecialchars(
-                    pf_dept_label($dept) !== '' ? pf_dept_label($dept) : $dept,
+                    pf_dept_label($deptRaw) !== '' ? pf_dept_label($deptRaw) : $deptLower,
                     ENT_QUOTES
                   );
                   ?>
@@ -714,7 +702,11 @@ $pfPaletteJson =
                   ' ' .
                   $person['email'] .
                   ' ' .
-                  $person['dept']
+                  $person['dept'] .
+                  ' ' .
+                  $person['role'] .
+                  ' ' .
+                  $person['status']
                 ),
                 ENT_QUOTES
               );
@@ -915,7 +907,10 @@ $pfPaletteJson =
             Showing
             <strong>
               <?php
-              echo count($directory);
+              echo min(
+                count($directory),
+                8
+              );
               ?>
             </strong>
 

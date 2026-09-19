@@ -3,24 +3,14 @@ require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
 require_once __DIR__ . '/../Employer/includes/collection_cache.php';
+require_once __DIR__ . '/supervisor_layout.php';
 require_login();
 require_role('supervisor');
 require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
 
-$navItems = [
-    ['label' => 'Dashboard', 'href' => 'supervisor_dashboard.php', 'active' => true],
-    ['label' => 'My Employees', 'href' => 'employees.php', 'active' => false],
-    ['label' => 'Rating Entry', 'href' => 'ratings.php', 'active' => false],
-    ['label' => 'Reports', 'href' => 'reports.php', 'active' => false],
-    ['label' => 'Settings', 'href' => 'settings.php', 'active' => false],
-    ['label' => 'Notifications', 'href' => 'notifications.php', 'active' => false],
-];
-
 // Load probationary employees.
-// TODO: once Employer's add_employee.php has a supervisorId field again,
-// filter this to only employees assigned to $_SESSION['uid'].
 $employees = [];
 try {
     $docs = get_cached_collection('Users', 600);
@@ -51,6 +41,7 @@ try {
 $nearingDeadlineCount = 0;
 $scoreSum = 0;
 $scoreCount = 0;
+$unratedCount = 0;
 $rows = [];
 
 foreach ($employees as $emp) {
@@ -66,8 +57,9 @@ foreach ($employees as $emp) {
             $daysIn = $today < $hire ? 0 : (int) $today->diff($hire)->format('%a');
             $probationPeriodDays = max(1, (int) ($emp['probationPeriodDays'] ?? 180));
             $daysLeft = max(0, $probationPeriodDays - $daysIn);
-            if ($daysLeft <= 30)
+            if ($daysLeft <= 30) {
                 $nearingDeadlineCount++;
+            }
         } catch (\Throwable $e) {
         }
     }
@@ -78,14 +70,17 @@ foreach ($employees as $emp) {
         $statusInfo = kpi_status_for_score($summary['score'], $summary['targetAvg']);
     } else {
         $statusInfo = ['status' => 'Not Yet Rated', 'statusClass' => 'status-neutral'];
+        $unratedCount++;
     }
 
     $rows[] = [
+        'uid' => $emp['uid'],
         'name' => $emp['name'],
         'industry' => ucfirst(str_replace('_', ' ', $emp['industry'])),
         'timeline' => $daysIn !== null ? "Day {$daysIn} · {$daysLeft} days left" : 'No hire date on file',
         'progress' => $daysIn !== null ? min(100, (int) round(($daysIn / max(1, (int) ($emp['probationPeriodDays'] ?? 180))) * 100)) : 0,
         'score' => $summary['score'],
+        'target' => $summary['targetAvg'],
         'status' => $statusInfo['status'],
         'statusClass' => $statusInfo['statusClass'],
     ];
@@ -93,97 +88,103 @@ foreach ($employees as $emp) {
 
 $avgScore = $scoreCount > 0 ? round($scoreSum / $scoreCount, 1) : 0;
 $totalAssigned = count($employees);
+
+// Stash for navigation badges
+$_SESSION['pf_nav_deadline'] = $nearingDeadlineCount;
+$_SESSION['pf_nav_unrated'] = $unratedCount;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Performa | Supervisor Dashboard</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="../ui-refresh.css" />
+    <?php supervisor_brand_head('Dashboard · Performa'); ?>
 </head>
 
 <body>
     <div class="app-shell">
-        <aside class="sidebar">
-            <div>
-                <div class="brand">
-                    <div class="brand-mark">P</div>
-                    <div>
-                        <div class="brand-name">Performa</div>
-                        <div class="brand-subtitle">Supervisor Dashboard</div>
+        <?php supervisor_render_shell('Dashboard'); ?>
+
+        <main class="main" id="dashboard">
+            <?php
+            ob_start();
+            ?>
+            <label class="search-bar">
+                <span class="sr-only">Search assigned employees</span>
+                <span class="search-icon" aria-hidden="true"><?php echo supervisor_layout_icon('search'); ?></span>
+                <input id="dashboardSearch" type="search" placeholder="Search your employees..." autocomplete="off" />
+            </label>
+            <?php if ($nearingDeadlineCount > 0): ?>
+                <div class="status-pill status-warning" style="padding: 6px 12px; font-size: 13px;">
+                    <?php echo $nearingDeadlineCount; ?> nearing deadline (&lt; 30d)
+                </div>
+            <?php endif; ?>
+            <?php
+            $headerActions = ob_get_clean();
+
+            $eyebrowHtml = '<span class="eyebrow">Supervisor Overview</span>';
+            supervisor_page_header(
+                'dashboard-title',
+                'Supervisor Dashboard',
+                $eyebrowHtml,
+                'Track KPI progress and evaluation timelines for probationary employees.',
+                $headerActions
+            );
+            ?>
+
+            <section class="metrics" aria-label="Key supervisor metrics">
+                <article class="metric-card">
+                    <div class="metric-icon icon-warm" aria-hidden="true">
+                        <?php echo supervisor_layout_icon('users'); ?>
                     </div>
-                </div>
-                <nav class="nav" aria-label="Primary">
-                    <?php foreach ($navItems as $item): ?>
-                        <a class="nav-item<?php echo $item['active'] ? ' active' : ''; ?>"
-                            href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>"><span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span></a>
-                    <?php endforeach; ?>
-                </nav>
-            </div>
-            <div class="sidebar-footer">
-                <div class="profile-avatar"><?php echo strtoupper(substr($supervisorName, 0, 2)); ?></div>
-                <div>
-                    <div class="profile-name"><?php echo htmlspecialchars($supervisorName, ENT_QUOTES); ?></div>
-                    <div class="profile-role">Shift Supervisor</div>
-                    <a class="logout-link" href="../logout.php" aria-label="Sign out">Sign out</a>
-                </div>
-            </div>
-        </aside>
-
-        <main class="main">
-            <header class="topbar">
-                <label class="search-bar" aria-label="Search assigned employees">
-                    <span class="search-icon">⌕</span>
-                    <input id="dashboardSearch" type="search" placeholder="Search your employees..." />
-                </label>
-                <div class="topbar-actions">
-                    <div class="deadline-pill"><?php echo $nearingDeadlineCount; ?>
-                        employee<?php echo $nearingDeadlineCount === 1 ? '' : 's'; ?>
-                        nearing deadline</div>
-                </div>
-            </header>
-
-            <section class="hero">
-                <p class="eyebrow">Supervisor Overview</p>
-                <h1>Track KPI progress for probationary employees.</h1>
-            </section>
-
-            <section class="metrics" aria-label="Key dashboard metrics">
-                <article class="metric-card warm">
-                    <div class="metric-icon">◔</div>
-                    <div class="metric-meta"><span>Employees</span><strong><?php echo $totalAssigned; ?></strong>
+                    <div class="metric-meta">
+                        <span class="metric-label">Assigned Employees</span>
+                        <strong class="metric-value"><?php echo $totalAssigned; ?></strong>
                     </div>
                     <div class="metric-badge neutral">Active</div>
                 </article>
-                <article class="metric-card gold">
-                    <div class="metric-icon">⌛</div>
-                    <div class="metric-meta"><span>Nearing Deadline (&lt; 30
-                            days)</span><strong><?php echo $nearingDeadlineCount; ?></strong>
+
+                <article class="metric-card">
+                    <div class="metric-icon icon-gold" aria-hidden="true">
+                        <?php echo supervisor_layout_icon('hourglass'); ?>
                     </div>
-                    <div class="metric-badge warning">Action Req.</div>
+                    <div class="metric-meta">
+                        <span class="metric-label">Nearing Deadline</span>
+                        <strong class="metric-value"><?php echo $nearingDeadlineCount; ?></strong>
+                    </div>
+                    <div class="metric-badge <?php echo $nearingDeadlineCount > 0 ? 'warning' : 'neutral'; ?>">
+                        <?php echo $nearingDeadlineCount > 0 ? 'Action Req.' : 'On Track'; ?>
+                    </div>
                 </article>
-                <article class="metric-card mint">
-                    <div class="metric-icon">▣</div>
-                    <div class="metric-meta"><span>Avg. KPI Score</span><strong><?php echo $avgScore; ?><small>/
-                                5.0</small></strong></div>
-                    <div class="metric-badge positive">This Month</div>
+
+                <article class="metric-card">
+                    <div class="metric-icon icon-mint" aria-hidden="true">
+                        <?php echo supervisor_layout_icon('trend'); ?>
+                    </div>
+                    <div class="metric-meta">
+                        <span class="metric-label">Avg. KPI Score</span>
+                        <strong class="metric-value font-mono"><?php echo $avgScore > 0 ? number_format($avgScore, 1) : '—'; ?><small>/ 5.0</small></strong>
+                    </div>
+                    <div class="metric-badge <?php echo $avgScore >= 3.5 ? 'positive' : 'neutral'; ?>">This Month</div>
                 </article>
             </section>
 
-            <section class="content-grid">
-                <div class="panel evaluations" style="grid-column: 1 / -1;">
+            <section class="content-grid" style="grid-template-columns: 1fr; margin-top: 24px;">
+                <div class="panel evaluations">
                     <div class="panel-header">
                         <div>
                             <h2>Probationary Employees</h2>
-                            <p>Live data from Firestore.</p>
+                            <p>Live progress from Firestore.</p>
                         </div>
+                        <a class="ghost-button" href="ratings.php">
+                            <?php echo supervisor_layout_icon('target'); ?>
+                            <span>Rate Employee</span>
+                        </a>
                     </div>
 
                     <?php if (empty($rows)): ?>
-                        <p style="padding:24px; color:var(--muted);">No probationary employees found yet.</p>
+                        <div class="empty-state">
+                            <p>No probationary employees found yet.</p>
+                        </div>
                     <?php else: ?>
                         <div class="table-wrap" role="table" aria-label="Employees">
                             <div class="table-head" role="row">
@@ -191,36 +192,42 @@ $totalAssigned = count($employees);
                                 <span role="columnheader">Timeline</span>
                                 <span role="columnheader">KPI Score</span>
                                 <span role="columnheader">Status</span>
+                                <span role="columnheader" style="text-align: right;">Action</span>
                             </div>
                             <div id="evaluationRows">
                                 <?php foreach ($rows as $row): ?>
-                                    <div class="table-row" role="row">
+                                    <div class="table-row" role="row" data-search="<?php echo htmlspecialchars(strtolower($row['name'] . ' ' . $row['industry'] . ' ' . $row['status']), ENT_QUOTES); ?>">
                                         <div class="employee-cell" role="cell">
-                                            <div class="avatar"></div>
+                                            <div class="avatar-chip" aria-hidden="true">
+                                                <?php echo htmlspecialchars(supervisor_avatar_initials($row['name']), ENT_QUOTES); ?>
+                                            </div>
                                             <div>
-                                                <div class="employee-name">
+                                                <div class="employee-name font-semibold">
                                                     <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>
                                                 </div>
-                                                <div class="employee-role">
+                                                <div class="employee-role text-muted">
                                                     <?php echo htmlspecialchars($row['industry'], ENT_QUOTES); ?>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="timeline-cell" role="cell">
-                                            <div class="timeline-text">
+                                            <div class="timeline-text text-sm">
                                                 <?php echo htmlspecialchars($row['timeline'], ENT_QUOTES); ?>
                                             </div>
-                                            <div class="timeline-bar"><span
-                                                    style="width: <?php echo (int) $row['progress']; ?>%; background: var(--primary);"></span>
+                                            <div class="timeline-bar" style="height: 6px; background: var(--ui-border, #e2e8f0); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                                                <span style="display: block; height: 100%; width: <?php echo (int) $row['progress']; ?>%; background: var(--ui-blue, #245fba); border-radius: 3px;"></span>
                                             </div>
                                         </div>
                                         <div class="score-cell" role="cell">
-                                            <strong
-                                                class="score-value"><?php echo $row['score'] !== null ? number_format($row['score'], 1) : '—'; ?></strong>
+                                            <?php echo supervisor_score_meter($row['score'], 5.0, $row['target']); ?>
                                         </div>
                                         <div class="status-cell" role="cell">
-                                            <span
-                                                class="status-pill <?php echo htmlspecialchars($row['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($row['status'], ENT_QUOTES); ?></span>
+                                            <span class="status-pill <?php echo htmlspecialchars($row['statusClass'], ENT_QUOTES); ?>">
+                                                <?php echo htmlspecialchars($row['status'], ENT_QUOTES); ?>
+                                            </span>
+                                        </div>
+                                        <div role="cell" style="text-align: right;">
+                                            <a class="ghost-button" style="padding: 6px 12px; font-size: 12px;" href="ratings.php?employee=<?php echo urlencode($row['uid']); ?>">Rate</a>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -228,13 +235,16 @@ $totalAssigned = count($employees);
                         </div>
                     <?php endif; ?>
 
-                    <a class="view-more" href="employees.php">View Full Employee List →</a>
+                    <div style="padding: 16px 20px; border-top: 1px solid var(--panel-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+                        <span class="text-sm text-muted">Showing <?php echo count($rows); ?> employee<?php echo count($rows) === 1 ? '' : 's'; ?></span>
+                        <a class="view-more" href="employees.php">View Full Employee Directory →</a>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="<?php echo htmlspecialchars(supervisor_asset('script.js'), ENT_QUOTES); ?>"></script>
 </body>
 
 </html>

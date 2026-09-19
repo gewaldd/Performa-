@@ -46,7 +46,8 @@ function send_transactional_email(string $toEmail, string $toName, string $subje
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
-    curl_close($ch);
+    // The curl handle is intentionally not closed: closing is deprecated in
+    // PHP 8.5 and has been a no-op since 8.0.
 
     if ($code >= 200 && $code < 300) {
         return true;

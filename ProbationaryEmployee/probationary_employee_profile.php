@@ -41,6 +41,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saveProfile'])) {
     }
 }
 
+// Forced-reset escape hatch. data.php's require_password_reset() bounces every
+// navigation click from a flagged account to this page, so this page is the
+// only one such a user can reach — the password form below is what releases
+// the gate. Mirrors Employer/settings.php's change_password branch, except for
+// the "fresh login" window: a freshness gate here would re-trap the user with
+// nowhere left to go, so it is deliberately omitted.
+$passwordMessage = '';
+$passwordMessageTone = 'info';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['changePassword'])) {
+    $newPassword = (string) ($_POST['newPassword'] ?? '');
+    $confirmPassword = (string) ($_POST['confirmPassword'] ?? '');
+
+    // Single-sourced policy: floor + mismatch strings live in root auth.php.
+    // The no-freshness-window flow documented above is unchanged.
+    if (($pwErr = performa_password_policy_error($newPassword, $confirmPassword)) !== null) {
+        $passwordMessage = $pwErr;
+        $passwordMessageTone = 'error';
+    } else {
+        try {
+            identitytoolkit_update_password($currentUserUid, $newPassword);
+
+            // Password is now user-chosen: lift the forced-reset flag both in
+            // Firestore (source of truth, read at next login) and in the live
+            // session (so the redirect gate releases immediately). Called
+            // directly here — never routed through another module's file.
+            try {
+                $self = firestore_get_document('Users', $currentUserUid) ?? [];
+                if (!empty($self['mustChangePassword'])) {
+                    $self['mustChangePassword'] = false;
+                    firestore_write_document('Users', $currentUserUid, $self);
+                }
+            } catch (Throwable $e) {
+                error_log('Probationary profile mustChangePassword clear failed: ' . $e->getMessage());
+            }
+
+            unset($_SESSION['must_change_password']);
+            // Fresh session ID after a credential change (fixation defense).
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+            $_SESSION['login_at'] = time();
+
+            $passwordMessage = 'Password updated. Your account is no longer limited to this page.';
+            $passwordMessageTone = 'success';
+        } catch (Throwable $e) {
+            error_log('Probationary profile password update failed: ' . $e->getMessage());
+            $passwordMessage = performa_password_update_failure_message();
+            $passwordMessageTone = 'error';
+        }
+    }
+}
+
 $evaluations = probationary_owned_documents('evaluations');
 $ratings = probationary_owned_documents('Ratings');
 $latestEvaluation = $evaluations[0] ?? $ratings[0] ?? [];
@@ -128,6 +181,13 @@ $profileDetails = [
                 <h1>See your employee details, performance snapshot, and upcoming review plan.</h1>
             </section>
 
+            <?php if (!empty($_SESSION['must_change_password']) && $passwordMessage === ''): ?>
+                <div class="alert-banner">
+                    Your account is using a temporary password. Please set your own password below to continue —
+                    the rest of the dashboard stays locked until you do.
+                </div>
+            <?php endif; ?>
+
             <section class="content-grid">
                 <div class="panel evaluations" style="grid-column: 1 / -1;">
                     <div class="panel-header">
@@ -186,6 +246,43 @@ $profileDetails = [
                     </form>
 
                     <a class="view-more" href="probationary_employee_goals.php">Back to Goals →</a>
+                </div>
+
+                <div class="panel evaluations" style="grid-column: 1 / -1;" id="changePassword">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Change Password</h2>
+                            <p>Set your own password to replace the temporary one issued to you.</p>
+                        </div>
+                    </div>
+
+                    <?php if ($passwordMessage !== ''): ?>
+                        <div class="alert-banner<?php echo $passwordMessageTone === 'error' ? ' error' : ''; ?>">
+                            <?php echo htmlspecialchars($passwordMessage, ENT_QUOTES); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form class="profile-form" method="post">
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="newPassword">New Password</label>
+                                <input id="newPassword" name="newPassword" type="password" autocomplete="new-password"
+                                    minlength="8" required placeholder="At least 8 characters" />
+                            </div>
+                            <div class="field-group">
+                                <label for="confirmPassword">Confirm New Password</label>
+                                <input id="confirmPassword" name="confirmPassword" type="password"
+                                    autocomplete="new-password" minlength="8" required placeholder="Repeat password" />
+                            </div>
+                        </div>
+
+                        <div class="profile-footer">
+                            <p class="microcopy">Choose a password only you know. It replaces the temporary password
+                                issued to you and unlocks the rest of your dashboard.</p>
+                            <button class="primary-button" type="submit" name="changePassword" value="1">Update
+                                Password</button>
+                        </div>
+                    </form>
                 </div>
 
             </section>

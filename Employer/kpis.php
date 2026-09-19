@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
@@ -48,13 +49,7 @@ $probationaryEmployees = [];
 $allUsers = get_cached_collection('Users', 600);
 
 foreach ($allUsers as $doc) {
-  $roleKey = strtolower(
-    trim(
-      (string) ($doc['role'] ?? '')
-    )
-  );
-
-  if (strpos($roleKey, 'probation') === false) {
+  if (normalize_role_key($doc['role'] ?? null) !== 'probationary') {
     continue;
   }
 

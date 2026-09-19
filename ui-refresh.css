@@ -379,7 +379,7 @@ button.pf-menu-btn {
 .ghost-button:hover, .btn-outline:hover, .btn-outline-primary:hover,
 .btn-cancel:hover, .logout-link:hover, .acknowledge-button:hover,
 .reset-button:hover, .page-btn:hover:not(:disabled) {
-  background: var(--ui-soft) !important; border-color: var(--ui-blue) !important; color: var(--ui-blue-dark) !important;
+  background: var(--ui-soft) !important; border-color: #d6dee8 !important; color: var(--ui-blue-dark) !important;
 }
 .page-btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn-primary svg, .primary-button svg, .ghost-button svg, .btn-outline svg { width: 15px; height: 15px; flex: 0 0 15px; }
@@ -679,6 +679,12 @@ button.pf-menu-btn {
   border: 1px solid currentColor !important; border-radius: 6px !important; background: transparent !important;
   font-size: 12px; font-weight: 700; white-space: nowrap;
 }
+.directory-row .dept-pill {
+  min-width: 11ch;
+  text-align: center;
+  justify-content: center;
+}
+
 .status-pill::before { content: ""; width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: currentColor; }
 .status-good { color: var(--ui-green) !important; }
 .status-warning { color: var(--ui-amber) !important; }

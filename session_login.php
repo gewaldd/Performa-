@@ -45,7 +45,9 @@ try {
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
-    curl_close($ch);
+    // The curl handle is intentionally not closed: closing is deprecated in
+    // PHP 8.5 and has been a no-op since 8.0 -- the handle is released when
+    // $ch goes out of scope.
 
     if ($resp === false || $code !== 200) {
         // tokeninfo failed — try Identity Toolkit accounts:lookup with API key as a fallback
@@ -61,7 +63,6 @@ try {
             curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode(['idToken' => $idToken]));
             $r2 = curl_exec($ch2);
             $code2 = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
-            curl_close($ch2);
             if ($r2 !== false && $code2 === 200) {
                 $t2 = json_decode($r2, true);
                 if (!empty($t2['users'][0]['localId'])) {

@@ -2,23 +2,10 @@
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
-
-function normalize_role_key(?string $role): string
-{
-  $roleKey = strtolower(trim((string) $role));
-  if (strpos($roleKey, 'probation') !== false)
-    return 'probationary';
-  if (strpos($roleKey, 'supervis') !== false)
-    return 'supervisor';
-  if (strpos($roleKey, 'employ') !== false)
-    return 'employer';
-  if (strpos($roleKey, 'admin') !== false)
-    return 'admin';
-  return $roleKey;
-}
 
 $uid = $_GET['uid'] ?? ($_POST['uid'] ?? '');
 if (!$uid) {

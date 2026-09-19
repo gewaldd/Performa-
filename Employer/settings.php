@@ -70,17 +70,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
   // to permanently take over the account. Requiring a recent login is the
   // standard "confirm it's you" gate (same pattern as Google/GitHub) and
   // needs no extra credentials store. Anyone past the window re-logs in.
+  // Forced-reset users are exempt: settings.php is the ONLY page the
+  // require_password_reset() gate lets them reach, so demanding a fresh
+  // re-login here re-traps them with nowhere to go. This mirrors the
+  // ProbationaryEmployee profile handler, which omits the window entirely.
+  $isForcedReset = !empty($_SESSION['must_change_password']);
+  $showReLoginLink = false;
   $loginAge = time() - (int) ($_SESSION['login_at'] ?? 0);
   $freshWindowSeconds = 15 * 60;
 
-  if ($loginAge > $freshWindowSeconds) {
+  if (!$isForcedReset && $loginAge > $freshWindowSeconds) {
     $message = 'For security, please sign out and sign in again, then change your password.';
     $messageTone = 'error';
-  } elseif (strlen($newPassword) < 8) {
-    $message = 'Password must be at least 8 characters.';
-    $messageTone = 'error';
-  } elseif ($newPassword !== $confirmPassword) {
-    $message = 'Passwords do not match.';
+    $showReLoginLink = true;
+  } elseif (($pwErr = performa_password_policy_error($newPassword, $confirmPassword)) !== null) {
+    // Single-sourced policy: floor + mismatch strings live in root auth.php.
+    // This branch keeps Employer's freshness gate, CSRF, and success path.
+    $message = $pwErr;
     $messageTone = 'error';
   } else {
     try {
@@ -119,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
         $e->getMessage()
       );
 
-      $message = 'We could not update your password right now. Please try again.';
+      $message = performa_password_update_failure_message();
       $messageTone = 'error';
     }
   }
@@ -201,6 +207,9 @@ $profileInitials = employer_avatar_initials($profileName);
         <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"
           role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>" aria-live="polite">
           <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
+          <?php if (!empty($showReLoginLink)): ?>
+            <a href="../login.php" style="color: inherit; font-weight: 700;">Sign in again</a>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
 

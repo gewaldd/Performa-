@@ -166,6 +166,30 @@ function require_password_reset(string $settingsFile): void
     }
 }
 
+// Single-sourced password policy. The three password-change flows (Employer
+// settings, Supervisor settings, Probationary profile) each keep their own
+// handler — different CSRF, freshness-window, and gate semantics — but the
+// floor, the validation strings, and the generic failure string live here so
+// they cannot drift again (the 6-vs-8 floor split was a live instance).
+// Pure functions: no session/header/IO, safe to unit-test.
+const PERFORMA_PASSWORD_MIN_LENGTH = 8;
+
+function performa_password_policy_error(string $newPassword, string $confirmPassword): ?string
+{
+    if ($newPassword === '' || strlen($newPassword) < PERFORMA_PASSWORD_MIN_LENGTH) {
+        return 'Password must be at least 8 characters.';
+    }
+    if ($newPassword !== $confirmPassword) {
+        return 'Passwords do not match.';
+    }
+    return null;
+}
+
+function performa_password_update_failure_message(): string
+{
+    return 'We could not update your password right now. Please try again.';
+}
+
 function logout(): void
 {
     $_SESSION = [];

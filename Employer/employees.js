@@ -169,12 +169,9 @@ if (exportBtn) {
   });
 }
 
-document.querySelectorAll(".nav-item").forEach((item) => {
-  item.addEventListener("click", (event) => {
-    document.querySelectorAll(".nav-item").forEach((navItem) => navItem.classList.remove("active"));
-    event.currentTarget.classList.add("active");
-  });
-});
+// Nav active-state is server-rendered (aria-current="page" via the shared
+// shell); the old client-side .nav-item click-toggle fought it (stale flash
+// before navigation) and duplicated script.js's own handler — removed.
 
 if (allRows.length > 0) render();
 })();

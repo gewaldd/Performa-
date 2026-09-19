@@ -675,6 +675,13 @@ body::before {
   font-size: 13px;
 }
 
+/* Validation failure tone for the password form; the base tone is a warm
+   "attention" banner, this one is for a rejected submission. */
+.alert-banner.error {
+  background: rgba(253, 235, 233, 0.95);
+  color: #b3261e;
+}
+
 .table-wrap {
   display: grid;
 }

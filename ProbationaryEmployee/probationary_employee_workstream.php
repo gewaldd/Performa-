@@ -8,11 +8,15 @@ $goalDocuments = probationary_owned_documents('goals');
 $evaluationDocuments = array_merge(probationary_owned_documents('evaluations'), probationary_owned_documents('Ratings'));
 $latestEvaluation = $evaluationDocuments[0] ?? [];
 $latestScore = probationary_evaluation_score($latestEvaluation);
+// FIX 3: these four labels point at the pages that actually render that
+// content. They previously used in-page anchors (#goals / #feedback /
+// #profile) whose targets were unrelated elements — #goals was the metrics
+// strip, #profile the AI-insight aside — so every click silently did nothing.
 $navItems = [
-    ['label' => 'Overview', 'href' => '#dashboard', 'active' => true],
-    ['label' => 'My Goals', 'href' => '#goals', 'active' => false],
-    ['label' => 'Feedback', 'href' => '#feedback', 'active' => false],
-    ['label' => 'Profile', 'href' => '#profile', 'active' => false],
+    ['label' => 'Overview', 'href' => 'probationary_employee_workstream.php', 'active' => true],
+    ['label' => 'My Goals', 'href' => 'probationary_employee_goals.php', 'active' => false],
+    ['label' => 'Feedback', 'href' => 'probationary_employee_feedback.php', 'active' => false],
+    ['label' => 'Profile', 'href' => 'probationary_employee_profile.php', 'active' => false],
 ];
 
 $metrics = [
@@ -203,7 +207,7 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                     </div>
 
                     <span id="feedback" class="section-anchor" aria-hidden="true"></span>
-                    <a class="view-more" href="#feedback">View Feedback History →</a>
+                    <a class="view-more" href="probationary_employee_feedback.php">View Feedback History →</a>
                 </div>
 
                 <aside class="insight-card" id="profile">
