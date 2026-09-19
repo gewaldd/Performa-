@@ -19,44 +19,29 @@ function send_json(array $payload, int $code = 200): void
 }
 
 require_once __DIR__ . '/firebase_init.php';
-session_start();
+// Hardened session bootstrap (cookie flags, strict mode) + session_start().
+require_once __DIR__ . '/auth.php';
 
-// Expect JSON body with { idToken, email? }
+// Expect JSON body with { idToken }. The client also sends `email`, which is
+// accepted but NEVER trusted for auth decisions: only identity proved by a
+// verified Firebase token may create a session. (Previously an unverified
+// email alone minted a session — a full auth bypass for anyone who knew an
+// address on file.)
 $data = json_decode(file_get_contents('php://input'), true);
-$idToken = $data['idToken'] ?? '';
-$fallbackEmail = strtolower(trim($data['email'] ?? ''));
+$idToken = (string) ($data['idToken'] ?? '');
 
-if (!$idToken && $fallbackEmail === '') {
-    send_json(['error' => 'Missing idToken and email'], 400);
+if ($idToken === '') {
+    // Deliberately generic on every failure path: distinct messages/codes
+    // would let attackers probe which emails or accounts exist.
+    send_json(['error' => 'Sign-in failed. Please try again.'], 400);
 }
 
 try {
-    $matchedUser = null;
-    if ($fallbackEmail !== '') {
-        $allUsers = firestore_list_documents('Users');
-        foreach ($allUsers as $item) {
-            if (!empty($item['email']) && strtolower($item['email']) === $fallbackEmail) {
-                $matchedUser = $item;
-                break;
-            }
-        }
-    }
-
-    if ($matchedUser) {
-        $_SESSION['uid'] = $matchedUser['uid'] ?? $fallbackEmail;
-        $_SESSION['name'] = $matchedUser['name'] ?? $matchedUser['email'] ?? $fallbackEmail;
-        $_SESSION['role'] = $matchedUser['role'] ?? ($matchedUser['roles'] ?? 'probationary_employee');
-        send_json(['ok' => true, 'role' => $_SESSION['role']]);
-    }
-
-    if (!$idToken) {
-        send_json(['error' => 'Missing idToken and no matching email'], 400);
-    }
-
     // Verify token via Google's tokeninfo endpoint (REST fallback) using curl
     $ch = curl_init('https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($idToken));
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
@@ -70,6 +55,7 @@ try {
             $ch2 = curl_init($lookupUrl);
             curl_setopt($ch2, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
             curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+            firebase_curl_timeouts($ch2);
             curl_setopt($ch2, CURLOPT_POST, true);
             curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode(['idToken' => $idToken]));
@@ -86,50 +72,13 @@ try {
                         'aud' => $apiKey,
                     ];
                 } else {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
+                    throw new RuntimeException('token verification failed');
                 }
             } else {
-                // As a last resort, fall back to the authenticated email provided by the client.
-                if ($fallbackEmail !== '') {
-                    $all = firestore_list_documents('Users');
-                    foreach ($all as $item) {
-                        if (!empty($item['email']) && strtolower($item['email']) === $fallbackEmail) {
-                            $t = [
-                                'sub' => $item['uid'] ?? $fallbackEmail,
-                                'email' => $item['email'],
-                                'name' => $item['name'] ?? $item['email'],
-                                'aud' => $apiKey,
-                            ];
-                            break;
-                        }
-                    }
-                    if (empty($t['sub'])) {
-                        throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
-                    }
-                } else {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($r2 ?: 'no response')));
-                }
+                throw new RuntimeException('token verification failed');
             }
         } else {
-            if ($fallbackEmail !== '') {
-                $all = firestore_list_documents('Users');
-                foreach ($all as $item) {
-                    if (!empty($item['email']) && strtolower($item['email']) === $fallbackEmail) {
-                        $t = [
-                            'sub' => $item['uid'] ?? $fallbackEmail,
-                            'email' => $item['email'],
-                            'name' => $item['name'] ?? $item['email'],
-                            'aud' => $fallbackEmail,
-                        ];
-                        break;
-                    }
-                }
-                if (empty($t['sub'])) {
-                    throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($curlErr ?: 'no response')));
-                }
-            } else {
-                throw new RuntimeException('Failed to verify token: ' . ($resp ?: ($curlErr ?: 'no response')));
-            }
+            throw new RuntimeException('token verification failed');
         }
     } else {
         $t = json_decode($resp, true);
@@ -147,38 +96,58 @@ try {
     $uid = $t['sub'];
     $name = $t['name'] ?? ($t['email'] ?? '');
 
-    // Read role from Firestore Users collection
+    // Read role from Firestore Users collection. Every lookup below keys
+    // off the VERIFIED token (uid, then the token's own email claim) — the
+    // client-supplied email is never consulted, so it cannot be used to
+    // steer the session onto someone else's account.
     $role = null;
+    $mustChangePassword = false;
     $doc = firestore_get_document('Users', $uid);
     if ($doc) {
         $role = $doc['role'] ?? null;
         $name = $doc['name'] ?? $name;
+        $mustChangePassword = !empty($doc['mustChangePassword']);
     } else {
         // Fallback: sometimes a Users document was created with a different id
-        // (or an import) — try to find by email in the Users collection.
-        try {
-            $emailToFind = $t['email'] ?? null;
-            if ($emailToFind) {
+        // (or an import) — try to find by the verified token email.
+        $emailToFind = $t['email'] ?? null;
+        if ($emailToFind) {
+            try {
                 $all = firestore_list_documents('Users');
                 foreach ($all as $item) {
                     if (!empty($item['email']) && strtolower($item['email']) === strtolower($emailToFind)) {
                         $role = $item['role'] ?? $item['roles'] ?? null;
                         $name = $item['name'] ?? $name;
+                        $mustChangePassword = !empty($item['mustChangePassword']);
                         break;
                     }
                 }
+            } catch (Throwable $e) {
+                // ignore — no matching record below denies the login
             }
-        } catch (Throwable $e) {
-            // ignore — we'll fall back to default role below
         }
     }
 
-    // Establish minimal PHP session
+    if ($role === null) {
+        // Valid token, unknown account: no session. (Previously such users
+        // were logged in with a default role.)
+        throw new RuntimeException('unknown account');
+    }
+
+    // Establish minimal PHP session on a fresh ID (fixation defense).
+    session_regenerate_id(true);
     $_SESSION['uid'] = $uid;
     $_SESSION['name'] = $name;
-    $_SESSION['role'] = $role ?? 'user';
+    $_SESSION['role'] = $role;
+    $_SESSION['login_at'] = time();
+    $_SESSION['must_change_password'] = $mustChangePassword;
+    // A new login must never inherit the previous session's CSRF token.
+    unset($_SESSION['csrf_token']);
 
-    send_json(['ok' => true, 'role' => $_SESSION['role']]);
+    send_json(['ok' => true, 'role' => $_SESSION['role'], 'mustChangePassword' => $mustChangePassword]);
 } catch (\Throwable $e) {
-    send_json(['error' => $e->getMessage()], 401);
+    // Generic message: exception details (audience, endpoint responses) are
+    // server-side information and must not reach the login screen.
+    error_log('session_login failed: ' . $e->getMessage());
+    send_json(['error' => 'Sign-in failed. Please try again.'], 401);
 }

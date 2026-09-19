@@ -3,6 +3,8 @@ $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/auth.php';
 require_once $rootDir . '/firebase_init.php';
 require_once $rootDir . '/kpi_templates.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 
 require_login();
@@ -158,6 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           <hr class="section-divider" />
 
           <form method="post">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
             <p class="microcopy" style="margin:0 0 12px;">Industry template: <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
             <div class="pf-rate-grid">

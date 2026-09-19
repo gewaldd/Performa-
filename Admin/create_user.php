@@ -31,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'role' => $role,
                 'createdAt' => date('c'),
                 'createdBy' => $_SESSION['uid'] ?? null,
+                // Temporary/admin-chosen password: force the new user to
+                // choose their own on first login (enforced in their
+                // module's auth gate; Employer gate enforces it).
+                'mustChangePassword' => true,
             ];
             if ($role === 'probationary_employee') {
                 $userData['industry'] = $industry;

@@ -1,4 +1,28 @@
 <?php
+// Hardened session bootstrap. Must run before session_start() on every
+// request, so it lives here: this file is required first by all role
+// modules (via */includes/auth.php) and by session_login.php.
+if (session_status() === PHP_SESSION_NONE) {
+    // Reject uninitialized session IDs instead of accepting attacker-chosen
+    // ones (session fixation via planted/provided IDs).
+    ini_set('session.use_strict_mode', '1');
+    // Never fall back to URL-based session IDs (would leak IDs via Referer,
+    // logs, and shared links).
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_trans_sid', '0');
+
+    // Secure/HttpOnly/SameSite enforced in code so protection does not
+    // depend on a particular php.ini. `secure` follows the current scheme
+    // so plain-http localhost development keeps working.
+    $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
 session_start();
 
 function users_file_path(): string
@@ -83,9 +107,17 @@ function verify_user(string $email, string $password)
 
 function login_user(array $user): void
 {
+    // Privilege change: fresh session ID so a pre-login (fixated) ID can
+    // never become authenticated.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+    }
     $_SESSION['uid'] = $user['uid'];
     $_SESSION['role'] = $user['role'];
     $_SESSION['name'] = $user['name'];
+    $_SESSION['login_at'] = time();
+    // A new login must never inherit the previous session's CSRF token.
+    unset($_SESSION['csrf_token']);
 }
 
 function require_login(): void

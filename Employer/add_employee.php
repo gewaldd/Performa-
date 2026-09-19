@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
 require_once __DIR__ . '/../security_utils.php';
@@ -99,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'department' => $department,
                         'status' => 'Active',
                         'createdAt' => date('c'),
+                        // Server-generated temporary password: force the new
+                        // user to choose their own on first login.
+                        'mustChangePassword' => true,
                     ];
                     if ($role === 'probationary_employee') {
                         $newUser['industry'] = $industry;
@@ -192,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <form method="post" novalidate>
+                    <?php echo csrf_field(); ?>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="name">Full name <span class="required-mark">*</span></label>

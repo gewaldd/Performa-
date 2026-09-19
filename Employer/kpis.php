@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
 
@@ -52,6 +54,15 @@ function get_cached_collection(
   string $collectionName,
   int $ttlSeconds = 600
 ): array {
+  // In-request memo: this page calls the helper twice per load (Users +
+  // Ratings). The disk file is the cross-request cache; this avoids
+  // decoding the same large JSON file twice in one request.
+  static $memo = [];
+  $memoKey = $collectionName . '|' . $ttlSeconds;
+  if (isset($memo[$memoKey])) {
+    return $memo[$memoKey];
+  }
+
   $cacheFile =
     sys_get_temp_dir() .
     '/performa_' .
@@ -60,14 +71,15 @@ function get_cached_collection(
 
   if (
     file_exists($cacheFile) &&
-    (time() - filemtime($cacheFile) < $ttlSeconds)
+    (time() - (int) @filemtime($cacheFile) < $ttlSeconds)
   ) {
     $data = json_decode(
-      (string) file_get_contents($cacheFile),
+      (string) @file_get_contents($cacheFile),
       true
     );
 
     if (is_array($data)) {
+      $memo[$memoKey] = $data;
       return $data;
     }
   }
@@ -81,15 +93,18 @@ function get_cached_collection(
       LOCK_EX
     );
 
-    return is_array($data) ? $data : [];
+    $result = is_array($data) ? $data : [];
+    $memo[$memoKey] = $result;
+    return $result;
   } catch (Throwable $e) {
     if (file_exists($cacheFile)) {
       $data = json_decode(
-        (string) file_get_contents($cacheFile),
+        (string) @file_get_contents($cacheFile),
         true
       );
 
       if (is_array($data)) {
+        $memo[$memoKey] = $data;
         return $data;
       }
     }
@@ -722,6 +737,7 @@ foreach (
 
                 <form method="post" id="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
                   class="kpi-edit-form" aria-hidden="true">
+                  <?php echo csrf_field(); ?>
                   <input type="hidden" name="action" value="edit_kpi_target" />
 
                   <input type="hidden" name="kpi_key" value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" />
@@ -786,6 +802,7 @@ foreach (
         </p>
 
         <form method="post" class="report-form-row">
+          <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="add_kpi" />
 
           <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />

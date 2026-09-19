@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
 
@@ -403,12 +405,16 @@ if ($cacheValid) {
         $liveUsers = [];
     }
 
+    /*
+     * Cache only the derived rows. The raw $allRatings array used to be
+     * stored here too, which serialized the entire Ratings collection into
+     * the PHP session file on every cache miss (slow session read/write +
+     * longer session-lock hold on every subsequent request). Summaries are
+     * recomputed from a fresh Ratings list on the next miss instead.
+     */
     $_SESSION[$cacheKey] = [
         'liveUsers' =>
             $liveUsers,
-
-        'allRatings' =>
-            $allRatings,
     ];
 
     $_SESSION[$cacheTimeKey] =
@@ -1106,6 +1112,7 @@ $insightScore =
                             <?php else: ?>
 
                                 <form method="post" style="flex:1;">
+                                    <?php echo csrf_field(); ?>
 
                                     <input type="hidden" name="action" value="assign_course" />
 

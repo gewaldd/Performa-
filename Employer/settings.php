@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 
 $profileName = $_SESSION['name'] ?? 'Unknown User';
@@ -64,7 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
   $newPassword = (string) ($_POST['newPassword'] ?? '');
   $confirmPassword = (string) ($_POST['confirmPassword'] ?? '');
 
-  if (strlen($newPassword) < 8) {
+  // Fresh re-authentication: a stolen-but-aging session must not be enough
+  // to permanently take over the account. Requiring a recent login is the
+  // standard "confirm it's you" gate (same pattern as Google/GitHub) and
+  // needs no extra credentials store. Anyone past the window re-logs in.
+  $loginAge = time() - (int) ($_SESSION['login_at'] ?? 0);
+  $freshWindowSeconds = 15 * 60;
+
+  if ($loginAge > $freshWindowSeconds) {
+    $message = 'For security, please sign out and sign in again, then change your password.';
+    $messageTone = 'error';
+  } elseif (strlen($newPassword) < 8) {
     $message = 'Password must be at least 8 characters.';
     $messageTone = 'error';
   } elseif ($newPassword !== $confirmPassword) {
@@ -76,6 +88,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
         $_SESSION['uid'],
         $newPassword
       );
+
+      // Password is now user-chosen: lift any forced-reset flag both in
+      // Firestore (source of truth, read at next login) and in the live
+      // session (so the redirect gate releases immediately).
+      try {
+        $self = firestore_get_document('Users', $_SESSION['uid']) ?? [];
+        if (!empty($self['mustChangePassword'])) {
+          $self['mustChangePassword'] = false;
+          firestore_write_document('Users', $_SESSION['uid'], $self);
+        }
+      } catch (Throwable $e) {
+        error_log(
+          'Employer settings mustChangePassword clear failed: ' .
+          $e->getMessage()
+        );
+      }
+      unset($_SESSION['must_change_password']);
+      // Fresh session ID after a credential change (fixation defense).
+      if (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+      }
+      $_SESSION['login_at'] = time();
 
       $message = 'Password updated.';
       $messageTone = 'success';
@@ -173,6 +207,12 @@ $profileInitials = employer_avatar_initials($profileName);
         </div>
       <?php endif; ?>
 
+      <?php if (!empty($_SESSION['must_change_password']) && !$message): ?>
+        <div class="alert alert-info" role="status" aria-live="polite">
+          Your account is using a temporary password. Please set your own password below to continue.
+        </div>
+      <?php endif; ?>
+
       <section class="settings-panel settings-profile-panel">
 
         <div class="settings-section-heading">
@@ -195,6 +235,7 @@ $profileInitials = employer_avatar_initials($profileName);
         </div>
 
         <form method="post" class="settings-form">
+          <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="save_profile" />
 
           <div class="form-grid">
@@ -251,6 +292,7 @@ $profileInitials = employer_avatar_initials($profileName);
         </div>
 
         <form method="post" class="settings-form">
+          <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="change_password" />
 
           <div class="form-grid">
@@ -306,6 +348,7 @@ $profileInitials = employer_avatar_initials($profileName);
           <form method="post" class="settings-card-form"
             data-confirm="Deactivate your account? You will be signed out immediately. An admin can reactivate it later."
             data-confirm-danger>
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="deactivate_account" />
 
             <button class="settings-card-action settings-card-action-danger" type="submit">

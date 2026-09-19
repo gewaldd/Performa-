@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
 
@@ -33,6 +35,15 @@ $reportTypes = [
 
 function get_cached_collection($collectionName, $ttlSeconds = 600)
 {
+  // In-request memo: this page calls the helper up to 3x per load (Users,
+  // Ratings, Reports). The disk file is the cross-request cache; this avoids
+  // decoding the same large JSON file repeatedly in one request.
+  static $memo = [];
+  $memoKey = $collectionName . '|' . $ttlSeconds;
+  if (isset($memo[$memoKey])) {
+    return $memo[$memoKey];
+  }
+
   $cacheFile =
     sys_get_temp_dir() .
     '/performa_' .
@@ -41,14 +52,15 @@ function get_cached_collection($collectionName, $ttlSeconds = 600)
 
   if (
     file_exists($cacheFile) &&
-    (time() - filemtime($cacheFile) < $ttlSeconds)
+    (time() - (int) @filemtime($cacheFile) < $ttlSeconds)
   ) {
     $data = json_decode(
-      file_get_contents($cacheFile),
+      (string) @file_get_contents($cacheFile),
       true
     );
 
     if (is_array($data)) {
+      $memo[$memoKey] = $data;
       return $data;
     }
   }
@@ -62,15 +74,18 @@ function get_cached_collection($collectionName, $ttlSeconds = 600)
       LOCK_EX
     );
 
-    return is_array($data) ? $data : [];
+    $result = is_array($data) ? $data : [];
+    $memo[$memoKey] = $result;
+    return $result;
   } catch (Throwable $e) {
     if (file_exists($cacheFile)) {
       $data = json_decode(
-        file_get_contents($cacheFile),
+        (string) @file_get_contents($cacheFile),
         true
       );
 
       if (is_array($data)) {
+        $memo[$memoKey] = $data;
         return $data;
       }
     }
@@ -516,6 +531,7 @@ $currentQuarter =
         <?php else: ?>
 
           <form method="post" class="report-form-row reports-form-row reports-generation-form">
+            <?php echo csrf_field(); ?>
 
             <div class="form-group">
 

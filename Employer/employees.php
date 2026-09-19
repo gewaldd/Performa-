@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 
 if (session_status() === PHP_SESSION_NONE) {

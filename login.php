@@ -392,6 +392,12 @@
                 if (res.ok) {
                     // Redirect based on role stored in session response
                     const role = body.role || 'probationary_employee';
+                    // Temporary-password accounts go straight to Settings so
+                    // the forced-reset gate is satisfied on first login.
+                    if (body.mustChangePassword && role === 'employer') {
+                        window.location.href = 'Employer/settings.php?force_reset=1';
+                        return;
+                    }
                     switch (role) {
                         case 'admin': window.location.href = 'Admin/admin_dashboard.php'; break;
                         case 'employer': window.location.href = 'Employer/employer_dashboard.php'; break;

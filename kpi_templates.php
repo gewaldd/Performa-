@@ -57,8 +57,22 @@ function kpi_templates(): array
 
 function kpi_template_for(?string $industry): array
 {
-    $templates = kpi_templates();
     $key = strtolower(trim((string) $industry));
+    if ($key === '') {
+        $key = 'retail';
+    }
+
+    // Per-request memo: the Employer dashboard calls this once per employee
+    // (via employee_kpi_summary). Each uncached call costs up to 2 Firestore
+    // round-trips, so without this an N-employee dashboard pays 2N HTTPS
+    // requests on every cache miss. Templates are read-only within a request
+    // except via add_custom_kpi()/set_kpi_target_override() below, which
+    // invalidate this memo after writing.
+    if (isset($GLOBALS['__kpi_template_memo'][$key])) {
+        return $GLOBALS['__kpi_template_memo'][$key];
+    }
+
+    $templates = kpi_templates();
     $template = $templates[$key] ?? $templates['retail'];
 
     // Merge any employer-added custom KPIs and target overrides for this industry,
@@ -96,7 +110,19 @@ function kpi_template_for(?string $industry): array
         }
     }
 
+    $GLOBALS['__kpi_template_memo'][$key] = $template;
+
     return $template;
+}
+
+function kpi_template_invalidate(?string $industry = null): void
+{
+    if ($industry === null) {
+        $GLOBALS['__kpi_template_memo'] = [];
+        return;
+    }
+
+    unset($GLOBALS['__kpi_template_memo'][strtolower(trim((string) $industry))]);
 }
 
 function add_custom_kpi(string $industry, string $name, float $target): void
@@ -107,6 +133,7 @@ function add_custom_kpi(string $industry, string $name, float $target): void
     $doc['kpis'] = $doc['kpis'] ?? [];
     $doc['kpis'][] = ['key' => $slug, 'name' => $name, 'target' => $target];
     firestore_write_document('CustomKpis', $key, $doc);
+    kpi_template_invalidate($key);
 }
 
 function set_kpi_target_override(string $industry, string $kpiKey, float $target): void
@@ -115,6 +142,7 @@ function set_kpi_target_override(string $industry, string $kpiKey, float $target
     $doc = firestore_get_document('KpiOverrides', $key) ?? [];
     $doc[$kpiKey] = $target;
     firestore_write_document('KpiOverrides', $key, $doc);
+    kpi_template_invalidate($key);
 }
 
 function kpi_status_for_score(float $current, float $target): array

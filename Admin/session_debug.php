@@ -4,6 +4,10 @@ require_once __DIR__ . '/../firebase_init.php';
 
 // Require login but allow any role so admin can inspect the session
 require_login();
+// Debug output includes session data, Firestore profile fields, and request
+// headers (which carry cookies) — admin-only. Never relax this to a wider
+// role: it exists for troubleshooting, not for regular use.
+require_role('admin');
 
 header('Content-Type: text/plain; charset=utf-8');
 echo "PHP Session:\n";

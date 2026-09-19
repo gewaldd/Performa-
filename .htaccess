@@ -1,3 +1,25 @@
 <Files "firebase-service-account.json">
     Require all denied
 </Files>
+
+# Phase 0 hardening: this app has no front controller, so every file under
+# the web root is directly addressable. Deny everything that is never meant
+# to be served over HTTP. (Apache 2.4+ syntax; re-evaluate if deployed to
+# nginx/IIS, where .htaccess is ignored.)
+Options -Indexes
+
+# Secrets and runtime config.
+<Files ".env">
+    Require all denied
+</Files>
+
+# Logs, local php config, TLS bundle, and the committed composer binary.
+<FilesMatch "\.(log|ini|pem|phar)$">
+    Require all denied
+</FilesMatch>
+
+# Non-public directories: ML model assets, CLI/admin scripts, the legacy
+# file-auth data dir (created on demand), planning notes, and git metadata.
+<If "%{REQUEST_URI} =~ m#^/(ml|scripts|data|\.planning|\.git)/#">
+    Require all denied
+</If>

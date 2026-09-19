@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
 
@@ -179,6 +181,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       <div class="settings-panel">
         <h4 class="settings-subhead">Profile</h4>
         <form method="post">
+          <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="save_profile" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
           <div class="form-grid">
@@ -223,6 +226,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         </p>
         <form method="post"
           data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate ' . ($profile['name'] ?? 'this account') . '? They will be signed out immediately and unable to log in.', ENT_QUOTES); ?>"<?php echo $statusLabel === 'Disabled' ? '' : ' data-confirm-danger'; ?>>
+          <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="toggle_status" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
           <button class="<?php echo $statusLabel === 'Disabled' ? 'btn-cancel' : 'btn-danger'; ?>"
@@ -252,6 +256,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <h4 class="settings-subhead">Employer Feedback</h4>
           <p class="microcopy">Share feedback that will appear on the employee's Feedback page.</p>
           <form method="post">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_feedback" />
             <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
             <div class="form-group">
@@ -283,6 +288,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <?php endif; ?>
 
           <form method="post">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_regularization" />
             <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
             <div class="form-grid">

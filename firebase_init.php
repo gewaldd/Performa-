@@ -65,6 +65,17 @@ function base64url_encode(string $data): string
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
+// Every Firestore / Identity Toolkit call is a synchronous HTTPS round-trip
+// on the page's critical path. Without timeouts one slow network stalls the
+// whole page (perceived as lag/hang), and the PHP session lock held during
+// the wait serializes the user's other tabs too. Keep these generous —
+// correctness first, but never hang forever.
+function firebase_curl_timeouts($ch): void
+{
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+}
+
 function get_service_account_access_token(): string
 {
     $svc = load_service_account();
@@ -113,10 +124,10 @@ function get_service_account_access_token(): string
 
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
@@ -167,6 +178,7 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
 
         curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($callBody));
@@ -199,6 +211,7 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['email' => $email, 'password' => $password, 'returnSecureToken' => true]));
@@ -214,6 +227,7 @@ function identitytoolkit_create_user(string $name, string $email, string $passwo
                     $chL = curl_init($lookupUrl);
                     curl_setopt($chL, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
                     curl_setopt($chL, CURLOPT_RETURNTRANSFER, true);
+                    firebase_curl_timeouts($chL);
                     curl_setopt($chL, CURLOPT_POST, true);
                     curl_setopt($chL, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
                     curl_setopt($chL, CURLOPT_POSTFIELDS, json_encode(['email' => [$email]]));
@@ -243,6 +257,7 @@ function identitytoolkit_update_password(string $uid, string $newPassword): void
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['localId' => $uid, 'password' => $newPassword]));
@@ -260,6 +275,7 @@ function identitytoolkit_disable_user(string $uid, bool $disabled = true): void
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['localId' => $uid, 'disableUser' => $disabled]));
@@ -316,6 +332,7 @@ function firestore_write_document(string $collection, string $documentId, array 
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $resp = curl_exec($ch);
@@ -336,6 +353,7 @@ function firestore_get_document(string $collection, string $documentId): ?array
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -396,6 +414,7 @@ function firestore_list_documents(string $collection): array
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
