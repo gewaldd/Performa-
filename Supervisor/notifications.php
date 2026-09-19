@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 require_login();
 require_role('supervisor');
 require_password_reset('settings.php');
@@ -20,7 +21,7 @@ $notifications = [];
 
 try {
     $employees = [];
-    foreach (firestore_list_documents('Users') as $doc) {
+    foreach (get_cached_collection('Users', 600) as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
             $employees[$doc['uid']] = $doc['name'] ?? $doc['email'] ?? 'Unknown';
@@ -29,7 +30,7 @@ try {
 
     $ratings = [];
     try {
-        $ratings = firestore_list_documents('Ratings');
+        $ratings = get_cached_collection('Ratings', 600);
     } catch (\Throwable $e) {
     }
 

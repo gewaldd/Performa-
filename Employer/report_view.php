@@ -47,7 +47,7 @@ $autoPrint = $report && !empty($_GET['autoprint']);
     <main class="main content-narrow">
       <div class="page-header no-print">
         <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          <?php echo employer_icon('menu'); ?>
         </button>
         <div class="ph-main">
           <a href="reports.php" class="ghost-button back-link">&larr; Back to Reports</a>

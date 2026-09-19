@@ -5,6 +5,8 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
+require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/includes/collection_cache.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -120,6 +122,24 @@ if ($cacheAvailable) {
 
 } else {
 
+  /*
+   * Latest KPI averages for the triage meta line. Single disk-cached
+   * Ratings load (TTL 600, per-tenant salted); summaries come from the
+   * memoized template helper, so N rows cost ~1 read, not N. Only needed
+   * on a directory cache miss — session-cached rows carry their values.
+   */
+  $ratingsForScores = [];
+
+  try {
+    $ratingsForScores =
+      get_cached_collection(
+        'Ratings',
+        600
+      );
+  } catch (Throwable $e) {
+    $ratingsForScores = [];
+  }
+
   try {
 
     $docs =
@@ -147,6 +167,83 @@ if ($cacheAvailable) {
       $status =
         $doc['status']
         ?? 'Active';
+
+      /*
+       * Days-left triage value for client-side sorting (dates already on
+       * the doc — zero new reads). Null when there is no probation clock
+       * (supervisors, missing hire date); nulls sort last.
+       */
+      $daysLeftValue = null;
+      $daySinceValue = null;
+
+      if ($roleKey === 'probationary') {
+        $directoryCreatedAt =
+          $doc['createdAt']
+          ?? $doc['hireDate']
+          ?? '';
+
+        $directoryCreatedTime =
+          $directoryCreatedAt
+          ? strtotime($directoryCreatedAt)
+          : false;
+
+        if ($directoryCreatedTime) {
+          $directoryPeriod =
+            max(
+              1,
+              (int) (
+                $doc['probationPeriodDays']
+                ?? 180
+              )
+            );
+
+          $daySinceValue =
+            max(
+              0,
+              (int) floor(
+                (time() - $directoryCreatedTime) /
+                86400
+              )
+            );
+
+          $daysLeftValue =
+            max(
+              0,
+              $directoryPeriod - $daySinceValue
+            );
+        }
+      }
+
+      /*
+       * Latest average for the triage meta line (probationary rows only).
+       * Null when unrated — the template says "Not yet rated".
+       */
+      $scoreValue = null;
+
+      if ($roleKey === 'probationary') {
+        $directoryUid =
+          (string) (
+            $doc['uid']
+            ?? ''
+          );
+
+        if ($directoryUid !== '') {
+          $directorySummary =
+            employee_kpi_summary(
+              $ratingsForScores,
+              $directoryUid,
+              (string) (
+                $doc['industry']
+                ?? 'retail'
+              )
+            );
+
+          if (!empty($directorySummary['hasData'])) {
+            $scoreValue =
+              (float) $directorySummary['score'];
+          }
+        }
+      }
 
       $roleLabel =
         display_role_label(
@@ -206,6 +303,15 @@ if ($cacheAvailable) {
         'status' =>
           $status,
 
+        'daysLeftValue' =>
+          $daysLeftValue,
+
+        'daySinceValue' =>
+          $daySinceValue,
+
+        'scoreValue' =>
+          $scoreValue,
+
         'statusClass' =>
           $status === 'Disabled'
           ? 'status-danger'
@@ -245,6 +351,56 @@ $departments =
   );
 
 sort($departments);
+
+/*
+ * Shell headcount badge + command palette index from the already-loaded
+ * directory rows (zero new reads).
+ */
+$_SESSION['pf_nav_employees'] =
+  count($directory);
+
+$pfPaletteIndex = [];
+
+foreach (
+  array_slice(
+    $directory,
+    0,
+    60
+  ) as $paletteEntry
+) {
+  $paletteUid =
+    (string) (
+      $paletteEntry['uid']
+      ?? ''
+    );
+
+  if ($paletteUid === '') {
+    continue;
+  }
+
+  $pfPaletteIndex[] = [
+    'label' =>
+      $paletteEntry['name'],
+    'sub' =>
+      (
+        $paletteEntry['role']
+        ?? ''
+      ) .
+      ' · View profile',
+    'href' =>
+      'employee_view.php?uid=' .
+      urlencode($paletteUid),
+  ];
+}
+
+$pfPaletteJson =
+  json_encode(
+    $pfPaletteIndex,
+    JSON_HEX_TAG |
+    JSON_HEX_APOS |
+    JSON_HEX_QUOT |
+    JSON_HEX_AMP
+  );
 ?>
 
 <!DOCTYPE html>
@@ -289,27 +445,7 @@ sort($departments);
 
     <main class="main">
 
-      <section class="page-header" aria-labelledby="employeesTitle">
-
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        </button>
-
-        <div class="ph-main">
-
-          <span class="eyebrow">Workforce</span>
-
-          <h1 id="employeesTitle">
-            Employees
-          </h1>
-
-          <p>
-            Manage and organize your workforce directory.
-          </p>
-
-        </div>
-
-        <div class="ph-actions">
+      <?php ob_start(); ?>
 
           <label class="search-bar" for="employeeSearch">
 
@@ -337,9 +473,16 @@ sort($departments);
             Add Employee
           </a>
 
-        </div>
-
-      </section>
+      <?php
+      $employeesActions = ob_get_clean();
+      employer_page_header(
+        'employeesTitle',
+        'Employees',
+        '<span class="eyebrow">Workforce</span>',
+        'Manage and organize your workforce directory.',
+        $employeesActions
+      );
+      ?>
 
       <?php if (isset($_GET['created'])): ?>
 
@@ -408,7 +551,7 @@ sort($departments);
                 <option value="<?php echo htmlspecialchars($dept, ENT_QUOTES); ?>">
                   <?php
                   echo htmlspecialchars(
-                    $dept,
+                    pf_dept_label($dept) !== '' ? pf_dept_label($dept) : $dept,
                     ENT_QUOTES
                   );
                   ?>
@@ -472,9 +615,33 @@ sort($departments);
 
         <div class="filter-actions">
 
-          <button class="reset-button" type="button" id="resetFiltersBtn">
+          <button class="ghost-button" type="button" id="resetFiltersBtn">
             Reset
           </button>
+
+          <label class="filter-select">
+
+            <span>
+              Sort by:
+            </span>
+
+            <select id="sortDirectory" class="perform-select perform-select--filter">
+
+              <option value="default">
+                Default order
+              </option>
+
+              <option value="name">
+                Name A–Z
+              </option>
+
+              <option value="days-left">
+                Days left (soonest)
+              </option>
+
+            </select>
+
+          </label>
 
           <button class="ghost-button" type="button" id="exportDirectoryBtn">
             <span aria-hidden="true">
@@ -566,6 +733,25 @@ sort($departments);
                 $person['type'],
                 ENT_QUOTES
               );
+              ?>" data-days-left="<?php
+              echo htmlspecialchars(
+                isset($person['daysLeftValue'])
+                ? (string) $person['daysLeftValue']
+                : '',
+                ENT_QUOTES
+              );
+              ?>" data-name="<?php
+              echo htmlspecialchars(
+                strtolower($person['name']),
+                ENT_QUOTES
+              );
+              ?>" data-score="<?php
+              echo htmlspecialchars(
+                isset($person['scoreValue'])
+                ? number_format((float) $person['scoreValue'], 1)
+                : '',
+                ENT_QUOTES
+              );
               ?>">
 
                 <div class="employee-cell" role="cell">
@@ -597,6 +783,28 @@ sort($departments);
                       ?>
 
                     </div>
+
+                    <?php if (($person['type'] ?? '') === 'Probationary'): ?>
+
+                      <div class="employee-triage">
+
+                        <?php if (isset($person['daySinceValue']) && isset($person['daysLeftValue'])): ?>
+                          <?php echo htmlspecialchars(pf_day((int) $person['daySinceValue']), ENT_QUOTES); ?>
+                          ·
+                          <?php echo (int) $person['daysLeftValue']; ?> days left
+                        <?php endif; ?>
+
+                        <?php if (isset($person['scoreValue'])): ?>
+                          ·
+                          <?php echo htmlspecialchars(pf_score_pair($person['scoreValue']), ENT_QUOTES); ?>
+                        <?php else: ?>
+                          ·
+                          Not yet rated
+                        <?php endif; ?>
+
+                      </div>
+
+                    <?php endif; ?>
 
                   </div>
 
@@ -638,7 +846,7 @@ sort($departments);
 
                     <?php
                     echo htmlspecialchars(
-                      $deptShort,
+                      pf_dept_label($deptShort),
                       ENT_QUOTES
                     );
                     ?>
@@ -748,6 +956,10 @@ sort($departments);
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
   <script src="<?php echo htmlspecialchars(employer_asset('employees.js'), ENT_QUOTES); ?>"></script>
+
+  <script>
+    window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
+  </script>
 
 </body>
 

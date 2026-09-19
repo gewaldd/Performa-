@@ -11,6 +11,7 @@ require_login();
 require_role('employer');
 // Ownership helpers + forced-reset gate (same as every other Employer page).
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/collection_cache.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -54,6 +55,25 @@ if (!$selectedEmployee && $employees) {
 }
 
 $template = $selectedEmployee ? kpi_template_for($selectedEmployee['industry']) : kpi_template_for('retail');
+
+/*
+ * Read-only history reference (UX #3): the selected employee's latest
+ * rating on file, shown per KPI under each slider. Single disk-cached
+ * Ratings load; never submitted, never touches slider defaults (3.0).
+ */
+$prevScores = [];
+
+if ($selectedEmployee) {
+  try {
+    $historyRatings = get_cached_collection('Ratings', 600);
+    $historyMine = ratings_for_employee($historyRatings, $selectedUid);
+    if (!empty($historyMine[0]['scores']) && is_array($historyMine[0]['scores'])) {
+      $prevScores = $historyMine[0]['scores'];
+    }
+  } catch (\Throwable $e) {
+    $prevScores = [];
+  }
+}
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
@@ -148,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     <main class="main content-narrow">
       <div class="page-header">
         <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          <?php echo employer_icon('menu'); ?>
         </button>
         <div class="ph-main">
           <a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>
@@ -168,7 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         <?php endif; ?>
 
         <?php if (!$employees): ?>
-          <p>No probationary employees yet. Add one first from the Employees page.</p>
+          <div class="empty-state">
+            <p>No probationary employees yet.</p>
+            <a class="btn-primary" href="add_employee.php">Add Employee</a>
+          </div>
         <?php else: ?>
           <form method="get" class="form-grid single-field-grid" style="margin-bottom:8px;">
             <div class="form-group">
@@ -185,16 +208,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
           <hr class="section-divider" />
 
-          <form method="post">
+          <form method="post" id="rateForm">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
             <p class="microcopy" style="margin:0 0 12px;">Industry template: <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
+            <div class="pf-rate-preview" id="ratePreview" aria-live="polite"></div>
             <div class="pf-rate-grid">
               <?php foreach ($template['kpis'] as $kpi): ?>
                 <div class="pf-rate-row">
                   <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
                     <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
                     <span class="microcopy"> · target <?php echo number_format((float) $kpi['target'], 1); ?></span>
+                    <span class="microcopy"> · <?php echo isset($prevScores[$kpi['key']]) ? 'Last week: ' . number_format((float) $prevScores[$kpi['key']], 1) : 'No prior rating'; ?></span>
                   </label>
                   <div class="pf-rate-controls">
                     <input type="range" min="1" max="5" step="0.1" value="3.0" data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
@@ -206,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
               <?php endforeach; ?>
             </div>
             <div class="form-actions">
-              <a class="btn-cancel" href="kpis.php">Cancel</a>
+              <a class="ghost-button" href="kpis.php">Cancel</a>
               <button class="btn-primary" type="submit">Save Rating</button>
             </div>
           </form>
@@ -215,6 +240,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     </main>
   </div>
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script>
+    // Targets for the live average preview (presentation only; the server
+    // re-derives everything from the template on POST).
+    window.__pfRateTargets = <?php
+      $rateTargets = [];
+      foreach ($template['kpis'] as $rateKpi) {
+        $rateTargets[$rateKpi['key']] = (float) $rateKpi['target'];
+      }
+      echo json_encode(
+        $rateTargets,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+      ) ?: '{}';
+    ?>;
+  </script>
   <script>
     // Slider <-> number sync (presentation only; submitted name stays score_*).
     document.querySelectorAll('[data-rate-slider]').forEach(function (slider) {
@@ -226,6 +265,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         if (!isNaN(v)) slider.value = Math.max(1, Math.min(5, v));
       });
     });
+
+    // Live average preview + below-target confirm. Ratings write four docs
+    // atomically with no undo, so a stray 1.0 deserves a second glance.
+    // Reuses the shared .modal-backdrop/.confirm-dialog chrome from script.js.
+    (function () {
+      var form = document.getElementById('rateForm');
+      var preview = document.getElementById('ratePreview');
+      if (!form || !preview) return;
+      var targets = window.__pfRateTargets || {};
+
+      function readScores() {
+        var vals = [];
+        form.querySelectorAll('input[name^="score_"]').forEach(function (input) {
+          var v = parseFloat(input.value);
+          if (isNaN(v)) return;
+          var key = input.name.replace(/^score_/, '');
+          vals.push({ key: key, value: Math.max(1, Math.min(5, v)) });
+        });
+        return vals;
+      }
+
+      function summarize() {
+        var vals = readScores();
+        if (!vals.length) return { avg: null, below: 0, total: 0 };
+        var sum = 0, below = 0;
+        vals.forEach(function (s) {
+          sum += s.value;
+          var t = parseFloat(targets[s.key]);
+          if (!isNaN(t) && s.value < t) below++;
+        });
+        return { avg: sum / vals.length, below: below, total: vals.length };
+      }
+
+      function paint() {
+        var s = summarize();
+        if (s.avg === null) { preview.textContent = ''; return; }
+        // Non-breaking spans keep each figure group on one line at narrow
+        // widths; visible text and aria-live announcement are unchanged.
+        preview.innerHTML = '';
+        preview.append('Average ');
+        var avgSpan = document.createElement('span');
+        avgSpan.style.whiteSpace = 'nowrap';
+        avgSpan.textContent = s.avg.toFixed(1) + ' / 5.0';
+        preview.append(avgSpan);
+        if (s.below > 0) {
+          preview.append(' · ');
+          var belowSpan = document.createElement('span');
+          belowSpan.style.whiteSpace = 'nowrap';
+          belowSpan.textContent = s.below + ' of ' + s.total + ' below target';
+          preview.append(belowSpan);
+        } else {
+          preview.append(' · all at or above target');
+        }
+      }
+
+      form.addEventListener('input', paint);
+      paint();
+
+      form.addEventListener('submit', function (event) {
+        if (form.dataset.ratedConfirmed === 'true') return;
+        var s = summarize();
+        if (s.below <= 0) return;
+        event.preventDefault();
+
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        var dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+        dialog.setAttribute('role', 'alertdialog');
+        dialog.setAttribute('aria-label', 'Confirm below-target rating');
+        var heading = document.createElement('h2');
+        heading.textContent = 'Save anyway?';
+        var message = document.createElement('p');
+        message.textContent = s.below + ' of ' + s.total + ' scores are below target (average '
+          + s.avg.toFixed(1) + '). This writes the weekly rating immediately.';
+        var actions = document.createElement('div');
+        actions.className = 'confirm-dialog-actions';
+        var reviewButton = document.createElement('button');
+        reviewButton.type = 'button';
+        reviewButton.className = 'ghost-button';
+        reviewButton.textContent = 'Review scores';
+        var saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'btn-primary';
+        saveButton.textContent = 'Save anyway';
+        actions.append(reviewButton, saveButton);
+        dialog.append(heading, message, actions);
+        backdrop.append(dialog);
+        document.body.append(backdrop);
+
+        var closeDialog = function () {
+          backdrop.remove();
+          document.removeEventListener('keydown', handleKeydown);
+          saveButton.focus({ preventScroll: true });
+        };
+        var handleKeydown = function (keyEvent) {
+          if (keyEvent.key === 'Escape') { closeDialog(); reviewButton.focus(); }
+        };
+        reviewButton.addEventListener('click', function () { backdrop.remove(); document.removeEventListener('keydown', handleKeydown); });
+        saveButton.addEventListener('click', function () {
+          form.dataset.ratedConfirmed = 'true';
+          backdrop.remove();
+          document.removeEventListener('keydown', handleKeydown);
+          HTMLFormElement.prototype.submit.call(form);
+        });
+        document.addEventListener('keydown', handleKeydown);
+        saveButton.focus();
+      });
+    })();
   </script>
 </body>
 

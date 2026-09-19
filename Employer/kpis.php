@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
-// Shared icons (Style A cleanup). Trend glyphs replaced by employer_trend_badge().
+// Shared icons (Style A cleanup).
 $icons = [
   'search' => employer_icon('search'),
   'plus' => employer_icon('plus'),
@@ -19,18 +19,6 @@ $icons = [
   'user' => employer_icon('users'),
   'dot' => employer_icon('more'),
   'download' => employer_icon('download'),
-];
-
-$trendGlyph = [
-  'up' => 'Improving',
-  'flat' => 'Steady',
-  'down' => 'Declining',
-];
-
-$trendClass = [
-  'up' => 'trend-up',
-  'flat' => 'trend-flat',
-  'down' => 'trend-down',
 ];
 
 $badgeCycle = [
@@ -48,88 +36,10 @@ $accentCycle = [
 ];
 
 /* =========================================================
-   FAST DISK-BACKED DATA CACHING
+   FAST DISK-BACKED DATA CACHING (shared include — see
+   includes/collection_cache.php; extracted verbatim Item 5)
    ========================================================= */
-function get_cached_collection(
-  string $collectionName,
-  int $ttlSeconds = 600
-): array {
-  // In-request memo: this page calls the helper twice per load (Users +
-  // Ratings). The disk file is the cross-request cache; this avoids
-  // decoding the same large JSON file twice in one request.
-  static $memo = [];
-  // Per-tenant salt: on shared hosting two concurrent employers must never
-  // swap directories via a shared cache file.
-  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
-  $memoKey = $tenant . '|' . $collectionName . '|' . $ttlSeconds;
-  if (isset($memo[$memoKey])) {
-    return $memo[$memoKey];
-  }
-
-  $cacheFile =
-    sys_get_temp_dir() .
-    '/performa_' .
-    md5($tenant . '|' . $collectionName) .
-    '.json';
-
-  if (
-    file_exists($cacheFile) &&
-    (time() - (int) @filemtime($cacheFile) < $ttlSeconds)
-  ) {
-    $data = json_decode(
-      (string) @file_get_contents($cacheFile),
-      true
-    );
-
-    if (is_array($data)) {
-      $memo[$memoKey] = $data;
-      return $data;
-    }
-  }
-
-  try {
-    $data = firestore_list_documents($collectionName);
-
-    @file_put_contents(
-      $cacheFile,
-      json_encode($data),
-      LOCK_EX
-    );
-
-    $result = is_array($data) ? $data : [];
-    $memo[$memoKey] = $result;
-    return $result;
-  } catch (Throwable $e) {
-    if (file_exists($cacheFile)) {
-      $data = json_decode(
-        (string) @file_get_contents($cacheFile),
-        true
-      );
-
-      if (is_array($data)) {
-        $memo[$memoKey] = $data;
-        return $data;
-      }
-    }
-
-    return [];
-  }
-}
-
-function clear_collection_cache(
-  string $collectionName
-): void {
-  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
-  $cacheFile =
-    sys_get_temp_dir() .
-    '/performa_' .
-    md5($tenant . '|' . $collectionName) .
-    '.json';
-
-  if (file_exists($cacheFile)) {
-    @unlink($cacheFile);
-  }
-}
+require_once __DIR__ . '/includes/collection_cache.php';
 
 /* =========================================================
    EMPLOYEE SELECTION
@@ -524,19 +434,7 @@ foreach (
 
     <main class="main">
 
-      <section class="page-header kpi-page-header" aria-labelledby="kpiTitle">
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        </button>
-        <div class="ph-main">
-          <span class="eyebrow">Performance framework</span>
-          <h1 id="kpiTitle">Key Performance Indicators</h1>
-          <p>
-            Define and track organization-wide performance metrics.
-          </p>
-        </div>
-
-        <div class="ph-actions">
+      <?php ob_start(); ?>
           <label class="search-bar" for="kpiSearch">
             <span class="sr-only">
               Search KPIs and categories
@@ -556,8 +454,17 @@ foreach (
             </span>
             Create KPI
           </a>
-        </div>
-      </section>
+      <?php
+      $kpiActions = ob_get_clean();
+      employer_page_header(
+        'kpiTitle',
+        'Key Performance Indicators',
+        '<span class="eyebrow">Performance framework</span>',
+        'Define and track organization-wide performance metrics.',
+        $kpiActions,
+        'kpi-page-header'
+      );
+      ?>
 
       <?php if ($kpiMessage !== ''): ?>
         <div
@@ -657,9 +564,7 @@ foreach (
 
           <div class="kpi-table-head">
             <span>KPI Name</span>
-            <span>Target Score</span>
             <span>Current Score</span>
-            <span>Trend</span>
             <span>Status</span>
             <span>Actions</span>
           </div>
@@ -680,7 +585,9 @@ foreach (
               );
             ?>
 
-            <article class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>">
+            <article class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name']), ENT_QUOTES); ?>"
+              data-target="<?php echo htmlspecialchars(number_format((float) $kpi['target'], 1), ENT_QUOTES); ?>"
+              data-status="<?php echo htmlspecialchars($kpi['status'], ENT_QUOTES); ?>">
 
               <div data-label="KPI Name">
                 <div class="kpi-name">
@@ -702,31 +609,33 @@ foreach (
                 </div>
               </div>
 
-              <div class="kpi-target" data-label="Target Score">
-                <?php
-                echo number_format(
-                  (float) $kpi['target'],
-                  1
-                );
-                ?>
-              </div>
-
               <div class="kpi-current" data-label="Current Score">
                 <?php echo employer_score_meter($kpi['hasData'] ? (float) $kpi['current'] : null, 5.0, (float) $kpi['target']); ?>
               </div>
 
-              <div data-label="Trend">
-                <?php echo employer_trend_badge($kpi['trend'], (bool) $kpi['hasData']); ?>
-              </div>
-
               <div data-label="Status">
-                <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>">
+                <?php
+                $trendGlyphs = ['up' => '↗', 'flat' => '→', 'down' => '↘'];
+                $trendLabels = ['up' => 'Improving', 'flat' => 'Steady', 'down' => 'Declining'];
+                $trendKey = $kpi['trend'] ?? 'flat';
+                $hasTrend = (bool) $kpi['hasData'] && isset($trendGlyphs[$trendKey]);
+                ?>
+                <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>"
+                  <?php if ($hasTrend): ?>
+                    title="<?php echo htmlspecialchars($trendLabels[$trendKey], ENT_QUOTES); ?>"
+                  <?php endif; ?>>
+                  <?php if ($hasTrend): ?>
+                    <span aria-hidden="true"><?php echo $trendGlyphs[$trendKey]; ?></span>
+                  <?php endif; ?>
                   <?php
                   echo htmlspecialchars(
                     $kpi['status'],
                     ENT_QUOTES
                   );
                   ?>
+                  <?php if ($hasTrend): ?>
+                    <span class="sr-only">(<?php echo htmlspecialchars($trendLabels[$trendKey], ENT_QUOTES); ?>)</span>
+                  <?php endif; ?>
                 </span>
               </div>
 

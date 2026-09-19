@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 require_login();
 require_role('supervisor');
 require_password_reset('settings.php');
@@ -18,7 +19,7 @@ $navItems = [
 
 $reports = [];
 try {
-    $reportDocs = firestore_list_documents('Reports');
+    $reportDocs = get_cached_collection('Reports', 600);
     usort($reportDocs, fn($a, $b) => strcmp($b['generatedAt'] ?? '', $a['generatedAt'] ?? ''));
     $reports = $reportDocs;
 } catch (\Throwable $e) {

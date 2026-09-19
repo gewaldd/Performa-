@@ -6,12 +6,16 @@ const deptFilter = document.getElementById("deptFilter");
 const statusFilter = document.getElementById("statusFilter");
 const typeFilter = document.getElementById("typeFilter");
 const resetBtn = document.getElementById("resetFiltersBtn");
+const sortSelect = document.getElementById("sortDirectory");
+const directoryRows = document.getElementById("directoryRows");
 const exportBtn = document.getElementById("exportDirectoryBtn");
 const prevBtn = document.getElementById("prevPageBtn");
 const nextBtn = document.getElementById("nextPageBtn");
 const pageIndicator = document.getElementById("pageIndicator");
 const paginationSummary = document.getElementById("paginationSummary");
 const allRows = Array.from(document.querySelectorAll(".directory-row"));
+// Home order survives re-appends: default sort restores it via index map.
+const homeOrder = new Map(allRows.map((row, i) => [row, i]));
 
 const PAGE_SIZE = 8;
 let currentPage = 1;
@@ -39,6 +43,7 @@ const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
 function render() {
   visibleRows = allRows.filter(matchesFilters);
+  applySort(visibleRows);
   const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
   if (currentPage > totalPages) currentPage = totalPages;
 
@@ -74,6 +79,36 @@ function render() {
   el.addEventListener("change", () => { currentPage = 1; render(); });
 });
 
+// Client-side reorder of the loaded rows (no new reads). Re-appends in
+// sorted order so pagination slices the sorted list. Missing values sort
+// last so legacy cached rows (no data-days-left) never jump to the top.
+function compareDaysLeft(a, b) {
+  const da = a.dataset.daysLeft === "" || a.dataset.daysLeft === undefined ? null : Number(a.dataset.daysLeft);
+  const db = b.dataset.daysLeft === "" || b.dataset.daysLeft === undefined ? null : Number(b.dataset.daysLeft);
+  if (da === null && db === null) return 0;
+  if (da === null) return 1;
+  if (db === null) return -1;
+  return da - db;
+}
+
+function applySort(rows) {
+  const mode = sortSelect ? sortSelect.value : "default";
+  if (mode === "name") {
+    rows.sort((a, b) => (a.dataset.name || "").localeCompare(b.dataset.name || ""));
+  } else if (mode === "days-left") {
+    rows.sort(compareDaysLeft);
+  } else {
+    rows.sort((a, b) => (homeOrder.get(a) ?? 0) - (homeOrder.get(b) ?? 0));
+  }
+  if (directoryRows) {
+    rows.forEach((row) => directoryRows.append(row));
+  }
+}
+
+if (sortSelect) {
+  sortSelect.addEventListener("change", () => { currentPage = 1; render(); });
+}
+
 if (clearFiltersBtn) {
   // Zero-result state reuses the exact Reset path — single source of truth.
   clearFiltersBtn.addEventListener("click", () => { if (resetBtn) resetBtn.click(); });
@@ -88,6 +123,7 @@ if (resetBtn) {
       // for the filter listeners below.
       el.dispatchEvent(new Event("change", { bubbles: true }));
     });
+    if (sortSelect) sortSelect.value = "default";
     currentPage = 1;
     render();
   });
@@ -107,7 +143,7 @@ if (nextBtn) {
 
 if (exportBtn) {
   exportBtn.addEventListener("click", () => {
-    const lines = [["Name", "Email", "Role", "Department", "Type", "Status"].join(",")];
+    const lines = [["Name", "Email", "Role", "Department", "Type", "Status", "Days Left", "Score"].join(",")];
     visibleRows.forEach((row) => {
       const name = row.querySelector(".employee-name")?.textContent.trim() || "";
       const email = row.querySelector(".employee-email")?.textContent.trim() || "";
@@ -116,7 +152,9 @@ if (exportBtn) {
       const dept = cells[2]?.textContent.trim() || "";
       const type = cells[3]?.textContent.trim() || "";
       const status = cells[4]?.textContent.trim() || "";
-      const row_ = [name, email, role, dept, type, status].map((v) => `"${v.replace(/"/g, '""')}"`);
+      const daysLeft = row.dataset.daysLeft ?? "";
+      const score = row.dataset.score ?? "";
+      const row_ = [name, email, role, dept, type, status, daysLeft, score].map((v) => `"${v.replace(/"/g, '""')}"`);
       lines.push(row_.join(","));
     });
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });

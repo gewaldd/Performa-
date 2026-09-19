@@ -185,20 +185,17 @@ $profileInitials = employer_avatar_initials($profileName);
 
     <main class="main settings-page" id="settingsPage">
 
-      <header class="settings-page-header page-header" aria-labelledby="settingsTitle">
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        </button>
-        <div class="ph-main">
-          <nav class="ph-crumb" aria-label="Breadcrumb">
-            <span>Settings</span>
-            <span aria-hidden="true">/</span>
-            <span>Account</span>
-          </nav>
-          <h1 id="settingsTitle">Settings</h1>
-          <p>Manage your account preferences and security.</p>
-        </div>
-      </header>
+      <?php
+      employer_page_header(
+        'settingsTitle',
+        'Settings',
+        '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Settings</span><span aria-hidden="true">/</span><span>Account</span></nav>',
+        'Manage your account preferences and security.',
+        '',
+        'settings-page-header',
+        'header'
+      );
+      ?>
 
       <?php if ($message): ?>
         <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"

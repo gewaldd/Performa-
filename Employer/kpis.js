@@ -71,9 +71,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       visibleRows.forEach((row) => {
         const name = row.querySelector(".kpi-name")?.textContent.trim() || "";
-        const target = row.querySelector(".kpi-target")?.textContent.trim() || "";
+        const target = row.dataset.target || row.querySelector(".kpi-target")?.textContent.trim() || "";
         const current = row.querySelector(".kpi-current strong")?.textContent.trim() || "";
-        const status = row.querySelector(".status-pill")?.textContent.trim() || "";
+        // data-status holds the plain label; pill text now carries an arrow
+        // glyph + sr-only trend word for sighted/screen-reader users.
+        const status = row.dataset.status || row.querySelector(".status-pill")?.textContent.trim() || "";
 
         const cells = [name, target, current, status].map((v) => `"${v.replace(/"/g, '""')}"`);
         csvLines.push(cells.join(","));

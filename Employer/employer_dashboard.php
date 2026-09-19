@@ -126,7 +126,8 @@ if (
         );
 
         header(
-            'Location: employer_dashboard.php?assigned=1'
+            'Location: employer_dashboard.php?assigned=' .
+            urlencode($uid)
         );
 
         exit;
@@ -363,7 +364,7 @@ if ($cacheValid) {
                 'initials' => employer_avatar_initials($name),
 
                 'day' =>
-                    'Day ' . $daysSince,
+                    pf_day($daysSince),
 
                 'daysLeft' =>
                     $daysLeft . ' days left',
@@ -427,10 +428,36 @@ if ($cacheValid) {
 }
 
 /*
-|--------------------------------------------------------------------------
-| Dashboard metrics
-|--------------------------------------------------------------------------
-*/
+ * Urgency order: soonest regularization deadline first, so the most urgent
+ * employee is always row one. Applied here — before metrics, palette index,
+ * badges, and the insight queue derive — so every consumer shares the
+ * order. Reorders loaded rows only: zero new reads.
+ */
+usort(
+    $liveUsers,
+    static function ($a, $b): int {
+        $da = $a['daysLeftValue'] ?? null;
+        $db = $b['daysLeftValue'] ?? null;
+
+        if ($da === null && $db === null) {
+            return 0;
+        }
+        if ($da === null) {
+            return 1;
+        }
+        if ($db === null) {
+            return -1;
+        }
+
+        return (int) $da <=> (int) $db;
+    }
+);
+
+/*
+ |--------------------------------------------------------------------------
+ | Dashboard metrics
+ |--------------------------------------------------------------------------
+ */
 
 $probationaryCount =
     count($liveUsers);
@@ -570,9 +597,12 @@ foreach ($liveUsers as $user) {
 $evaluations =
     $liveUsers;
 
-$insightEmployee = null;
-
-$worstGap = 0;
+/*
+ * Ranked attention queue: every scored employee below target, worst gap
+ * first, top 3. Replaces the old single-employee insight so staff beyond
+ * the first are no longer invisible.
+ */
+$insightQueue = [];
 
 foreach ($liveUsers as $user) {
     if (!$user['hasScore']) {
@@ -591,54 +621,101 @@ foreach ($liveUsers as $user) {
     $gap =
         $target - $score;
 
-    if (
-        $gap > 0 &&
-        (
-            $insightEmployee === null ||
-            $gap > $worstGap
-        )
-    ) {
-        $worstGap =
-            $gap;
-
-        $insightEmployee =
-            $user;
+    if ($gap > 0) {
+        $insightQueue[] = [
+            'user' => $user,
+            'gap' => $gap,
+        ];
     }
 }
+
+usort(
+    $insightQueue,
+    static fn($a, $b) =>
+        $b['gap'] <=> $a['gap']
+);
+
+$insightQueue =
+    array_slice(
+        $insightQueue,
+        0,
+        3
+    );
 
 $justAssigned =
     isset($_GET['assigned']);
 
+$justAssignedUid =
+    isset($_GET['assigned'])
+    && $_GET['assigned'] !== '1'
+    ? (string) $_GET['assigned']
+    : null;
+
+/*
+ * Shell badges + command palette index. Counts come from the rows already
+ * loaded above (zero new reads); the palette reuses the same rows.
+ */
+$_SESSION['pf_nav_employees'] =
+    $probationaryCount;
+
+$_SESSION['pf_nav_deadline'] =
+    $nearDeadlineCount;
+
+$pfPaletteIndex = [];
+
+foreach (
+    array_slice(
+        $liveUsers,
+        0,
+        60
+    ) as $paletteUser
+) {
+    $paletteUid =
+        (string) (
+            $paletteUser['uid']
+            ?? ''
+        );
+
+    if ($paletteUid === '') {
+        continue;
+    }
+
+    $pfPaletteIndex[] = [
+        'label' =>
+            $paletteUser['name'],
+        'sub' =>
+            $paletteUser['status'] .
+            ' · View profile',
+        'href' =>
+            'employee_view.php?uid=' .
+            urlencode($paletteUid),
+    ];
+
+    $pfPaletteIndex[] = [
+        'label' =>
+            'Rate ' .
+            $paletteUser['name'],
+        'sub' =>
+            'Weekly KPI rating',
+        'href' =>
+            'rate_employee.php?employee=' .
+            urlencode($paletteUid),
+    ];
+}
+
+$pfPaletteJson =
+    json_encode(
+        $pfPaletteIndex,
+        JSON_HEX_TAG |
+        JSON_HEX_APOS |
+        JSON_HEX_QUOT |
+        JSON_HEX_AMP
+    );
+
 $insightTitle =
-    $insightEmployee
+    $insightQueue
     ? 'Intervention Suggested'
     : 'No Data Yet';
-
-$insightName =
-    $insightEmployee
-    ? $insightEmployee['name']
-    : null;
-
-$recommendation =
-    $insightEmployee
-    ? 'Performance Improvement Training'
-    : null;
-
-$insightTarget =
-    $insightEmployee
-    ? (float) (
-        $insightEmployee['targetAvg']
-        ?? 4.2
-    )
-    : null;
-
-$insightScore =
-    $insightEmployee
-    ? (float) (
-        $insightEmployee['score']
-        ?? 0
-    )
-    : null;
 ?>
 
 <!DOCTYPE html>
@@ -676,16 +753,7 @@ $insightScore =
 
         <main class="main" id="dashboard">
 
-            <section class="page-header" aria-labelledby="dashboardTitle">
-                <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-                </button>
-                <div class="ph-main">
-                    <span class="eyebrow">Regularization cycle</span>
-                    <h1 id="dashboardTitle">Probationary Overview</h1>
-                    <p>Track and evaluate employees approaching regularization.</p>
-                </div>
-                <div class="ph-actions">
+            <?php ob_start(); ?>
                     <label class="search-bar">
                         <span class="sr-only">
                             Search employees or reports
@@ -721,8 +789,16 @@ $insightScore =
                         <?php echo $icons['plus']; ?>
                         Add Employee
                     </a>
-                </div>
-            </section>
+            <?php
+            $dashboardActions = ob_get_clean();
+            employer_page_header(
+                'dashboardTitle',
+                'Probationary Overview',
+                '<span class="eyebrow">Regularization cycle</span>',
+                'Track and evaluate employees approaching regularization.',
+                $dashboardActions
+            );
+            ?>
 
             <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
 
@@ -747,9 +823,16 @@ $insightScore =
                                     ENT_QUOTES
                                 );
                                 ?>
-                            </div>
-
                         </div>
+
+                        <div class="dashboard-empty" id="noFilterMatches" hidden>
+                            No employees match this filter combination.
+                            <button class="ghost-button" type="button" id="clearDashboardFilters">
+                                Clear filters
+                            </button>
+                        </div>
+
+                    </div>
 
                         <div class="metric-meta">
 
@@ -871,6 +954,7 @@ $insightScore =
 
                                 <div class="dashboard-empty">
                                     No probationary employees are currently available.
+                                    <a class="btn-primary" href="add_employee.php">Add Employee</a>
                                 </div>
 
                             <?php else: ?>
@@ -1007,7 +1091,7 @@ $insightScore =
 
                 </div>
 
-                <aside class="insight-card" id="insight">
+                <aside class="insight-card pf-panel" id="insight">
 
                     <div class="insight-top">
 
@@ -1028,114 +1112,104 @@ $insightScore =
                         ?>
                     </h2>
 
-                    <?php if ($insightEmployee): ?>
+                    <?php if ($insightQueue): ?>
 
-                        <p id="insightText">
-
-                            Based on their latest KPI ratings,
-                            <strong>
+                        <ol class="insight-queue">
+                            <?php foreach ($insightQueue as $queuePos => $queueEntry): ?>
                                 <?php
-                                echo htmlspecialchars(
-                                    $insightName,
-                                    ENT_QUOTES
-                                );
+                                $queueUser = $queueEntry['user'];
+                                $queueRecommendation = 'Performance Improvement Training';
+                                $queueAssigned =
+                                    !empty($queueUser['assignedTraining']) ||
+                                    $justAssignedUid === (string) ($queueUser['uid'] ?? '') ||
+                                    ($justAssigned && $justAssignedUid === null && $queuePos === 0);
                                 ?>
-                            </strong>
-                            is currently below the employee KPI target average and may benefit from targeted upskilling.
+                                <li class="insight-queue-item">
+                                    <div class="insight-queue-head">
+                                        <strong>
+                                            <?php
+                                            echo htmlspecialchars(
+                                                $queueUser['name'],
+                                                ENT_QUOTES
+                                            );
+                                            ?>
+                                        </strong>
+                                        <span class="insight-queue-gap">
+                                            <?php
+                                            echo number_format(
+                                                (float) $queueUser['score'],
+                                                1
+                                            );
+                                            ?>
+                                            /
+                                            <?php
+                                            echo number_format(
+                                                (float) ($queueUser['targetAvg'] ?? 4.2),
+                                                1
+                                            );
+                                            ?>
+                                            target
+                                        </span>
+                                    </div>
 
-                        </p>
+                                    <div class="recommendation-box">
 
-                        <div class="insight-score-row">
+                                        <span class="recommendation-icon" aria-hidden="true">
+                                            <?php echo $icons['cap']; ?>
+                                        </span>
 
-                            Current:
+                                        <div>
 
-                            <strong>
-                                <?php
-                                echo number_format(
-                                    $insightScore,
-                                    1
-                                );
-                                ?>
-                            </strong>
+                                            <div class="recommendation-label">
+                                                Recommended Action:
+                                            </div>
 
-                            <span> / </span>
+                                            <strong>
+                                                <?php
+                                                echo htmlspecialchars(
+                                                    $queueRecommendation,
+                                                    ENT_QUOTES
+                                                );
+                                                ?>
+                                            </strong>
 
-                            Target:
+                                        </div>
 
-                            <strong>
-                                <?php
-                                echo number_format(
-                                    $insightTarget,
-                                    1
-                                );
-                                ?>
-                            </strong>
+                                    </div>
 
-                        </div>
+                                    <div class="insight-actions">
 
-                        <div class="recommendation-box">
+                                        <?php if ($queueAssigned): ?>
 
-                            <span class="recommendation-icon" aria-hidden="true">
-                                <?php echo $icons['cap']; ?>
-                            </span>
+                                            <button class="btn-primary" type="button" disabled>
+                                                Assigned
+                                            </button>
 
-                            <div>
+                                        <?php else: ?>
 
-                                <div class="recommendation-label">
-                                    Recommended Action:
-                                </div>
+                                            <form method="post" style="flex:1;">
+                                                <?php echo csrf_field(); ?>
 
-                                <strong id="recommendationTitle">
-                                    <?php
-                                    echo htmlspecialchars(
-                                        $recommendation,
-                                        ENT_QUOTES
-                                    );
-                                    ?>
-                                </strong>
+                                                <input type="hidden" name="action" value="assign_course" />
 
-                            </div>
+                                                <input type="hidden" name="uid"
+                                                    value="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>" />
 
-                        </div>
+                                                <input type="hidden" name="course"
+                                                    value="<?php echo htmlspecialchars($queueRecommendation, ENT_QUOTES); ?>" />
 
-                        <div class="insight-actions">
+                                                <button class="btn-primary" type="submit" style="width:100%;">
+                                                    Assign Course
+                                                </button>
 
-                            <?php
-                            $alreadyAssigned =
-                                !empty(
-                                $insightEmployee['assignedTraining']
-                            ) ||
-                                $justAssigned;
-                            ?>
+                                            </form>
 
-                            <?php if ($alreadyAssigned): ?>
+                                        <?php endif; ?>
 
-                                <button class="primary-button" type="button" disabled>
-                                    Assigned
-                                </button>
-
-                            <?php else: ?>
-
-                                <form method="post" style="flex:1;">
-                                    <?php echo csrf_field(); ?>
-
-                                    <input type="hidden" name="action" value="assign_course" />
-
-                                    <input type="hidden" name="uid"
-                                        value="<?php echo htmlspecialchars($insightEmployee['uid'], ENT_QUOTES); ?>" />
-
-                                    <input type="hidden" name="course"
-                                        value="<?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?>" />
-
-                                    <button class="primary-button" type="submit" style="width:100%;">
-                                        Assign Course
-                                    </button>
-
-                                </form>
-
-                            <?php endif; ?>
-
-                        </div>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
 
                     <?php else: ?>
 
@@ -1154,6 +1228,10 @@ $insightScore =
     </div>
 
     <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+
+    <script>
+        window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
+    </script>
 
 </body>
 

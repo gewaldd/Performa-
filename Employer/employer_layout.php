@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/includes/icons.php';
+require_once __DIR__ . '/includes/format_helpers.php';
 
 function employer_layout_icon(string $name): string
 {
@@ -129,17 +130,56 @@ function employer_trend_badge(string $trend, bool $hasData): string
     . htmlspecialchars($info['label'], ENT_QUOTES) . '</span>';
 }
 
-function employer_render_shell(string $active): void
+/**
+ * Shared page header — one markup pattern for every Employer page.
+ *
+ * $leadHtml is trusted author HTML for the eyebrow/crumb row (e.g. an
+ * .eyebrow span or .ph-crumb nav); $title is escaped plain text;
+ * $descHtml is trusted author HTML for the lede paragraph ('' omits it);
+ * $actionsHtml is trusted author HTML for .ph-actions, typically captured
+ * with ob_start()/ob_get_clean() around the page's verbatim actions block
+ * (conditionals render before the call, so output is identical).
+ */
+function employer_page_header(
+  string $titleId,
+  string $title,
+  string $leadHtml,
+  string $descHtml,
+  string $actionsHtml,
+  string $extraClass = '',
+  string $tag = 'section'
+): void {
+  $tag = $tag === 'header' ? 'header' : 'section';
+  $class = trim('page-header ' . $extraClass);
+  ?>
+  <<?php echo $tag; ?> class="<?php echo htmlspecialchars($class, ENT_QUOTES); ?>" aria-labelledby="<?php echo htmlspecialchars($titleId, ENT_QUOTES); ?>">
+    <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
+    <div class="ph-main">
+      <?php echo $leadHtml; ?>
+      <h1 id="<?php echo htmlspecialchars($titleId, ENT_QUOTES); ?>"><?php echo htmlspecialchars($title, ENT_QUOTES); ?></h1>
+      <?php if ($descHtml !== ''): ?>
+        <p><?php echo $descHtml; ?></p>
+      <?php endif; ?>
+    </div>
+    <?php if (trim($actionsHtml) !== ''): ?>
+    <div class="ph-actions">
+      <?php echo $actionsHtml; ?>
+    </div>
+    <?php endif; ?>
+  </<?php echo $tag; ?>>
+  <?php
+}
+
+/**
+ * Item 5 — reusable shell chrome, decoupled for later cross-module reuse.
+ * Each function below renders exactly what employer_render_shell() used to
+ * inline; the shell now composes them with zero output change.
+ */
+function employer_nav_groups(): array
 {
-  if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-  }
-  $profileName = $_SESSION['name'] ?? 'Employer';
-  $profileRole = ucwords(str_replace('_', ' ', $_SESSION['role'] ?? 'Employer'));
-  // Local initials avatars (no external image requests): deterministic,
-  // offline-safe, same look at every size.
-  $profileInitials = employer_avatar_initials($profileName);
-  $navGroups = [
+  return [
     [
       'label' => 'Manage',
       'items' => [
@@ -156,6 +196,78 @@ function employer_render_shell(string $active): void
       ],
     ],
   ];
+}
+
+function employer_nav_badge(string $key): ?string
+{
+  // Session-stashed counts from pages that already load the data; absent
+  // values render no badge. Zero reads — shell stays presentation-only.
+  if ($key === 'Employees') {
+    $n = isset($_SESSION['pf_nav_employees']) ? (int) $_SESSION['pf_nav_employees'] : null;
+    return ($n !== null && $n > 0) ? (string) $n : null;
+  }
+  if ($key === 'Dashboard') {
+    $n = isset($_SESSION['pf_nav_deadline']) ? (int) $_SESSION['pf_nav_deadline'] : null;
+    return ($n !== null && $n > 0) ? (string) $n : null;
+  }
+  return null;
+}
+
+function employer_render_nav_item(array $item, string $active): void
+{
+  $badge = employer_nav_badge($item['key']);
+  ?>
+  <a class="nav-item<?php echo $item['key'] === $active ? ' active' : ''; ?>"
+    href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>" <?php echo $item['key'] === $active ? ' aria-current="page"' : ''; ?>
+    title="<?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?>">
+    <span class="nav-icon" aria-hidden="true"><?php echo employer_layout_icon($item['icon']); ?></span>
+    <span class="nav-label"><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
+    <?php if ($badge !== null): ?>
+      <span class="nav-badge" aria-hidden="true"><?php echo htmlspecialchars($badge, ENT_QUOTES); ?></span>
+      <span class="sr-only"><?php echo htmlspecialchars($badge, ENT_QUOTES); ?></span>
+    <?php endif; ?>
+  </a>
+  <?php
+}
+
+function employer_render_avatar(string $name): void
+{
+  ?>
+  <div class="profile-avatar" title="<?php echo htmlspecialchars($name, ENT_QUOTES); ?>"
+    aria-hidden="true"><span class="profile-initials" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($name), ENT_QUOTES); ?></span></div>
+  <?php
+}
+
+function employer_render_collapse_button(): void
+{
+  ?>
+  <button class="pf-sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse navigation" aria-expanded="true" title="Collapse sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <?php
+}
+
+function employer_render_palette_trigger(): void
+{
+  ?>
+  <button class="pf-palette-trigger" type="button" data-palette-open aria-label="Search employees and reports (Ctrl+K)" title="Search (Ctrl+K)">
+    <span class="nav-icon" aria-hidden="true"><?php echo employer_layout_icon('search'); ?></span>
+    <span class="nav-label">Search</span>
+    <kbd class="nav-kbd" aria-hidden="true">Ctrl K</kbd>
+  </button>
+  <?php
+}
+
+function employer_render_shell(string $active): void
+{
+  if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+  }
+  $profileName = $_SESSION['name'] ?? 'Employer';
+  $profileRole = ucwords(str_replace('_', ' ', $_SESSION['role'] ?? 'Employer'));
+  // Local initials avatars (no external image requests): deterministic,
+  // offline-safe, same look at every size.
+  $navGroups = employer_nav_groups();
   ?>
   <div class="pf-sidebar-backdrop" data-sidebar-backdrop aria-hidden="true"></div>
   <aside class="sidebar" id="pfSidebar" aria-label="Employer navigation">
@@ -163,6 +275,7 @@ function employer_render_shell(string $active): void
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"><span class="brand-mark-dot"></span></span>
         <span class="brand-name">Performa</span>
+        <?php employer_render_collapse_button(); ?>
         <button class="pf-sidebar-close" type="button" data-sidebar-close aria-label="Close navigation">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
         </button>
@@ -171,18 +284,14 @@ function employer_render_shell(string $active): void
         <?php foreach ($navGroups as $group): ?>
           <span class="nav-group-label" aria-hidden="true"><?php echo htmlspecialchars($group['label'], ENT_QUOTES); ?></span>
           <?php foreach ($group['items'] as $item): ?>
-            <a class="nav-item<?php echo $item['key'] === $active ? ' active' : ''; ?>"
-              href="<?php echo htmlspecialchars($item['href'], ENT_QUOTES); ?>" <?php echo $item['key'] === $active ? ' aria-current="page"' : ''; ?>>
-              <span class="nav-icon" aria-hidden="true"><?php echo employer_layout_icon($item['icon']); ?></span>
-              <span><?php echo htmlspecialchars($item['label'], ENT_QUOTES); ?></span>
-            </a>
+            <?php employer_render_nav_item($item, $active); ?>
           <?php endforeach; ?>
         <?php endforeach; ?>
+        <?php employer_render_palette_trigger(); ?>
       </nav>
     </div>
     <div class="sidebar-footer">
-      <div class="profile-avatar" title="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>"
-        aria-hidden="true"><span class="profile-initials" aria-hidden="true"><?php echo htmlspecialchars($profileInitials, ENT_QUOTES); ?></span></div>
+      <?php employer_render_avatar($profileName); ?>
       <div class="profile-meta">
         <div class="profile-name"><?php echo htmlspecialchars($profileName, ENT_QUOTES); ?></div>
         <div class="profile-role"><?php echo htmlspecialchars($profileRole, ENT_QUOTES); ?></div>

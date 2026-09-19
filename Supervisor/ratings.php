@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 require_login();
 require_role('supervisor');
 require_password_reset('settings.php');
@@ -20,7 +21,7 @@ $navItems = [
 
 $employees = [];
 try {
-    $docs = firestore_list_documents('Users');
+    $docs = get_cached_collection('Users', 600);
     foreach ($docs as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
@@ -62,38 +63,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         $messageIsError = true;
     } else {
         try {
+            // Single atomic commit (L2): mirrors Employer/rate_employee.php
+            // — either all four docs land or none does, in one round-trip.
             $docId = $selectedEmployee['uid'] . '_' . date('Y-m-d');
-            firestore_write_document('Ratings', $docId, [
-                'employeeUid' => $selectedEmployee['uid'],
-                'employeeName' => $selectedEmployee['name'],
-                'industry' => $selectedEmployee['industry'],
-                'weekOf' => date('Y-m-d'),
-                'ratedAt' => date('c'),
-                'ratedBy' => $supervisorUid,
-                'ratedByRole' => 'supervisor',
-                'scores' => $scores,
-            ]);
-            firestore_write_document('Acknowledgements', $selectedEmployee['uid'] . '_' . date('Y-m'), [
-                'employeeUid' => $selectedEmployee['uid'],
-                'month' => date('F Y'),
-                'status' => 'Pending',
-                'timestamp' => null,
-                'createdAt' => date('c'),
-            ]);
-            firestore_write_document('notifications', $selectedEmployee['uid'] . '_' . date('Y-m') . '_summary', [
-                'employeeUid' => $selectedEmployee['uid'],
-                'title' => 'Performance summary ready',
-                'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
-                'type' => 'info',
-                'createdAt' => date('c'),
-            ]);
-            firestore_write_document('Feedback', $selectedEmployee['uid'] . '_' . date('Y-m') . '_supervisor', [
-                'employeeUid' => $selectedEmployee['uid'],
-                'sender' => $supervisorName,
-                'role' => 'Supervisor',
-                'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
-                'status' => 'Received',
-                'createdAt' => date('c'),
+            firestore_batch_write([
+                [
+                    'collection' => 'Ratings',
+                    'documentId' => $docId,
+                    'data' => [
+                        'employeeUid' => $selectedEmployee['uid'],
+                        'employeeName' => $selectedEmployee['name'],
+                        'industry' => $selectedEmployee['industry'],
+                        'weekOf' => date('Y-m-d'),
+                        'ratedAt' => date('c'),
+                        'ratedBy' => $supervisorUid,
+                        'ratedByRole' => 'supervisor',
+                        'scores' => $scores,
+                    ],
+                ],
+                [
+                    'collection' => 'Acknowledgements',
+                    'documentId' => $selectedEmployee['uid'] . '_' . date('Y-m'),
+                    'data' => [
+                        'employeeUid' => $selectedEmployee['uid'],
+                        'month' => date('F Y'),
+                        'status' => 'Pending',
+                        'timestamp' => null,
+                        'createdAt' => date('c'),
+                    ],
+                ],
+                [
+                    'collection' => 'notifications',
+                    'documentId' => $selectedEmployee['uid'] . '_' . date('Y-m') . '_summary',
+                    'data' => [
+                        'employeeUid' => $selectedEmployee['uid'],
+                        'title' => 'Performance summary ready',
+                        'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
+                        'type' => 'info',
+                        'createdAt' => date('c'),
+                    ],
+                ],
+                [
+                    'collection' => 'Feedback',
+                    'documentId' => $selectedEmployee['uid'] . '_' . date('Y-m') . '_supervisor',
+                    'data' => [
+                        'employeeUid' => $selectedEmployee['uid'],
+                        'sender' => $supervisorName,
+                        'role' => 'Supervisor',
+                        'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
+                        'status' => 'Received',
+                        'createdAt' => date('c'),
+                    ],
+                ],
             ]);
             $message = 'Rating submitted successfully and saved to the database.';
         } catch (\Throwable $e) {

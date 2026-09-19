@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 
 require_login();
 require_role('probationary_employee');
@@ -38,11 +39,20 @@ function probationary_timeline(array $user): array
 
 function probationary_collection(string $collection): array
 {
+    // Disk-cached + in-request memoized via the shared helper (L3); the
+    // static memo below mirrors it so this function's contract
+    // (array-always, never throws) holds even if the helper changes.
+    static $memo = [];
+    if (isset($memo[$collection])) {
+        return $memo[$collection];
+    }
     try {
-        return firestore_list_documents($collection);
+        $result = get_cached_collection($collection, 600);
     } catch (Throwable $e) {
         return [];
     }
+    $memo[$collection] = is_array($result) ? $result : [];
+    return $memo[$collection];
 }
 
 function probationary_owned(array $document, string $uid): bool

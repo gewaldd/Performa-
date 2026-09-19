@@ -158,7 +158,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
     <main class="main content-narrow">
       <div class="page-header">
         <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          <?php echo employer_icon('menu'); ?>
         </button>
         <div class="ph-main">
           <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
@@ -204,7 +204,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <div class="form-group">
               <label for="department">Department</label>
               <input id="department" name="department" type="text"
-                value="<?php echo htmlspecialchars($profile['department'] ?? '', ENT_QUOTES); ?>" />
+                value="<?php echo htmlspecialchars(pf_dept_label($profile['department'] ?? ''), ENT_QUOTES); ?>" />
             </div>
             <?php if ($isProbationary): ?>
               <div class="form-group">
@@ -235,7 +235,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
           <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="toggle_status" />
           <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
-          <button class="<?php echo $statusLabel === 'Disabled' ? 'btn-cancel' : 'btn-danger'; ?>"
+          <button class="<?php echo $statusLabel === 'Disabled' ? 'ghost-button' : 'btn-danger'; ?>"
             type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
         </form>
       </div>
@@ -282,7 +282,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <p class="microcopy">
               Current decision: <strong><?php echo $profile['regularizationRecommendation'] === 'recommended' ? 'Recommended for Regularization' : 'Not Yet Recommended'; ?></strong>
               <?php if (!empty($profile['regularizationDecidedAt'])): ?> &middot;
-                <?php echo date('M j, Y', strtotime($profile['regularizationDecidedAt'])); ?>     <?php endif; ?>
+                <?php echo htmlspecialchars(pf_date($profile['regularizationDecidedAt'], ''), ENT_QUOTES); ?>     <?php endif; ?>
               <?php if (!empty($profile['regularizationDecidedBy'])): ?> by
                 <?php echo htmlspecialchars($profile['regularizationDecidedBy'], ENT_QUOTES); ?>     <?php endif; ?>
             </p>

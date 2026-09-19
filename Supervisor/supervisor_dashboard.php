@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 require_login();
 require_role('supervisor');
 require_password_reset('settings.php');
@@ -22,7 +23,7 @@ $navItems = [
 // filter this to only employees assigned to $_SESSION['uid'].
 $employees = [];
 try {
-    $docs = firestore_list_documents('Users');
+    $docs = get_cached_collection('Users', 600);
     foreach ($docs as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
@@ -42,7 +43,7 @@ try {
 
 $allRatings = [];
 try {
-    $allRatings = firestore_list_documents('Ratings');
+    $allRatings = get_cached_collection('Ratings', 600);
 } catch (\Throwable $e) {
     // leave empty if collection doesn't exist yet
 }

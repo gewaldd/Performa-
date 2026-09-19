@@ -100,7 +100,7 @@ a:hover { color: var(--ui-blue-dark); }
 .main {
   min-width: 0;
   width: 100%;
-  max-width: 1480px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px 28px 40px !important;
 }
@@ -332,11 +332,11 @@ button.pf-menu-btn {
 .page-header p,
 .settings-page-header p, .kpi-page-header p, .reports-page-header p {
   margin: 0 !important; max-width: 52rem;
-  color: var(--ui-muted) !important; font-size: 13.5px !important; line-height: 1.55;
+  color: var(--ui-muted) !important; font-size: 14.5px !important; line-height: 1.55;
 }
 .eyebrow {
   display: inline-block; margin-bottom: 6px;
-  color: var(--ui-blue) !important; font-size: 11.5px; font-weight: 700;
+  color: var(--ui-blue) !important; font-size: 11px; font-weight: 700;
   letter-spacing: .07em; text-transform: uppercase;
 }
 .back-link { margin-bottom: 12px; }
@@ -379,7 +379,7 @@ button.pf-menu-btn {
 .ghost-button:hover, .btn-outline:hover, .btn-outline-primary:hover,
 .btn-cancel:hover, .logout-link:hover, .acknowledge-button:hover,
 .reset-button:hover, .page-btn:hover:not(:disabled) {
-  background: var(--ui-soft) !important; border-color: #c7d2df !important; color: var(--ui-blue-dark) !important;
+  background: var(--ui-soft) !important; border-color: var(--ui-blue) !important; color: var(--ui-blue-dark) !important;
 }
 .page-btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn-primary svg, .primary-button svg, .ghost-button svg, .btn-outline svg { width: 15px; height: 15px; flex: 0 0 15px; }
@@ -401,25 +401,61 @@ button.pf-menu-btn {
 /* ============================================================
    CARDS & PANELS
    ============================================================ */
-.metric-card, .panel, .insight-card, .report-panel, .settings-panel,
-.directory-panel, .metrics-panel, .category-card, .report-item,
-.settings-card {
+/* Fix 1 — single-edged panels: large panels keep background + radius +
+   shadow but LOSE the hairline border (border + shadow together drew a
+   double edge = sliced look). Small elements keep both — they need the
+   definition at small sizes. */
+.panel, .insight-card, .report-panel, .settings-panel,
+.directory-panel, .metrics-panel {
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  backdrop-filter: none !important;
+}
+.metric-card, .category-card, .report-item, .settings-card {
   border: 1px solid var(--ui-hairline) !important;
   border-radius: 14px !important;
   background: var(--ui-surface) !important;
   box-shadow: var(--ui-shadow-lg) !important;
   backdrop-filter: none !important;
 }
+/* Item B — canonical panel recipe (surface, 14px radius, one shadow, 20px
+   padding). Reference implementation on simple boxes; header/body frames
+   (.panel, .report-panel, …) intentionally keep padding:0 with 20px-rythm
+   inner sections instead of a destructive migration. */
+.pf-panel {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-hairline) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  padding: 20px !important;
+}
 .metric-card:hover, .panel:hover, .category-card:hover, .report-item:hover { box-shadow: var(--ui-shadow) !important; }
 
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
-.metric-card { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px !important; }
+.metric-card { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px !important; }
 .metric-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .metric-icon { display: none !important; }
 .metric-meta { display: grid; gap: 5px; }
 .metric-meta span { color: var(--ui-muted) !important; font-size: 12.5px; font-weight: 500; }
 .metric-meta strong { font-size: 1.9rem; line-height: 1; font-weight: 700; font-family: var(--ui-font-mono); font-variant-numeric: tabular-nums; }
 .metric-meta small { color: var(--ui-muted); font-size: .68em; font-weight: 400; font-family: var(--ui-font-sans); }
+/* Fix 7 — orphaned third metric card: styles.css drops .metrics to 2
+   columns at <=960px, stranding card 3 alone on row 2. Only inside that
+   two-column band, span it full width as a compact horizontal summary bar.
+   Single-column (<=760px) and desktop 3-column modes are untouched. */
+@media (min-width: 761px) and (max-width: 960px) {
+  .metrics > .metric-card:last-child:nth-child(3) { grid-column: 1 / -1; }
+  .metrics > .metric-card:last-child:nth-child(3) .metric-meta {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+}
+/* Item F — same orphan exists for .category-cards (3 cards in 2 columns at
+   <=1100px). Span only; card internals keep their vertical rhythm. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .category-cards > .category-card:last-child:nth-child(3) { grid-column: 1 / -1; }
+}
 
 .metric-badge {
   height: fit-content; padding: 4px 10px;
@@ -435,7 +471,7 @@ button.pf-menu-btn {
 .panel { padding: 0 0 12px !important; overflow: hidden; }
 .panel-header {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 16px 18px !important;
+  padding: 16px 20px !important;
   border-bottom: 1px solid var(--ui-border-soft) !important;
   background: transparent !important;
 }
@@ -444,12 +480,12 @@ button.pf-menu-btn {
 .microcopy { font-size: 13px; line-height: 1.55; }
 .microcopy strong { color: var(--ui-text); }
 .panel-actions { display: flex; gap: 8px; flex: 0 0 auto; }
-.view-more { display: inline-flex; margin: 12px 18px 6px; font-size: 13px; font-weight: 600; text-decoration: none; }
+.view-more { display: inline-flex; margin: 12px 20px 6px; font-size: 13px; font-weight: 600; text-decoration: none; }
 
 /* Insight card — white, not dark gradient */
 .insight-card {
   display: flex; flex-direction: column; gap: 13px;
-  padding: 18px !important;
+  padding: 20px !important;
   background: #fff !important; background-image: none !important; color: var(--ui-text) !important;
 }
 .insight-top { display: flex; align-items: center; gap: 10px; }
@@ -477,7 +513,7 @@ button.pf-menu-btn {
    ============================================================ */
 .table-toolbar, .filter-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  padding: 14px 18px !important;
+  padding: 14px 20px !important;
 }
 /* Employees toolbar: borderless controls row (exempt from the panel-header
    pattern) — filters left, actions right, one 20px beat to the table */
@@ -530,12 +566,19 @@ button.pf-menu-btn {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.kpi-table-head, .kpi-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, .7fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, .6fr); }
+.kpi-table-head, .kpi-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
 
 .table-head > *, .directory-head > *, .kpi-table-head > *,
 .table-row > *, .directory-row > *, .kpi-row > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* Head labels never wrap; desktop directory cells hold one line so rows stay steady */
 .table-head > *, .directory-head > *, .kpi-table-head > * { white-space: nowrap; }
+/* Sticky list heads: long evaluations/directory/KPI lists scroll under a
+   fixed header. Solid surface bg so rows slide underneath opaquely. The
+   760px card layout hides heads entirely, so this never applies there. */
+.table-head, .directory-head, .kpi-table-head {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--ui-surface);
+}
 @media (min-width: 761px) {
   .directory-row > div { white-space: nowrap; }
 }
@@ -543,7 +586,7 @@ button.pf-menu-btn {
 .table-row, .directory-row, .kpi-row {
   display: grid; gap: 12px; align-items: center;
   min-width: 0; min-height: 56px;
-  padding: 12px 18px !important;
+  padding: 12px 20px !important;
   border-top: 1px solid var(--ui-border-soft) !important;
   background: transparent !important;
 }
@@ -551,9 +594,7 @@ button.pf-menu-btn {
 /* Row actions reveal on hover (desktop pointers only): opacity only, so no
    layout shift. Touch + keyboard focus always show them. */
 @media (hover:hover) {
-  .directory-row > [data-label="Actions"],
-  .table-row .eval-btn,
-  .kpi-row .edit-button {
+  .table-row .eval-btn {
     opacity: 0;
     transition: opacity var(--ui-ease);
   }
@@ -566,6 +607,15 @@ button.pf-menu-btn {
     opacity: 1;
   }
 }
+/* Directory View stays permanently visible (mirrors the KPI pencil
+   treatment): it is the primary row action, and the ACTIONS column would
+   otherwise render empty until hover. Dashboard eval reveal above is
+   untouched. */
+.directory-row > [data-label="Actions"] { opacity: 1; }
+/* KPI pencil stays permanently visible (densification Item 3): it is the
+   primary edit path, and the ACTIONS column would otherwise render as dead
+   space. Directory/dashboard reveals above are untouched. */
+.kpi-row .edit-button { opacity: 1; }
 
 .employee-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .avatar {
@@ -588,6 +638,9 @@ button.pf-menu-btn {
 }
 .employee-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .employee-role, .employee-email { color: var(--ui-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Directory triage meta (Item 5): same secondary treatment as the email
+   line above it, tabular numerals for the Day/score figures. */
+.employee-triage { color: var(--ui-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 
 .timeline-cell { display: grid; gap: 7px; min-width: 0; }
 .timeline-text { display: flex; gap: 8px; font-size: 12.5px; align-items: baseline; flex-wrap: wrap; }
@@ -601,13 +654,14 @@ button.pf-menu-btn {
 
 /* Purged 2026-09: .stars text glyphs (zero markup refs; meters replaced them). */
 
-/* New score meter + trend (accessible replacements) */
-.pf-score { display: grid; gap: 4px; }
+/* New score meter + trend (accessible replacements). Value and scale share
+   one baseline row ("3.2 / 5.0"); the meter takes its own full row below. */
+.pf-score { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; row-gap: 4px; }
 .pf-score-value { font-size: 15px; font-weight: 700; }
 .pf-score-empty { color: var(--ui-muted); }
-.pf-score-scale { color: var(--ui-muted); font-size: 11.5px; margin-left: 5px; font-weight: 400; }
+.pf-score-scale { color: var(--ui-muted); font-size: 11.5px; font-weight: 400; }
 .pf-score-note { color: var(--ui-muted); font-size: 11.5px; }
-.pf-meter { display: block; height: 5px; border-radius: 999px; background: #e6ebf1; overflow: hidden; max-width: 130px; }
+.pf-meter { display: block; flex: 1 1 100%; height: 5px; border-radius: 999px; background: #e6ebf1; overflow: hidden; max-width: 130px; }
 .pf-meter-fill { display: block; height: 100%; background: var(--ui-blue); border-radius: inherit; }
 .pf-trend { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--ui-border); background: #fff; color: var(--ui-muted); white-space: nowrap; }
 .pf-trend-up { color: var(--ui-green); border-color: #bfe3cf; background: var(--ui-green-bg); }
@@ -630,11 +684,11 @@ button.pf-menu-btn {
 .status-warning { color: var(--ui-amber) !important; }
 .status-ready { color: var(--ui-blue-dark) !important; }
 .status-danger { color: var(--ui-red) !important; }
-.status-neutral { color: var(--ui-muted) !important; }
+.status-neutral { color: #4b5b73 !important; } /* token audit: --ui-muted (~4.4:1) fails 12px-bold 4.5:1; #4b5b73 reuses the dept-pill token (~7:1) */
 .dept-blue, .dept-gray, .dept-orange, .dept-green, .dept-purple { color: #4b5b73 !important; }
 .category-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; }
 
-.pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 8px; border-top: 1px solid var(--ui-border-soft); font-size: 13px; color: var(--ui-muted); }
+.pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px 8px; border-top: 1px solid var(--ui-border-soft); font-size: 13px; color: var(--ui-muted); }
 .page-buttons { display: flex; gap: 8px; align-items: center; }
 .page-indicator { align-self: center; font-size: 13px; color: var(--ui-muted); }
 /* Secondary directory columns sit back so names carry the row */
@@ -647,22 +701,22 @@ button.pf-menu-btn {
 .report-panel, .metrics-panel, .directory-panel, .settings-panel { padding: 0; overflow: hidden; }
 .report-panel > *, .metrics-panel > *, .settings-panel > * { box-sizing: border-box; }
 .section-header, .metrics-panel-header, .reports-generation-head, .reports-section-header, .settings-section-heading {
-  padding: 16px 18px 14px !important;
+  padding: 16px 20px 14px !important;
   border-bottom: 1px solid var(--ui-border-soft);
 }
 .section-header h2, .metrics-panel-header h2, .reports-generation-head h2, .settings-section-heading h2 { margin: 0 0 4px; font-size: var(--font-panel-title); font-weight: 700; letter-spacing: -0.01em; }
 .section-header p, .metrics-panel-header p, .reports-generation-head p, .settings-section-heading p { margin: 0; color: var(--ui-muted); font-size: 13px; }
-.employee-select-wrap, .report-form-row, .reports-form-row, .settings-form { padding: 16px 18px !important; }
+.employee-select-wrap, .report-form-row, .reports-form-row, .settings-form { padding: 20px !important; }
 .employee-select-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .kpi-name { font-weight: 600; font-size: 13.5px; }
 .kpi-sub { color: var(--ui-muted); font-size: 12px; font-family: var(--ui-font-mono); }
 .kpi-target, .kpi-current { font-family: var(--ui-font-mono); font-variant-numeric: tabular-nums; }
-.kpi-add-link, .add-kpi-button { display: inline-flex; align-items: center; gap: 8px; margin: 12px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+.kpi-add-link, .add-kpi-button { display: inline-flex; align-items: center; gap: 8px; margin: 12px 20px; font-size: 13px; font-weight: 600; text-decoration: none; }
 /* End-of-list Add KPI: solid outline button matching the module system.
    Beats styles.css:3305 (dashed dropzone) + :6101 with winning specificity. */
 .kpi-page .metrics-panel .add-kpi-button.kpi-add-link {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 36px; margin: 12px 18px; padding: 0 14px;
+  min-height: 36px; margin: 12px 20px; padding: 0 14px;
   border: 1px solid #d6dee8 !important; border-radius: 7px !important;
   background: #fff !important;
   color: var(--ui-blue-dark) !important;
@@ -677,7 +731,7 @@ button.pf-menu-btn {
   color: var(--ui-blue-dark) !important;
 }
 .category-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.category-card { padding: 16px 18px !important; display: grid; gap: 10px; }
+.category-card { padding: 16px 20px !important; display: grid; gap: 10px; }
 .category-card-top { display: flex; align-items: center; justify-content: space-between; }
 .category-title { margin: 0; font-size: var(--font-panel-title); font-weight: 700; letter-spacing: -0.01em; }
 .category-target-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ui-muted); }
@@ -690,19 +744,22 @@ button.pf-menu-btn {
 .kpi-edit-form.is-open { display: flex; }
 
 /* Reports */
-.reports-generation-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 14px; align-items: end; }
+.reports-generation-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .6fr); gap: 14px; align-items: end; }
 .reports-generation-form .form-group { min-width: 0; }
-.reports-generation-form .btn-primary { white-space: nowrap; max-width: 100%; }
+/* Fix 8 — the button owns a defined 0.6fr share instead of "whatever's
+   left", so the row stays balanced at width. Narrow overrides below stay
+   byte-identical. */
+.reports-generation-form .btn-primary { white-space: nowrap; width: 100%; justify-self: stretch; }
 /* KPI employee row: select flexes, Rate action keeps its size */
 .kpi-employee-select-row .employee-select { flex: 1 1 240px; min-width: 0; }
 .kpi-employee-select-row .kpi-rate-button { flex: 0 0 auto; }
-.employee-select-wrap { padding: 16px 18px !important; }
+.employee-select-wrap { padding: 20px !important; }
 @media (max-width: 1200px) {
   .reports-generation-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .reports-generation-form .btn-primary { grid-column: 1 / -1; justify-self: stretch; white-space: normal; text-align: center; }
 }
 .reports-generation-panel { margin-bottom: 20px; }
-.report-list { display: grid; gap: 10px; padding: 16px 18px !important; }
+.report-list { display: grid; gap: 10px; padding: 20px !important; }
 .report-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px !important; }
 .file-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 9px; background: var(--ui-blue-soft); color: var(--ui-blue-dark); border: 1px solid #d9e5f5; }
 .file-icon svg { width: 18px; height: 18px; }
@@ -714,20 +771,18 @@ button.pf-menu-btn {
 .report-title { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .report-meta { color: var(--ui-muted); font-size: 12px; }
 .report-actions { display: flex; gap: 8px; flex: 0 0 auto; }
-.reports-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 18px 0 !important; border: 0 !important; }
+.reports-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px 20px 0 !important; border: 0 !important; }
 .reports-section-header h2 { margin: 0; font-size: var(--font-panel-title); font-weight: 700; letter-spacing: -0.01em; }
 /* Paneled reports list: divider-separated rows (not floating cards) */
 .generated-reports-panel .reports-section-header { padding-bottom: 14px !important; border-bottom: 1px solid var(--ui-border-soft) !important; }
-.generated-reports-panel .report-list { padding: 6px 18px 14px !important; }
+.generated-reports-panel .report-list { padding: 6px 20px 14px !important; }
 .generated-reports-panel .report-item {
   border: 0 !important; border-radius: 0 !important; background: transparent !important;
   box-shadow: none !important;
-  border-top: 1px solid var(--ui-border-soft) !important;
   padding: 12px 0 !important;
 }
-.generated-reports-panel .report-item:first-child { border-top: 0 !important; }
 .reports-section-count { color: var(--ui-muted); font-size: 13px; }
-.reports-contributors { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: #fff; box-shadow: var(--ui-shadow); margin-top: 14px; }
+.reports-contributors { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: #fff; box-shadow: var(--ui-shadow); margin-top: 14px; }
 .contributors-content { display: flex; align-items: center; gap: 12px; }
 .contributors-avatars { display: flex; }
 .contributors-avatar { width: 30px; height: 30px; border-radius: 50%; background-size: cover; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--ui-border); margin-left: -8px; }
@@ -759,10 +814,10 @@ input:disabled, select:disabled, textarea:disabled { background: var(--ui-soft) 
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 .section-divider { border: 0; border-top: 1px solid var(--ui-border-soft); margin: 18px 0; }
 .settings-panel, .report-panel { padding-bottom: 6px !important; }
-.settings-panel > h4, .settings-subhead { padding: 0 18px; font-size: var(--font-subtitle); font-weight: 700; margin: 16px 0 8px; }
-.settings-panel > p, .settings-panel > hr { margin-left: 18px; margin-right: 18px; }
+.settings-panel > h4, .settings-subhead { padding: 0 20px; font-size: var(--font-subtitle); font-weight: 700; margin: 16px 0 8px; }
+.settings-panel > p, .settings-panel > hr { margin-left: 20px; margin-right: 20px; }
 .settings-profile-panel, .settings-security-panel { margin-bottom: 20px; }
-.profile-photo-row { display: flex; gap: 14px; align-items: center; padding: 4px 18px 12px; }
+.profile-photo-row { display: flex; gap: 14px; align-items: center; padding: 4px 20px 12px; }
 .profile-photo-frame { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--ui-border); }
 .profile-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
 .profile-photo-info h3 { margin: 0 0 2px; font-size: var(--font-subtitle); font-weight: 700; }
@@ -847,7 +902,7 @@ select.perform-select.perform-select-native {
 .pf-rate-row { display: grid; gap: 8px; padding: 13px 14px; border: 1px solid var(--ui-border-soft); border-radius: 8px; background: var(--ui-soft); }
 .pf-rate-row label { font-weight: 600; font-size: 13px; }
 .pf-rate-controls { display: grid; grid-template-columns: 1fr 76px; gap: 12px; align-items: center; }
-.pf-rate-controls input[type="range"] { width: 100%; accent-color: var(--ui-blue); padding: 0; border: 0 !important; background: transparent !important; min-height: 0; }
+.pf-rate-controls input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-blue); padding: 0; border: 0 !important; background: transparent !important; min-height: 0; }
 .pf-rate-controls input[type="range"]:focus { box-shadow: none !important; }
 .pf-rate-value { font-family: var(--ui-font-mono); font-weight: 700; text-align: center; }
 
@@ -863,13 +918,14 @@ select.perform-select.perform-select-native {
 .alert-success, .alert-banner.alert-success { border-color: #bfe3cf !important; background: var(--ui-green-bg) !important; color: #0e5c38 !important; }
 .alert-error, .alert-danger { border-color: #f3c1bd !important; background: var(--ui-red-bg) !important; color: #8f1d17 !important; }
 .alert-info { border-color: #d9e5f5 !important; background: var(--ui-blue-soft) !important; color: var(--ui-blue-dark) !important; }
-.dashboard-empty, .empty-state { padding: 36px 20px !important; text-align: center; color: var(--ui-muted) !important; font-size: 13.5px; }
+.dashboard-empty, .empty-state, .reports-empty-note { padding: 36px 20px !important; text-align: center; color: var(--ui-muted) !important; font-size: 13.5px; }
+.reports-empty-note .btn-primary { margin-top: 12px; }
 #noFilterResults .ghost-button { margin-top: 12px; }
 .empty-search-row { color: var(--ui-muted); }
 
 .site-footer {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  max-width: 1480px; margin: 0 auto; padding: 16px 28px 26px;
+  max-width: 1400px; margin: 0 auto; padding: 16px 28px 26px;
   border: 0 !important; color: var(--ui-muted) !important; font-size: 12.5px;
 }
 
@@ -921,7 +977,7 @@ select.perform-select.perform-select-native {
   .directory-row > :nth-child(6) { display: flex; }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .app-shell { grid-template-columns: minmax(0, 1fr) !important; }
   .sidebar {
     position: fixed !important; inset: 0 auto 0 0; width: min(280px, 84vw);
@@ -949,7 +1005,7 @@ select.perform-select.perform-select-native {
 }
 /* Dashboard search sizing (ID specificity beats the generic header rule) */
 #dashboard .ph-actions .search-bar { width: auto !important; max-width: 100% !important; }
-@media (min-width: 901px) {
+@media (min-width: 1101px) {
   #dashboard .ph-actions .search-bar { flex: 1 1 220px; width: auto !important; max-width: 420px !important; }
 }
 
@@ -991,12 +1047,199 @@ select.perform-select.perform-select-native {
    PRINT (report_view)
    ============================================================ */
 @media print {
-  .no-print, .sidebar, .topbar, .site-footer, .pf-sidebar-backdrop { display: none !important; }
+  .no-print, .sidebar, .topbar, .site-footer, .pf-sidebar-backdrop, .pf-palette-backdrop, .pf-toast { display: none !important; }
   .app-shell { display: block; background: #fff; }
   .main { max-width: none; padding: 0; margin: 0; }
   .settings-panel, .report-panel, .panel { box-shadow: none !important; border: 1px solid #ccc !important; }
+  /* One print unit: never orphan the report title/section heads at a page
+     foot. Screen rendering untouched. */
+  .settings-panel h1, .settings-subhead { break-after: avoid; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ============================================================
+   WAVE 1 — collapsible sidebar rail, nav badges, command palette
+   Desktop-only: every rule below is scoped to min-width 1101px so the
+   drawer (max-width 1100px) keeps working untouched.
+   ============================================================ */
+.nav-badge {
+  margin-left: auto;
+  min-width: 22px; height: 20px;
+  padding: 0 6px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.nav-item.active .nav-badge { background: rgba(255, 255, 255, .22); }
+
+/* Desktop collapse toggle: same chrome as the mobile close button,
+   but only ever visible on desktop. */
+.pf-sidebar-collapse {
+  display: none;
+  margin-left: auto;
+  width: 32px; height: 32px; flex: 0 0 32px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, .75);
+  cursor: pointer;
+}
+.pf-sidebar-collapse svg { width: 15px; height: 15px; transition: transform 160ms ease; }
+.pf-sidebar-collapse:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+
+/* Palette trigger reads as one more nav row (keyboard + pointer). */
+.pf-palette-trigger {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 42px; padding: 10px 12px; margin-top: 3px;
+  border: 0; border-radius: 8px;
+  background: transparent; color: #b9c5d4;
+  font-size: 13.5px; font-weight: 500; font-family: inherit;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.pf-palette-trigger:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.nav-kbd {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-bottom-width: 2px; border-radius: 5px;
+  font-family: inherit; font-size: 10.5px; font-weight: 600;
+  color: rgba(255, 255, 255, .6);
+}
+
+@media (min-width: 1101px) {
+  .pf-sidebar-collapse { display: grid; }
+  .app-shell { transition: grid-template-columns 180ms ease; }
+  body.sidebar-collapsed .app-shell { grid-template-columns: 76px minmax(0, 1fr); }
+  body.sidebar-collapsed .sidebar { padding: 18px 10px 16px; }
+  /* Rail brand fix: the horizontal row (32px mark + 12px gap + 32px toggle)
+     overflows the ~56px rail content box, crushing mark and chevron
+     together. Stack vertically instead; both stay visible. */
+  body.sidebar-collapsed .brand { flex-direction: column; align-items: center; gap: 10px; justify-content: center; padding: 4px 0 22px; }
+  body.sidebar-collapsed .brand-name,
+  body.sidebar-collapsed .nav-group-label,
+  body.sidebar-collapsed .nav-label,
+  body.sidebar-collapsed .nav-kbd,
+  body.sidebar-collapsed .nav-badge,
+  body.sidebar-collapsed .profile-meta { display: none !important; }
+  body.sidebar-collapsed .pf-sidebar-collapse { margin-left: 0; }
+  body.sidebar-collapsed .pf-sidebar-collapse svg { transform: rotate(180deg); }
+  body.sidebar-collapsed .nav-item,
+  body.sidebar-collapsed .pf-palette-trigger { justify-content: center; padding: 10px 0; }
+  body.sidebar-collapsed .nav-item.active::before { left: 0; }
+  body.sidebar-collapsed .sidebar-footer { justify-content: center; }
+  body.sidebar-collapsed .profile-signout { display: none; }
+}
+
+/* Command palette dialog (built by script.js; no-JS means no dialog,
+   pages keep working — progressive enhancement). */
+.pf-palette-backdrop {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(20, 34, 54, .5);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 10vh 16px 16px;
+}
+.pf-palette {
+  width: min(480px, calc(100% - 32px));
+  max-height: min(420px, 70vh);
+  display: flex; flex-direction: column;
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, .28);
+  overflow: hidden;
+}
+.pf-palette-input {
+  width: 100%; border: 0; border-bottom: 1px solid var(--ui-border, #e3e9f2);
+  padding: 14px 16px; font-size: 15px; font-family: inherit; color: var(--ui-text, #142236);
+}
+.pf-palette-input:focus { outline: 2px solid var(--ui-primary, #2f6df6); outline-offset: -2px; }
+.pf-palette-list { list-style: none; margin: 0; padding: 8px; overflow-y: auto; }
+.pf-palette-item {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 9px 10px; border-radius: 8px;
+  cursor: pointer; font-size: 14px; color: var(--ui-text, #142236);
+}
+.pf-palette-item small { color: var(--ui-muted, #64748b); font-size: 12px; margin-left: auto; white-space: nowrap; }
+.pf-palette-item[aria-selected="true"] { background: rgba(47, 109, 246, .1); }
+.pf-palette-empty { padding: 16px; color: var(--ui-muted, #64748b); font-size: 13.5px; }
+
+/* ============================================================
+   WAVE 2 — insight attention queue + filter empty state
+   ============================================================ */
+.insight-queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.insight-queue-item { padding: 12px 0; }
+.insight-queue-item + .insight-queue-item { border-top: 1px solid var(--ui-border, #e3e9f2); }
+.insight-queue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.insight-queue-head strong { font-size: 14.5px; }
+.insight-queue-gap { font-size: 12px; color: var(--ui-muted, #64748b); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.insight-queue-item .recommendation-box { margin: 0 0 10px; }
+#noFilterMatches { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 16px; text-align: center; }
+#noFilterMatches[hidden] { display: none; }
+
+/* ============================================================
+   WAVE 3 — rating preview, toast, empty-state actions
+   ============================================================ */
+.pf-rate-preview { margin: 0 0 12px; font-size: 13.5px; color: var(--ui-muted, #64748b); font-variant-numeric: tabular-nums; }
+.dashboard-empty .ghost-button { margin-top: 10px; }
+.pf-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: 120;
+  display: flex; align-items: center; gap: 12px;
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 12px 12px 12px 16px;
+  border-radius: 12px;
+  background: #142236; color: #fff;
+  font-size: 13.5px; font-weight: 500;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, .3);
+}
+.pf-toast-close {
+  display: grid; place-items: center;
+  width: 28px; height: 28px; flex: 0 0 28px;
+  border: 1px solid rgba(255, 255, 255, .25); border-radius: 8px;
+  background: transparent; color: #fff; font-size: 16px; line-height: 1;
+  cursor: pointer;
+}
+.pf-toast-close:hover { background: rgba(255, 255, 255, .12); }
+
+/* ============================================================
+   ITEMS 8–9 — freshly generated report flash (PRG anchor target)
+   ============================================================ */
+.report-item:target {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: -2px;
+  border-radius: 10px;
+  background: var(--ui-blue-soft) !important;
+}
+.report-type-row { margin-top: 6px; }
+
+/* ============================================================
+   FIX 2 — inset inner dividers (no layout change: painted gradient
+   lines instead of full-bleed borders, inset by the 20px rhythm)
+   ============================================================ */
+.panel-header,
+.section-header, .metrics-panel-header, .reports-generation-head,
+.reports-section-header, .settings-section-heading,
+.generated-reports-panel .reports-section-header {
+  border-bottom: 0 !important;
+  background-image: linear-gradient(var(--ui-border-soft), var(--ui-border-soft)) !important;
+  background-size: calc(100% - 40px) 1px !important;
+  background-position: center bottom !important;
+  background-repeat: no-repeat !important;
+}
+/* Sticky list heads: same inset treatment top + bottom. Painted lines
+   travel with the sticky head; background + z-index untouched. */
+.table-head, .directory-head, .kpi-table-head {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  background-image:
+    linear-gradient(var(--ui-border-soft), var(--ui-border-soft)),
+    linear-gradient(var(--ui-border-soft), var(--ui-border-soft)) !important;
+  background-size: calc(100% - 40px) 1px, calc(100% - 40px) 1px !important;
+  background-position: center top, center bottom !important;
+  background-repeat: no-repeat !important;
 }

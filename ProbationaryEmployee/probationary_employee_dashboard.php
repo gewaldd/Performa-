@@ -34,6 +34,15 @@ $dashboardInsightText = $latestEvaluation['notes'] ?? 'No performance insight ha
 $dashboardRecommendation = $user['profileRecommendation'] ?? 'Keep your contact and role information current.';
 $acknowledgements = probationary_owned_documents('Acknowledgements');
 $acknowledgementIds = array_fill_keys(array_map(static fn(array $ack): string => (string) ($ack['uid'] ?? ''), $acknowledgements), true);
+// Hoisted (L1b): the old code re-downloaded the whole Feedback collection
+// inside the per-rating loop below — build the existing-ID set once here.
+$existingFeedbackIds = array_fill_keys(array_map(static fn(array $feedback): string => (string) ($feedback['uid'] ?? ''), probationary_owned_documents('Feedback')), true);
+// Batched backfills (L1c): collect ops per category, commit once each.
+// Local arrays merge only on commit success, so end state matches the old
+// sequential behavior on success and is cleaner on failure (no partials).
+$ackBackfillOps = [];
+$ackBackfillLocal = [];
+$feedbackBackfillOps = [];
 foreach ($ratingDocuments as $rating) {
     $ratedAt = (string) ($rating['ratedAt'] ?? $rating['createdAt'] ?? '');
     $ratedTimestamp = $ratedAt ? strtotime($ratedAt) : false;
@@ -51,27 +60,44 @@ foreach ($ratingDocuments as $rating) {
         'status' => 'Pending',
         'timestamp' => null,
     ];
-    try {
-        firestore_write_document('Acknowledgements', $acknowledgementId, $acknowledgement + ['createdAt' => date('c')]);
-        $acknowledgements[] = $acknowledgement;
-        $acknowledgementIds[$acknowledgementId] = true;
-    } catch (Throwable $e) {
-    }
+    $ackBackfillOps[] = [
+        'collection' => 'Acknowledgements',
+        'documentId' => $acknowledgementId,
+        'data' => $acknowledgement + ['createdAt' => date('c')],
+    ];
+    $ackBackfillLocal[] = $acknowledgement;
 
     $feedbackId = $currentUserUid . '_' . date('Y-m', $ratedTimestamp) . '_supervisor';
-    $existingFeedbackIds = array_fill_keys(array_map(static fn(array $feedback): string => (string) ($feedback['uid'] ?? ''), probationary_owned_documents('Feedback')), true);
     if (!isset($existingFeedbackIds[$feedbackId])) {
-        try {
-            firestore_write_document('Feedback', $feedbackId, [
+        $feedbackBackfillOps[] = [
+            'collection' => 'Feedback',
+            'documentId' => $feedbackId,
+            'data' => [
                 'employeeUid' => $currentUserUid,
                 'sender' => ($rating['ratedByRole'] ?? '') === 'supervisor' ? 'Supervisor' : 'Employer',
                 'role' => ($rating['ratedByRole'] ?? '') === 'supervisor' ? 'Supervisor' : 'Employer',
                 'message' => 'Your ' . date('F Y', $ratedTimestamp) . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
                 'status' => 'Received',
                 'createdAt' => date('c', $ratedTimestamp),
-            ]);
-        } catch (Throwable $e) {
+            ],
+        ];
+        $existingFeedbackIds[$feedbackId] = true;
+    }
+}
+if ($ackBackfillOps) {
+    try {
+        firestore_batch_write($ackBackfillOps);
+        foreach ($ackBackfillLocal as $backfilledAck) {
+            $acknowledgements[] = $backfilledAck;
+            $acknowledgementIds[(string) ($backfilledAck['uid'] ?? '')] = true;
         }
+    } catch (Throwable $e) {
+    }
+}
+if ($feedbackBackfillOps) {
+    try {
+        firestore_batch_write($feedbackBackfillOps);
+    } catch (Throwable $e) {
     }
 }
 $summaryMetrics = [
@@ -100,6 +126,9 @@ foreach (probationary_owned_documents('notifications') as $notification) {
     $notifications[] = ['title' => $notification['title'] ?? 'Notification', 'detail' => $notification['detail'] ?? $notification['message'] ?? '', 'date' => probationary_date($notification['createdAt'] ?? null), 'type' => $notification['type'] ?? 'info'];
 }
 $notificationIds = array_fill_keys(array_map(static fn(array $notification): string => (string) ($notification['uid'] ?? ''), probationary_owned_documents('notifications')), true);
+// Batched backfill (L1c): one commit for all missing summary notifications.
+$notificationBackfillOps = [];
+$notificationBackfillLocal = [];
 foreach ($ratingDocuments as $rating) {
     $ratedAt = (string) ($rating['ratedAt'] ?? $rating['createdAt'] ?? '');
     $ratedTimestamp = $ratedAt ? strtotime($ratedAt) : false;
@@ -118,10 +147,20 @@ foreach ($ratingDocuments as $rating) {
         'type' => 'info',
         'createdAt' => date('c', $ratedTimestamp),
     ];
+    $notificationBackfillOps[] = [
+        'collection' => 'notifications',
+        'documentId' => $notificationId,
+        'data' => $notification,
+    ];
+    $notificationBackfillLocal[] = $notification;
+}
+if ($notificationBackfillOps) {
     try {
-        firestore_write_document('notifications', $notificationId, $notification);
-        $notifications[] = ['title' => $notification['title'], 'detail' => $notification['detail'], 'date' => probationary_date($notification['createdAt']), 'type' => $notification['type']];
-        $notificationIds[$notificationId] = true;
+        firestore_batch_write($notificationBackfillOps);
+        foreach ($notificationBackfillLocal as $backfilledNotification) {
+            $notifications[] = ['title' => $backfilledNotification['title'], 'detail' => $backfilledNotification['detail'], 'date' => probationary_date($backfilledNotification['createdAt']), 'type' => $backfilledNotification['type']];
+            $notificationIds[(string) ($backfilledNotification['uid'] ?? '')] = true;
+        }
     } catch (Throwable $e) {
     }
 }
@@ -137,12 +176,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])
                 ? $requestedAcknowledgementId
                 : (string) ($acknowledgement['uid'] ?? ($currentUserUid . '_' . date('Y-m', $monthTimestamp)));
             try {
+                // Single write; the exception path reports failure (L1d: the
+                // old immediate re-GET verify cost a round trip per action
+                // for what exceptions already prove).
                 $acknowledgementData = ['employeeUid' => $currentUserUid, 'month' => $requestedMonth, 'status' => 'Acknowledged', 'timestamp' => $acknowledgedAt];
                 firestore_write_document('Acknowledgements', $acknowledgementId, $acknowledgementData);
-                $savedAcknowledgement = firestore_get_document('Acknowledgements', $acknowledgementId);
-                if (($savedAcknowledgement['status'] ?? '') !== 'Acknowledged' || empty($savedAcknowledgement['timestamp'])) {
-                    throw new RuntimeException('Firestore did not confirm the acknowledgement update.');
-                }
                 $acknowledgement['status'] = 'Acknowledged';
                 $acknowledgement['timestamp'] = $acknowledgedAt;
                 $acknowledgement['uid'] = $acknowledgementId;

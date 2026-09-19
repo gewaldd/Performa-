@@ -33,88 +33,9 @@ $reportTypes = [
   'risk_analysis' => 'Underperformance Risk Analysis',
 ];
 
-function get_cached_collection($collectionName, $ttlSeconds = 600)
-{
-  // In-request memo: this page calls the helper up to 3x per load (Users,
-  // Ratings, Reports). The disk file is the cross-request cache; this avoids
-  // decoding the same large JSON file repeatedly in one request.
-  static $memo = [];
-  // Per-tenant salt: on shared hosting two concurrent employers must never
-  // swap directories via a shared cache file.
-  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
-  $memoKey = $tenant . '|' . $collectionName . '|' . $ttlSeconds;
-  if (isset($memo[$memoKey])) {
-    return $memo[$memoKey];
-  }
-
-  $cacheFile =
-    sys_get_temp_dir() .
-    '/performa_' .
-    md5($tenant . '|' . $collectionName) .
-    '.json';
-
-  if (
-    file_exists($cacheFile) &&
-    (time() - (int) @filemtime($cacheFile) < $ttlSeconds)
-  ) {
-    $data = json_decode(
-      (string) @file_get_contents($cacheFile),
-      true
-    );
-
-    if (is_array($data)) {
-      $memo[$memoKey] = $data;
-      return $data;
-    }
-  }
-
-  try {
-    $data = firestore_list_documents($collectionName);
-
-    @file_put_contents(
-      $cacheFile,
-      json_encode($data),
-      LOCK_EX
-    );
-
-    $result = is_array($data) ? $data : [];
-    $memo[$memoKey] = $result;
-    return $result;
-  } catch (Throwable $e) {
-    if (file_exists($cacheFile)) {
-      $data = json_decode(
-        (string) @file_get_contents($cacheFile),
-        true
-      );
-
-      if (is_array($data)) {
-        $memo[$memoKey] = $data;
-        return $data;
-      }
-    }
-
-    error_log(
-      'Employer reports collection load failed: ' .
-      $e->getMessage()
-    );
-
-    return [];
-  }
-}
-
-function clear_collection_cache($collectionName)
-{
-  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
-  $cacheFile =
-    sys_get_temp_dir() .
-    '/performa_' .
-    md5($tenant . '|' . $collectionName) .
-    '.json';
-
-  if (file_exists($cacheFile)) {
-    @unlink($cacheFile);
-  }
-}
+/* Disk-backed collection cache (shared include — see
+   includes/collection_cache.php; extracted verbatim Item 5). */
+require_once __DIR__ . '/includes/collection_cache.php';
 
 /* =========================================================
    PROBATIONARY EMPLOYEES
@@ -304,12 +225,19 @@ if (
         'Reports'
       );
 
-      $genMessage =
-        'Report generated for ' .
-        $emp['name'] .
-        '.';
-
-      $genMessageType = 'success';
+      /*
+       * PRG: redirect so refresh never re-submits, and the new row can be
+       * highlighted + linked. The #report-<id> anchor scrolls natively.
+       */
+      header(
+        'Location: reports.php?generated=' .
+        urlencode($reportId) .
+        '&name=' .
+        urlencode($emp['name']) .
+        '#report-' .
+        urlencode($reportId)
+      );
+      exit;
 
     } catch (Throwable $e) {
       error_log(
@@ -353,22 +281,11 @@ $iconCycle = [
 ];
 
 foreach ($reportDocs as $index => $reportDoc) {
-  $generatedTimestamp =
-    !empty(
-    $reportDoc['generatedAt']
-  )
-    ? strtotime(
-      $reportDoc['generatedAt']
-    )
-    : false;
-
   $generatedDate =
-    $generatedTimestamp
-    ? date(
-      'M j, Y',
-      $generatedTimestamp
-    )
-    : '';
+    pf_date(
+      $reportDoc['generatedAt'] ?? null,
+      ''
+    );
 
   $reportId =
     (string) (
@@ -378,6 +295,24 @@ foreach ($reportDocs as $index => $reportDoc) {
 
   if ($reportId === '') {
     continue;
+  }
+
+  /*
+   * Snapshot average for the scannable history row (Item 9). Scores were
+   * frozen at generation time; empty means the employee was unrated then.
+   */
+  $snapshotScores =
+    $reportDoc['scores'] ?? [];
+
+  $snapshotVals = [];
+
+  if (is_array($snapshotScores)) {
+    foreach ($snapshotScores as $snapshotScore) {
+      $snapshotVal = (float) $snapshotScore;
+      if ($snapshotVal > 0) {
+        $snapshotVals[] = $snapshotVal;
+      }
+    }
   }
 
   $reports[] = [
@@ -399,6 +334,15 @@ foreach ($reportDocs as $index => $reportDoc) {
       ? 'Generated on ' . $generatedDate
       : 'Generation date unavailable',
 
+    'typeLabel' =>
+      $reportDoc['reportTypeLabel']
+      ?? 'Performance Report',
+
+    'scoreAvg' =>
+      $snapshotVals
+      ? array_sum($snapshotVals) / count($snapshotVals)
+      : null,
+
     'iconClass' =>
       $iconCycle[
         $index % count($iconCycle)
@@ -414,6 +358,50 @@ $currentQuarter =
   ) .
   ' ' .
   date('Y');
+
+/*
+ * Command palette index from the already-loaded report rows (zero new
+ * reads). Cap keeps the inline payload small.
+ */
+$pfPaletteIndex = [];
+
+foreach (
+  array_slice(
+    $reports,
+    0,
+    60
+  ) as $paletteReport
+) {
+  $paletteId =
+    (string) (
+      $paletteReport['id']
+      ?? ''
+    );
+
+  if ($paletteId === '') {
+    continue;
+  }
+
+  $pfPaletteIndex[] = [
+    'label' =>
+      $paletteReport['title'],
+    'sub' =>
+      $paletteReport['meta'] .
+      ' · View report',
+    'href' =>
+      'report_view.php?id=' .
+      urlencode($paletteId),
+  ];
+}
+
+$pfPaletteJson =
+  json_encode(
+    $pfPaletteIndex,
+    JSON_HEX_TAG |
+    JSON_HEX_APOS |
+    JSON_HEX_QUOT |
+    JSON_HEX_AMP
+  );
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -453,27 +441,7 @@ $currentQuarter =
 
     <main class="main reports-page" id="reports">
 
-      <section class="page-header reports-page-header" aria-labelledby="reportsTitle">
-
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        </button>
-
-        <div class="ph-main">
-
-          <span class="eyebrow">Documentation</span>
-
-          <h1 id="reportsTitle">
-            Employee Reports
-          </h1>
-
-          <p>
-            Create and manage individual performance assessments.
-          </p>
-
-        </div>
-
-        <div class="ph-actions">
+      <?php ob_start(); ?>
 
           <div class="reports-period" title="Current review period">
 
@@ -493,9 +461,17 @@ $currentQuarter =
 
           </div>
 
-        </div>
-
-      </section>
+      <?php
+      $reportsActions = ob_get_clean();
+      employer_page_header(
+        'reportsTitle',
+        'Employee Reports',
+        '<span class="eyebrow">Documentation</span>',
+        'Create and manage individual performance assessments.',
+        $reportsActions,
+        'reports-page-header'
+      );
+      ?>
 
       <?php if ($genMessage !== ''): ?>
 
@@ -508,6 +484,25 @@ $currentQuarter =
             ENT_QUOTES
           );
           ?>
+        </div>
+
+      <?php endif; ?>
+
+      <?php if (isset($_GET['generated']) && $_GET['generated'] !== ''): ?>
+
+        <div class="alert alert-success reports-message" role="status" aria-live="polite">
+          Report generated for
+          <strong>
+            <?php
+            echo htmlspecialchars(
+              $_GET['name'] ?? 'employee',
+              ENT_QUOTES
+            );
+            ?>
+          </strong>.
+          <a href="report_view.php?id=<?php echo urlencode($_GET['generated']); ?>">
+            View report
+          </a>
         </div>
 
       <?php endif; ?>
@@ -529,7 +524,8 @@ $currentQuarter =
         <?php if (!$employeesList): ?>
 
           <p class="reports-empty-note">
-            No probationary employees yet. Add one from the Employees page first.
+            No probationary employees yet.
+            <a class="btn-primary" href="employees.php">Go to Employees</a>
           </p>
 
         <?php else: ?>
@@ -658,7 +654,7 @@ $currentQuarter =
 
             <?php foreach ($reports as $report): ?>
 
-              <article class="report-item">
+              <article class="report-item" id="report-<?php echo htmlspecialchars($report['id'], ENT_QUOTES); ?>">
 
                 <div class="file-icon <?php echo htmlspecialchars($report['iconClass'], ENT_QUOTES); ?>" aria-hidden="true">
                   <?php
@@ -684,13 +680,35 @@ $currentQuarter =
                       ENT_QUOTES
                     );
                     ?>
+                    ·
+                    <?php if ($report['scoreAvg'] !== null): ?>
+                      <?php
+                      echo htmlspecialchars(
+                        pf_score_pair($report['scoreAvg']),
+                        ENT_QUOTES
+                      );
+                      ?>
+                    <?php else: ?>
+                      No scores captured
+                    <?php endif; ?>
+                  </div>
+
+                  <div class="report-type-row">
+                    <span class="status-pill status-neutral">
+                      <?php
+                      echo htmlspecialchars(
+                        $report['typeLabel'],
+                        ENT_QUOTES
+                      );
+                      ?>
+                    </span>
                   </div>
 
                 </div>
 
                 <div class="report-actions">
 
-                  <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1">
+                  <a class="ghost-button" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1">
                     <span aria-hidden="true">
                       <?php
                       echo $icons['download'];
@@ -699,7 +717,7 @@ $currentQuarter =
                     Download PDF
                   </a>
 
-                  <a class="btn-outline" href="report_view.php?id=<?php echo urlencode($report['id']); ?>">
+                  <a class="ghost-button" href="report_view.php?id=<?php echo urlencode($report['id']); ?>">
                     <span aria-hidden="true">
                       <?php
                       echo $icons['file'];
@@ -725,6 +743,10 @@ $currentQuarter =
   </div>
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+
+  <script>
+    window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
+  </script>
 
 </body>
 
