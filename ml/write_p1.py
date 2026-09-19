@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""Write part 1 of predict.py"""
+
+p1 = '''#!/usr/bin/env python3
 """
 Performa Random Forest Prediction Module
 
@@ -30,7 +33,13 @@ from config import (
     DEFAULT_COMPETENCY_TARGET,
     classify_score,
 )
+'''
 
+with open("ml/predict.py", "w") as f:
+    f.write(p1)
+print("Part 1 written")
+
+p2 = '''
 
 def build_feature_vector(
     employee: Dict[str, Any],
@@ -88,7 +97,13 @@ def classify_competencies(
             "critical_gap": classification == CLASS_CRITICAL_GAP,
         }
     return results
+'''
 
+with open("ml/predict.py", "a") as f:
+    f.write(p2)
+print("Part 2 written")
+
+p3 = '''
 
 def predict_employee(
     model: Any,
@@ -129,7 +144,13 @@ def predict_employee(
         "model": "random_forest",
         "model_version": model_version,
     }
+'''
 
+with open("ml/predict.py", "a") as f:
+    f.write(p3)
+print("Part 3 written")
+
+p4 = '''
 
 def predict_all(
     model: Any,
@@ -161,7 +182,13 @@ def load_model(model_path: str = None) -> Any:
     with open(path, "rb") as f:
         model = pickle.load(f)
     return model
+'''
 
+with open("ml/predict.py", "a") as f:
+    f.write(p4)
+print("Part 4 written")
+
+p5 = '''
 
 def train_on_the_fly(
     training_data: List[Dict[str, Any]],
@@ -234,3 +261,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''
+
+with open("ml/predict.py", "a") as f:
+    f.write(p5)
+print("predict.py complete!")
+
+
+
+

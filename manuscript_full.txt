@@ -1,0 +1,703 @@
+
+
+
+Performa: A Web-Based KPI Probationary Employee Evaluation and Training Recommendation Platform For Small Steps Learning Center Using Random Forest Model
+
+
+
+ Jarl Valiant F. Robelo, Ralph Andrew B. Rocha, Warren Clyde S. Soberano, and Gerald Tegio
+College of Computer Studies, Technological Institute of the Philippines - Quezon City
+IT 304 – Capstone Project 1
+Ms. Nila Santiago
+May 2026
+
+
+
+
+
+
+
+
+Table of Contents
+Cover Page ………………………………………………………………………………………1
+Tables of Contents ………………………………………………………………………………2
+List of Figures …………………………………………………………………………………...4
+List of Tables …………………………………………………………………………………….5
+Chapter  1 …………………………………………………………………………….……....….6
+Introduction …………………………………………………………….……………….6
+Background of the Study …………………………………………………………….…..8
+Project Objectives ……………………………………………………………………….12
+Significance of the Study ………………………………………………………………..13
+Scope of the Study ………...…………………………………………………………….14
+Delimitation of the Study ……………………………………………………………….17
+Chapter 2……………………………………………………………………………………….19
+Theoretical Framework………………………………………………………………….19
+Review of Related Literature……………………………………………………………19
+Conceptual Framework ………………..………………………………………………..28
+System Architecture …………………………………………………………………….29
+Definition of Terms ……………………………………………………………………..31
+Chapter 3……………………………………………………………………………………….38
+Research Methodology………………………………………………………………….38 
+Project Design ……………………………………………………………………...…..39
+
+Design Discussion ………………………………………………………………….…..40
+Design Trade-offs  .………………………………………………………………...……46
+Design Prototype……………………………………………………………………...…44
+Project Development ……………………………………………………………...…….46
+Testing and Operating Procedures.………………………………..……………..………47
+Project Evaluation…….………….…………………………………………………...….47
+Work Plan.………………………………………………………………………………..67
+Potential for Commercialization…………………………………………………………51
+Market Model……………………………………………………………………………52
+Measurable Benefits .……………………………………………………………………53
+Three-Year Product Roadmap …………………………………………………………..55
+Go-To-Market Strategy………………………………………………………………….56
+Business Model …………………………………………………………….…………...73
+References …………………………………………………………………..…………..76
+
+
+
+
+
+
+List of Figures
+Figure 1 Conceptual Framework of Performa…………………………………………...……...29
+Figure 2 System Architecture of Performa………………………………………..…………….31
+Figure 3 Design 1………………………………………………………………………………..41
+Figure 4 Design 2………………………………………………………………………………..43
+Figure 5 Design 3………………………………………………………………………………..45
+Figure 6 KPI’s Page (Employer)……...…………………………………………………………50
+Figure 7 Reports Page (Employer)..............................................………………………………..51
+Figure 8 Settings Page (Employer).............................................…………………..……………52
+Figure 9 Supervisor Login Page…………………………………..……………………………..52
+Figure 10 Supervisor Dashboard…………………………………...……………………..……..53
+Figure 11 KPI’s Page (Supervisor).........................................………………………...…………56
+Figure 12 Probationary Employee Login Page……………..…………………………………...55
+Figure 13 Probationary Employee Dashboard…...……………………………………………...58
+Figure 14 Design 1……………………………………………………………………...……….60
+Figure 15 Design 2……………………………………………………………………………....61
+Figure 16 Design 3……………………………………………………………………………....63
+Figure 17 RAD Model………………………………………………….……………………….78
+Figure 18 ISO 25010…………………………………………………………………………….82
+Figure 19 Work Plan……………………………………………………………..……………...89
+Figure 20  Market Model………………………...………………………...……………………91
+Figure 21 Market Strategy.…………………………...………………………………………….95
+Figure 22 Business Model.………………………………...…………………………………….96
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+List of Tables
+Table 1 Summary of Contraints………………………………………………….………………65
+Table 2 Comparative Analysis of Machine Learning Algorithms………………………………66
+Table 3 Comparative Trade-off Matrix of ML Algorithms………………………….....…..……71
+Table 4 Sensitivity Analysis Matrix of Hyperparameter Configurations……………………..…74
+Table 5 Selected Evaluation Criteria………………………………………………………...…..81
+Table 6 Likert Scale………...……………………………………………...…….………………83
+Table 7 Distribution of Respondents…………………….……………….………….…………..83
+Table 8 Comparative analysis of Existing HR Evaluation Systems and Performa……………...85
+Table 9 Measurable Benefits……………………………….…….………………….…………..91
+Table 10 Three-Year Product Roadmap.………………………..………………...……………..92
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Chapter 1
+Introduction	
+	With today's growing complexities in organizational management, businesses can no longer turn a blind eye to human resource development as an equally important strategic function in their operations as product development and business growth. The success of an organization depends heavily on the skills and performance of their employees to achieve the business goals and maintain operations throughout time (Otoo & Rather, 2024). Unfortunately, many businesses, small and medium enterprises in particular, still lack the formal tools to systematically and objectively measure employee performance and support legally defensible appraisal and feedback, which the study aims to solve.
+To combat this, many businesses have resorted to adopting performance management systems which formalize methods of employee performance measurement and improvement. A well-established framework within the domain of performance management is the use of Key Performance Indicators (KPIs). When an organization employs KPIs in performance management, it provides managers with a tangible and measurable means of monitoring employee performance over time, rather than relying on impressions or memory (Sudaryanto, 2024). When performance expectations are clear and documented from the beginning, evaluations are based on what the employee actually delivered rather than on subjective impressions, making decisions more fair and defensible.
+The system developed in this study is called Performa, an AI-Assisted Key Performance Indicator-based probationary employee evaluation and training recommendation platform for small and medium enterprises in the Philippines, which typically have 5 to 30 employees and do not have a dedicated human resources department. Performa enables employers to select and customize KPIs suited to specific job roles and organizational expectations, record weekly employee performance ratings, generate automated performance reports, and recommend targeted training interventions based on accumulated performance data.
+It is particularly important for the structured appraisal of probationary employees, as employers must reach a regularization decision within a specified time frame. Under Article 296 of the Philippine Labor Code, probationary employment cannot exceed six months, and the employee must be informed of the standards to be used to judge their work on the first day of employment (Britanico, 2025). An AI-assisted regularization recommendation is provided at the middle of the fifth month of employment to assist employers in deciding whether to terminate or confirm the probationary employment of a new hire before the legal limit of six months.
+Training Recommendation Component
+The training recommendation component of Performa operates in three stages. First, weekly KPI scores entered by the employer or supervisor are aggregated into monthly performance summaries across five competency categories: task completion, attendance and punctuality, communication and teamwork, initiative and adaptability, and quality of work. Second, a trained Random Forest classification model analyzes the aggregated monthly scores to identify each employee's competency gaps, classifying performance in each category as Meets Expectations, Needs Improvement, or Critical Gap. Third, the classification output is passed to the Google Gemini API together with the employee's job role, industry context, and identified weak categories. The Gemini API generates a structured set of training recommendations in natural language, specifying training type (on-the-job coaching, workshop, self-directed learning, or mentoring), target competency area, and suggested timeline for completion.
+The AI-generated training recommendations are reviewed by the employer or supervisor before being sent to the probationary employee as part of the monthly performance summary. Employees receive the recommendations through the system and provide digital acknowledgement of receipt. This review step ensures that the employer retains full decision-making authority over training interventions, while the AI component provides data-driven, personalized suggestions that would otherwise require an HR specialist to produce manually.
+Research Gap
+The review of related literature reveals a substantial and well-documented gap at the intersection of AI-assisted performance management, legal compliance automation, and SME-oriented HR technology in the Philippine context. While the broader literature on AI in human resource management demonstrates clear benefits in terms of evaluation consistency, bias reduction, and personalized training recommendations (Sampath et al., 2024; Raparthi, 2023), the practical application of these advances has been almost entirely confined to medium and large organizations with established HR departments in high-income country contexts. The specific legal, resource, and operational conditions of Philippine SMEs managing probationary employees have not been addressed by any of the systems or studies reviewed.
+Studies on probationary employment in the Philippines document significant rates of non-compliance with Article 296 of the Philippine Labor Code, particularly among micro and small enterprises that lack the HR infrastructure to maintain written performance standards, conduct periodic documented evaluations, and produce evidence-based justification for regularization decisions (Britanico, 2025; Chambers & Partners, 2023; The World Law Group, 2025). Despite the availability of commercial performance management platforms such as BambooHR, Leapsome, 365Talents, and Engagedly, none of these systems were designed to operate within the six-month probationary employment framework or to support the specific legal compliance requirements of the Philippine Labor Code. Furthermore, none of these platforms are accessible or affordable for SMEs employing between 5 and 30 workers without a dedicated HR function. Within the academic literature, no existing study reviewed has proposed or evaluated an integrated system that simultaneously performs KPI-based probationary performance tracking aligned with legal compliance requirements, automated 180-day deadline monitoring, AI-driven competency gap classification, individualized monthly training recommendations generated through a large language model API, and a regularization decision support output delivered prior to the legal deadline. Performa is proposed as a purpose-built solution to fill this specific and previously unaddressed gap in the Philippine HR technology landscape (Lim et al., 2025; Raparthi, 2023).
+Background of the Study
+The acquisition, appraisal, and development of human resources have become the determining factor of the sustainability and growth of small enterprises in a fiercely competitive Philippine economy. However, for micro and small businesses, the primary operational threat lies not only in recruiting the appropriate personnel but in determining whether a new probationary employee should become a regular employee on time as mandated by national labor statutes. Under Article 296 of the Philippine Labor Code, probationary employment shall not exceed six months (180 days), and employers are strictly required to inform employees of the exact performance standards they must meet beginning on their very first day of work (Respicio & Co., 2025). 
+Despite this rigid legal mandate, local literature highlights a severe, systemic problem: the vast majority of small business owners are completely unaware of their strict legal obligations or altogether lack a concrete, objective system to document employee metrics. 
+According to national labor studies, performance management remains the single least-practiced and most poorly executed human resource function among micro, small, and medium enterprises across the Philippines, with most organizations completely relying on informal, unwritten arrangements (Binghay & Gumiran, 2023). This absence of formal documentation is a critical vulnerability; local empirical research confirms that SME performance appraisals are universally characterized by extreme subjectivity, supervisor bias, and a total lack of verifiable paper trails, leaving business owners completely defenseless during formal labor disputes (Lubon, 2023). The result is a dual crisis: underperforming employees are frequently regularized by default due to missed tracking deadlines, or underperforming workers are terminated without valid, written, and legally defensible reasons - both outcomes exposing the small business to debilitating illegal dismissal lawsuits and severe financial risks. 
+To combat these vulnerabilities, many progressive organizations have adopted formal performance management systems, with a heavily utilized framework being Key Performance Indicators (KPIs). KPIs measure performance against concrete targets on specific business areas and are used to assess performance over time to ensure employee output aligns with organizational goals (Talentnet Group, 2024). When performance expectations are documented from day one, it provides absolute legal and operational clarity to workers. However, mainstream commercial KPI tools are neither financially accessible nor operationally designed for local small businesses employing 5 to 30 workers without a dedicated HR expert. 
+Recently, AI-assisted performance management systems have demonstrated the capacity to drastically minimize evaluation subjectivity and supervisory inconsistency by introducing data-driven pattern recognition and structured feedback mechanisms (Sampath et al., 2024). The deployment of machine learning models in HR contexts - specifically for employee performance classification and automated training recommendation generation - is heavily supported by contemporary literature as a viable approach for organizations seeking to replace erratic, impressionistic appraisals with consistent, reproducible analytical outputs (Raparthi, 2023). However, a distinct gap remains as these tools have never been structured or deployed within the Philippine SME context to address the specific statutory obligations of Article 296. Performa directly addresses this convergence of legal vulnerability and technical need by combining customizable role-based KPI tracking, Random Forest-based competency gap classification, Gemini API-powered training recommendations, and an automated 180-day regularization decision support mechanism within a single web-based platform tailored for non-HR users. 
+Needs Analysis
+A preliminary needs analysis was conducted to validate the problem statement and confirm that the features proposed in Performa respond to real operational needs. A preliminary interview was conducted with the administration of Small Steps Learning Center, the partner institution for this study, and a preliminary survey was administered to 15 SME owners and supervisors in Quezon City. The key findings are summarized below. The Letter of Cooperation from Small Steps Learning Center and the Transcript of the Partner Interview are provided in Appendix A and Appendix B, respectively.
+First, Small Steps Learning Center currently conducts probationary evaluations informally, relying on verbal feedback and supervisor recall rather than documented written standards or structured rating instruments. The administration reported that performance criteria are communicated verbally on the first day of employment but not provided in writing, creating a potential non-compliance risk under Article 296. No formal mechanism exists for tracking the 180-day probationary deadline per employee, and past regularization decisions have on occasion been delayed beyond the legal limit due to the absence of an automated alert system.
+Second, the preliminary survey results confirmed that these issues are not isolated to the partner institution. Thirteen out of 15 respondents (87%) reported that they do not use any formal written performance evaluation instrument for probationary employees. Fourteen out of 15 (93%) manage their probationary evaluations through informal memory-based observations or verbal feedback. All 15 respondents (100%) identified the inability to justify regularization or termination decisions with documentation as a significant operational risk, and 12 out of 15 (80%) expressed willingness to adopt a web-based evaluation platform if it was affordable and required no prior HR expertise.
+Third, the RRL confirms the systemic nature of the problem. (Binghay and Gumiran 2023) found that performance management remains one of the least practiced HR functions among micro and small businesses in the Philippines. Lubon (2023) similarly reported that SME performance appraisals are characterized by subjectivity, inconsistency, and a near-total absence of written documentation. These findings collectively establish the empirical and theoretical basis for the problem that Performa is designed to address.
+Project Objectives
+General Objective
+ The overall goal of this study is to design, develop, and test Performa, a web-based platform that will monitor and evaluate employee performance and recommend training based on KPIs and the Random Forest algorithm for SMEs in the Philippines.
+Specific Objectives
+Develop a web-based system for small and medium enterprises that will allow employers to track and rate the performance of their probationary employees through customizable Key Performance Indicators (KPIs), providing a structured and objective method of assessing probationary employee performance.
+Design an employee training recommendation module using the Random Forest algorithm for analyzing employee KPI data and generating appropriate, data-driven employee training interventions to improve employee performance, with outputs delivered via the Google Gemini API.
+Design a web-based performance tracking dashboard that logs weekly KPI ratings per employee, aggregates scores into monthly summaries, and generates visual performance trend reports.
+Implement an automated 180-day probationary deadline tracker with milestone alerts at 150, 165, and 178 days, and an AI-assisted regularization recommendation delivered at the middle of the fifth month of employment, in compliance with Article 296 of the Philippine Labor Code.
+Evaluate the developed system using the ISO 25010 software quality model across the criteria of functional suitability, performance efficiency, usability, reliability, security, and maintainability.
+Significance of the Study
+This study aims to develop Performa, an AI-assisted KPI-based probationary employee evaluation and training recommendation platform designed specifically for small and medium enterprises (SMEs) in the Philippines. The significance of this study extends to multiple stakeholder groups and aligns with broader national and international development goals. The results of this study are expected to benefit the following:
+Employers and Business Owners. Managing probationary employees is one of the most legally sensitive and time-consuming responsibilities facing small business owners. Performa provides employers with a structured, data-driven method of tracking employee performance throughout the probationary period, reducing the risk of missed regularization deadlines and undocumented terminations. With an AI-assisted regularization recommendation delivered at the middle of the fifth month, employers can make well-documented decisions with sufficient lead time before the six-month deadline mandated under Article 296 of the Philippine Labor Code.                       
+Supervisors. Supervisors are often the primary observers of day-to-day employee performance but lack formal tools to record and communicate their observations consistently. Performa replaces memory-based evaluation with a structured weekly rating system, reducing the time and cognitive load required to document performance. The system ensures that supervisor input is recorded systematically, contributing to a fairer and more defensible evaluation process.
+Probationary Employees. Employees benefit from a more transparent and equitable evaluation process. By tracking performance continuously against pre-defined and communicated KPIs, Performa ensures that employees are assessed on the basis of actual recorded performance data rather than a single end-of-period impression. Monthly AI-generated feedback also gives employees the opportunity to identify and address performance gaps before the regularization decision is made, supporting employee development throughout the probationary period.
+SMEs Without a Dedicated HR Department. Performa is built specifically for SMEs that lack formal HR infrastructure. The platform automates what would otherwise require an HR specialist: KPI design, performance documentation, training gap identification, and regularization tracking. By making structured performance management accessible and affordable for small businesses, Performa reduces the competitive disadvantage that many Philippine SMEs face due to the absence of formal HR functions.
+Partner Institution: Small Steps Learning Center. As the primary partner of this study, Small Steps Learning Center directly benefits from the deployment of Performa as a tool for managing the performance of its own probationary staff. The platform provides the institution with a legally sound and systematic approach to employee evaluation consistent with the requirements of Philippine labor law, replacing informal and undocumented practices with a structured, AI-supported system.
+Future Researchers. This study contributes to the growing body of literature on AI-assisted human resource management systems, particularly in the context of Philippine SMEs. The methodology, system architecture, and evaluation findings of this study may serve as a reference for future researchers investigating AI applications in workforce management, legal compliance systems, or employee development platforms in developing country contexts.
+Alignment With the Sustainable Development Goals
+This study aligns with the following United Nations Sustainable Development Goals (SDGs), which provide a global framework for development that the proposed system directly supports.
+SDG 8: Decent Work and Economic Growth. Performa directly supports SDG 8 by promoting fair, structured, and legally compliant labor practices within Philippine SMEs. By providing employers with a transparent and documented evaluation process aligned with Article 296 of the Philippine Labor Code, the system reduces the risk of arbitrary or undocumented regularization and termination decisions. The platform also supports employee development through AI-generated training recommendations, contributing to a more productive and skilled workforce within the SME sector.
+SDG 9: Industry, Innovation, and Infrastructure. By integrating a Random Forest classification model and a large language model API into a lightweight, browser-based platform accessible to non-technical users, this study demonstrates how AI technology can be deployed in practical, low-cost applications within the Philippine business landscape. The system represents an innovation in making enterprise-grade HR tools accessible to micro and small businesses, contributing to the digital transformation of SME operations in the Philippines.
+SDG 16: Peace, Justice, and Strong Institutions. Performa supports SDG 16 by promoting institutional accountability and rule of law within employment relationships. The system ensures that probationary employment practices are conducted in accordance with the legal standards established under Article 296 of the Philippine Labor Code, reducing instances of illegal dismissal, constructive regularization, and labor disputes arising from undocumented performance management.
+SDG 8: Decent Work and Economic Growth. Performa directly supports SDG 8 by promoting fair, structured, and legally compliant labor practices within Philippine SMEs. By providing employers with a transparent and documented evaluation process aligned with Article 296 of the Philippine Labor Code, the system reduces the risk of arbitrary or undocumented regularization and termination decisions. The platform also supports employee development through AI-generated training recommendations, contributing to a more productive and skilled workforce within the SME sector.
+
+
+
+
+Scope and Delimitations
+Scope: 
+This study covers the design and development of Performa, a web-based KPI-based probationary employee evaluation and training recommendation platform. The system is intended for SMEs in the Philippines that do not have a dedicated human resource department, and it operates exclusively within the six-month probationary period as defined under Article 296 of the Philippine Labor Code. The system supports four distinct user types, each with a defined set of features and access levels: the Administrator, the Employer, the Supervisor, and the Probationary Employee. The scope is organized below according to the functionalities available to each user type.
+
+Administrator
+The Administrator holds system-level and IT-level access, distinct from the Employer's organization-level management functions, and is primarily responsible for platform oversight and maintenance. The following modules and functionalities are within the scope of this study for the Administrator role:
+User Account Management. The Administrator may create, deactivate, and reset the passwords of Employer, Supervisor, and Probationary Employee accounts through the Account Management Module.
+KPI Configuration (View-Only). The Administrator may view KPIs configured across the system for oversight purposes but may not create or edit KPI definitions; this function remains exclusive to the Employer role.
+Employee Records (View-Only). The Administrator may view probationary employee profiles across the system for oversight purposes but may not add or edit employee records; this function remains exclusive to the Employer role.
+System Settings. The Administrator may manage global system settings, including deadline-tracker thresholds and the industry KPI template library, through the System Settings Module.
+Audit Log. The Administrator may view a system-wide activity log that records user actions such as additions, edits, and ratings including the user responsible and the timestamp of each action.
+Reports. The Administrator may access performance and activity reports across all registered Employer accounts on the platform.
+
+Employer
+The Employer is the primary administrator of the system and holds the highest level of access. The following modules and functionalities are within the scope of this study for the Employer role:
+
+Authentication and Account Management. The Employer may register an account, log in securely using Firebase Authentication, and manage account preferences and notification settings through the Settings Module.
+Employee Profile Management. The Employer may create, update, and manage probationary employee profiles, including hire dates, assigned job roles, and KPI assignments, through the Employee Management Module.
+KPI Configuration. The Employer may define and assign Key Performance Indicators per job role using the KPI Configuration Module, which includes access to pre-built KPI templates organized by industry (retail, BPO, food service, logistics, and construction). KPI weights and scoring thresholds are configurable by the Employer.
+Performance Rating Entry. The Employer may input weekly KPI performance scores for each probationary employee through the Performance Rating Module.
+AI-Generated Training Recommendations. The Employer may view monthly AI-generated summaries that identify each employee's weak performance areas and recommend targeted training interventions, generated via the Google Gemini API.
+Regularization Recommendation. The Employer receives an AI-assisted regularization recommendation at the middle of the fifth month of each employee's probationary period, providing a data-driven basis for the regularization or termination decision, delivered through the Regularization Recommendation Module.
+Deadline Tracking and Alerts. The Employer receives automated alerts at 150, 165, and 178 days of each employee's probationary period via the Deadline Tracker Module, in compliance with Article 296 of the Philippine Labor Code.
+PDF Report Generation. The Employer may export a PDF performance report per employee containing complete monthly scores, AI-generated training recommendations, and regularization decision records through the PDF Report Export Module.
+Employee Acknowledgement Dispatch. The Employer may send monthly performance summaries to the concerned employee for digital acknowledgement, ensuring transparency and documentation of feedback delivery.
+Supervisor
+The Supervisor has a secondary level of access within the system. The scope of this study for the Supervisor role includes the following:
+Authentication. The Supervisor may log in using Firebase Authentication with role-specific access credentials assigned by the Employer.
+Dashboard Access. The Supervisor may view the main dashboard, including an overview of active probationary employees, their current KPI scores, and any upcoming regularization deadlines.
+Performance Rating Entry. The Supervisor may input weekly KPI performance scores for employees under their supervision through the Performance Rating Module. The Supervisor may not modify previously configured KPIs or scoring thresholds.
+Training Recommendations (View Only). The Supervisor may view AI-generated monthly training recommendations but may not modify or dismiss them.
+Regularization Recommendation (View Only). The Supervisor may view the AI-generated regularization recommendation at the middle of the fifth month but does not hold decision-making authority over the regularization outcome.
+Deadline Tracker (View Only). The Supervisor may view the remaining days in each employee's probationary period but does not receive or manage alert settings.
+Probationary Employee
+The Probationary Employee has a read-only access level focused on transparency and self-monitoring. The scope of this study for the Employee role includes the following:
+Authentication and Profile Management. The Employee may create an account, log in, and view or update personal profile information.
+Performance Summary Dashboard. The Employee may view their own performance summary, including monthly KPI scores, performance trends, and AI-generated feedback shared by the Employer.
+Acknowledgement of Monthly Summaries. The Employee may digitally acknowledge receipt of the monthly performance summary sent by the Employer, creating a documented record of feedback delivery and receipt.
+Notifications. The Employee may receive in-app alerts regarding newly available performance summaries and system reminders relevant to their probationary period.
+The system operates from the date of the probationary employee's hiring up to the middle of the fifth month, ensuring that both the AI-generated regularization recommendation and the employer's final decision can be completed before the six-month legal deadline. The system is web-based and accessible via any modern browser without installation, and is built on PHP, Javascript, and CSS for the front end interface, with Firebase (Authentication, Firestore, and Hosting), and the Google Gemini API.
+Delimitations:
+This study is limited to the following
+The system is limited to the evaluation and tracking of probationary employees as defined under Article 296 of the Philippine Labor Code. It does not extend to regular, contractual, project-based, or part-time employment arrangements.
+The system does not include payroll processing, timekeeping, biometric integration, leave management, recruitment, onboarding workflows, or government contribution management (SSS, PhilHealth, Pag-IBIG).
+Performance ratings are recorded exclusively by the Employer or Supervisor user roles. The system does not support peer evaluation, 360-degree feedback, or self-assessment inputs.
+Training recommendations and regularization recommendations generated by the system are decision-support outputs only. They do not constitute legal advice, and final employment decisions remain the sole responsibility of the employer.
+
+
+
+CHAPTER 2
+Theoretical Framework
+This chapter includes the related literature and studies about performance management systems, KPI based employee evaluation, and AI assisted decision making in human resource management. It consists of the process of the system and how it works using the system architecture. It will also include the discussion of operational terms used.
+
+
+Review of Related Literature
+
+Human Resource Management and Workforce Development
+In today's globalized business world, companies are no longer evaluated by their products or marketing strategies, but by their workforce's performance and readiness to face market competition (Otoo & Rather, 2024). Numerous researches prove that the development of human resources has positive effects on employee commitment and satisfaction as well as organizational sustainability. Thus, workforce development is not an additional part but an essential process for competitive advantage (Otoo & Rather, 2024). Many organizations now use specific methods for continuously monitoring and developing the performance of an employee, starting from the very beginning of the employment period.
+Probationary Employment in the Philippines
+It is a huge burden for owners of a small business in the Philippines to manage their employees legally. Under Article 296 of the Philippine Labor Code, probationary employment shall not exceed six months and employers are required to communicate the standards for regularization to the employee on the first day of employment (Respicio & Co., 2025). Failure to comply with these requirements exposes employers to legal liability for illegal dismissal or constructive regularization. Despite this clear legal obligation, a significant proportion of Philippine SMEs do not maintain formal written performance standards, do not conduct documented periodic evaluations, and are unable to produce written evidence of performance-based decisions when labor disputes arise (Binghay & Gumiran, 2023; Chambers & Partners, 2023). The World Law Group (2025) documented a cautionary case in which a Philippine employer's failure to communicate standards in writing resulted in the constructive regularization of an underperforming employee, underlining the practical legal risk of informal evaluation practices.
+Key Performance Indicators in Employee Evaluation
+Key Performance Indicators are measurable standards used to objectively evaluate employee performance based on specific job responsibilities and business objectives, providing organizations with a structured and quantifiable basis for tracking individual achievement over time (Sudaryanto, 2024). In probationary employment contexts, KPIs serve a dual function: they operationalize the performance standards that Article 296 requires employers to communicate to probationary employees, and they provide the quantitative basis for regularization or termination decisions that must withstand legal scrutiny. Research on KPI-based evaluation systems demonstrates that they improve the consistency and defensibility of performance appraisals by replacing subjective impressions with documented, measurable performance records (Talentnet Group, 2024).
+AI-Assisted Performance Management
+AI-powered performance evaluation systems have emerged as a significant development in human resource management, with recent literature demonstrating their capacity to reduce evaluator bias, improve rating consistency, and generate personalized development recommendations (Sampath et al., 2024). Raparthi (2023) established that AI integration in employee performance evaluation systems produces more accurate and actionable appraisal outputs compared to traditional supervisor-only evaluation methods, particularly when the AI component processes structured performance data over multiple evaluation periods rather than relying on a single-point assessment. These findings support the use of machine learning models in the Performa system for competency gap classification and training recommendation generation.
+Machine Learning for HR Classification Tasks
+Random Forest is an ensemble learning method that constructs multiple decision trees during training and outputs the classification that represents the majority vote of the individual trees (Breiman, 2001). Studies applying Random Forest in HR-related classification tasks have confirmed its advantages over single-model approaches in terms of accuracy on small tabular datasets, robustness to noisy or incomplete input, and the production of interpretable feature importance scores that identify which variables contribute most strongly to each classification outcome (Hamoud et al., 2018; Tuhairwe et al., 2024). These properties are directly relevant to the Performa use case, where training datasets are limited to the performance records of a small number of employees, input features include a mix of continuous KPI scores and categorical job role identifiers, and interpretability is required to enable employers without HR expertise to understand and act on the system's outputs. 
+Recommender Systems and Training Recommendations
+Recommender systems that combine machine learning classification with natural language generation have been shown to produce actionable, personalized recommendations at the individual level (Lim et al., 2025). The integration of classification model outputs with large language model APIs enables the generation of recommendations that are tailored to the specific competency profile of each user rather than drawn from a generic catalog of interventions. In Performa, the Random Forest model classifies each employee's competency gaps and passes the classification results to the Google Gemini API, which generates structured training recommendations in natural language. This architecture aligns with the approach described by Gavanelli et al. (2011) for rule-based and AI-based decision support systems operating on structured categorical data.
+Performance Management in Philippine SMEs
+Performance management remains one of the least practiced HR functions among micro and small businesses in the Philippines, with most organizations relying on informal arrangements due to the absence of affordable and accessible tools (Binghay & Gumiran, 2023). Lubon (2023) reported that SME performance appraisals in the Philippine context are characterized by subjectivity, inconsistency, and a near-total absence of written documentation, leaving employers legally vulnerable in labor proceedings. These findings are reinforced by data from the (Philippine Statistics Authority 2023), which reported over 1.2 million micro and small business establishments in the Philippines, the vast majority of which operate without dedicated HR departments or formal performance management systems. The absence of affordable, legally compliant, AI-assisted performance management tools specifically designed for this population represents both the market opportunity and the research problem that Performa is designed to address.
+Algorithm Justification and Comparative Analysis
+The selection of the Random Forest algorithm as the primary machine learning model for Performa's competency gap classification and regularization recommendation functions is grounded in the characteristics of the performance data the system generates and the requirements of the classification task. Random Forest is robust to overfitting on small datasets, handles mixed feature types (continuous KPI scores, ordinal ratings, categorical job role identifiers) without requiring feature scaling or distributional assumptions, and produces feature importance scores that support interpretable output for non-HR users (Breiman, 2001; Liaw & Wiener, 2002). These properties directly address the data availability constraints and interpretability requirements of the SME context (Hamoud et al., 2018; Tuhairwe et al., 2024). Table 2 presents a comparative analysis of five candidate algorithms evaluated against criteria relevant to the Performa classification task. 
+Algorithmic Superiority of Random Forest over Alternative Classifiers
+	When processing human resource metrics and employee competency data, choosing the optimal machine learning classifier is critical to ensuring predictive accuracy. Contemporary literature demonstrates that Random Forest systematically outperforms single decision trees and alternative distance-based or linear algorithms when handling structured, tabular workforce data pools. According to a comparative study by (Tuhairwe et al., 2024), individual Decision Trees exhibit a high degree of structural instability; a minor modification or localized variance in supervisor rating data can cause a catastrophic shift in the entire tree architecture, leading to extreme overfitting.  In contrast, Random Forest overcomes this limitation by utilizing Bootstrap Aggregation (Bagging) to train hundreds of independent trees in parallel and averaging their predictions. This ensemble voting framework drastically suppresses model variance and ensures high classification stability that individual Decision Trees cannot mathematically achieve.  Furthermore, empirical evaluations in predictive human resource analytics highlight that Random Forest yields vastly superior performance metrics compared to Support Vector Machines (SVM) and K-Nearest Neighbors (KNN) when deployed on ordinal KPI scores. Research by (Raparthi, 2023) notes that distance-based classifiers like KNN are highly vulnerable to subjective evaluation noise, outliers, and data scaling anomalies common in manual supervisor inputs. SVMs also scale poorly on sparse tabular matrices and require complex mathematical transformations that render their inner operations a "black box." Conversely, Random Forest demonstrates a lower sensitivity to sample noise, resists the curse of dimensionality, and naturally handles unscaled mixed-data types without requiring extensive data preprocessing setups (Raparthi, 2023).  Most critically, within automated workforce intervention and recommendation frameworks, Random Forest is uniquely advantageous over complex deep learning architectures due to its built-in explainability. As established by (Sampath et al., 2024) , while Neural Networks or Multi-Layer Perceptrons may demand computationally prohibitive processing overhead and thousands of training instances to function without overfitting, Random Forest delivers optimal accuracy on small-to-medium datasets while providing implicit Feature Importance calculations. This metric allows the system to mathematically rank which precise performance dimensions caused a competency classification drop, providing the transparent data infrastructure necessary to safely generate contextual training recommendations through large language model (LLM) pipelines.
+
+
+
+
+
+
+
+Synthesis of Related Literature
+The literatures analyzed above are all in agreement and have set a firm ground for the creation of Performa. Studies on human resource development has confirmed that a structured and sustained performance appraisal is a critical part of organizational growth and worker development (Otoo & Rather, 2024) while research on probationary employment in the Philippines demonstrates the employers legal liability and the grave risk of non-compliance if not performed on a documented and structured format (Britanico, 2025; Chambers & Partners, 2023). KPI appraisal literature have also revealed the efficacy of using quantitative measures as performance standards to improve accountability and decision-making (Sudaryanto, 2024) whereas literatures on AI in HR further show the efficiency and accuracy machine learning and natural language processing can add to the subjective aspects of performance appraisal and training recommendations (Sampath et al., 2024; Lim et al., 2025). Combined, all these researches can attest both to the problem perceived and technology utilized by Performa. However, there is a noticeable repetition that most of the existing studies and applications are tailored for medium to large businesses with substantial HR structure; this has left small to micro businesses without a reliable solution that would address the legal concerns and resource limitation.
+Research Gap
+The review of related literature reveals a substantial and well-documented gap at the intersection of AI-assisted performance management, legal compliance automation, and SME-oriented HR technology in the Philippine context. While the broader literature on AI in human resource management demonstrates clear benefits in terms of evaluation consistency, bias reduction, and personalized training recommendation (Sampath et al., 2024; Raparthi, 2023), the practical application of these advances has been almost entirely confined to medium and large organizations with established HR departments in high-income country contexts. The specific legal, resource, and operational conditions of Philippine SMEs managing probationary employees have not been addressed by any of the systems or studies reviewed.
+
+Studies on probationary employment in the Philippines document significant rates of non-compliance with Article 296 of the Philippine Labor Code, particularly among micro and small enterprises that lack the HR infrastructure to maintain written performance standards, conduct periodic documented evaluations, and produce evidence-based justification for regularization decisions (Britanico, 2025; Chambers & Partners, 2023; The World Law Group, 2025). Despite the availability of commercial performance management platforms such as BambooHR, Leapsome, 365Talents, and Engagedly, none of these systems were designed to operate within the six-month probationary employment framework or to support the specific legal compliance requirements of the Philippine Labor Code. Furthermore, none of these platforms are accessible or affordable for SMEs employing between five and thirty workers without a dedicated HR function.
+
+Within the academic literature, no existing study reviewed has proposed or evaluated an integrated system that simultaneously performs the following functions within a single platform: (1) customizable KPI-based probationary performance tracking aligned with legal compliance requirements; (2) automated 180-day deadline monitoring with milestone alerts; (3) AI-driven competency gap classification using a machine learning model; (4) individualized monthly training recommendations generated through a large language model API; and (5) a regularization decision support output delivered prior to the legal deadline. This gap in the literature, combined with the empirical evidence of need gathered through the partner institution interview and the preliminary survey, constitutes the primary research problem that this study seeks to address. Performa is proposed as a purpose-built solution to fill this specific and previously unaddressed gap in the Philippine HR technology landscape (Lim et al., 2025; Raparthi, 2023).
+Conceptual Framework
+The conceptual framework of this study, illustrated in Figure 1, is anchored on three interconnected concepts: KPI-based performance measurement, AI-assisted analysis, and regularization decision-making. These concepts form a sequential process that defines the operational flow of Performa.
+The first concept is KPI-based performance measurement, which serves as the primary input of the system. KPIs are measurable standards used to objectively evaluate employee performance based on specific job responsibilities and business objectives, providing organizations with a structured and quantifiable basis for tracking individual achievement over time (Sudaryanto, 2024). In Performa, supervisors record weekly KPI ratings using customizable templates aligned with the employee's role and industry. These structured performance records replace subjective and undocumented evaluations with quantifiable and consistent data, allowing fairer assessment of probationary employees (Talentnet Group, 2024).
+The second concept is AI-assisted analysis, which functions as the processing component of the framework. The accumulated KPI data is first processed by a Random Forest classification model, which analyzes aggregated KPI patterns to identify and categorize the employee's competency gaps across performance areas such as attendance, communication, and task completion. The resulting classifications are then analyzed through the Google Gemini API to detect performance trends and generate personalized training recommendations based on each employee's identified weak areas. Studies have shown that AI-assisted evaluation systems improve consistency, reduce bias, and support data-driven decision-making in performance management (Sampath et al., 2024).
+The final concept is regularization decision-making, which represents the output of the framework. Using aggregated KPI evaluations, AI-generated recommendations, and documented performance records, the system assists employers in making fair and evidence-based regularization decisions. Performa also supports compliance with Article 296 of the Philippine Labor Code by ensuring that probationary employees are evaluated continuously using clearly communicated standards (Britanico, 2025).
+The conceptual framework of this study, illustrated in Figure 1, is anchored on three interconnected concepts: KPI-based performance measurement, AI-assisted analysis, and regularization decision-making. These concepts form a sequential process that defines the operational flow of Performa.
+The first concept is KPI-based performance measurement, which serves as the primary input of the system. KPIs are measurable standards used to objectively evaluate employee performance based on specific job responsibilities and business objectives, providing organizations with a structured and quantifiable basis for tracking individual achievement over time (Sudaryanto, 2024). In Performa, supervisors record weekly KPI ratings using customizable templates aligned with the employee's role and industry. These structured performance records replace subjective and undocumented evaluations with quantifiable and consistent data, allowing fairer assessment of probationary employees (Talentnet Group, 2024).
+The second concept is AI-assisted analysis, which functions as the processing component of the framework. The accumulated KPI data is first processed by a Random Forest classification model, which analyzes aggregated KPI patterns to identify and categorize the employee's competency gaps across performance areas such as attendance, communication, and task completion. The resulting classifications are then analyzed through the Google Gemini API to detect performance trends and generate personalized training recommendations based on each employee's identified weak areas. Studies have shown that AI-assisted evaluation systems improve consistency, reduce bias, and support data-driven decision-making in performance management (Sampath et al., 2024).
+The final concept is regularization decision-making, which represents the output of the framework. Using aggregated KPI evaluations, AI-generated recommendations, and documented performance records, the system assists employers in making fair and evidence-based regularization decisions. Performa also supports compliance with Article 296 of the Philippine Labor Code by ensuring that probationary employees are evaluated continuously using clearly communicated standards (Britanico, 2025).
+
+
+Figure 1 
+Conceptual Framework
+
+
+System Architecture
+The system architecture of Performa integrates three primary layers, Presentation, Application Logic, and Data with a dedicated machine learning pipeline embedded within the Application Logic layer. Figure 2 presents the updated System Architecture diagram specification, which includes the Random Forest classification pipeline as a distinct algorithmic component. The following subsections describe each architectural component.
+Presentation Tier
+The Presentation Tier is the layer of the system directly visible and interactable with users. The presentation tier of Performa is the web-based interface accessed through a browser, built using PHP and CSS. It is responsible for taking inputs and delivering outputs to three types of users: employers, supervisors, and probationary employees. This tier displays information requested by users, accepts inputs such as KPI performance ratings and employee data, and delivers outputs such as performance reports, AI performance recommendations, and notifications of approaching deadlines. The presentation tier communicates directly with the logic tier for sending user requests and receiving processing results.
+Logic Tier
+The Logic Tier represents the application layer of the system that performs all business logic, calculation, and data routing between the Presentation Tier and Data Tier. It hosts the Random Forest classification model, which receives aggregated monthly KPI score data and produces competency gap classifications for each employee. The classification outputs are passed to the Google Gemini API integration module, which generates personalized training recommendations and regularization recommendation drafts in natural language. The Logic Tier also hosts the 180-day deadline tracking engine and the alert dispatch module.
+Security and Authentication Layer
+In alignment with the team's cybersecurity specialization track, a dedicated Security and Authentication Layer is embedded within the Logic Tier and governs all access between the Presentation Tier and the Data Tier. This layer implements the following security controls: (1) Firebase Authentication enforces identity verification for all three user roles, with role-based access control (RBAC) ensuring that each user type can only access the modules and data authorized for their role; (2) Firebase Security Rules enforce server-side data access restrictions, ensuring that Firestore database reads and writes are permitted only to authenticated users with the appropriate role, preventing unauthorized cross-user data access; (3) all data in transit is protected by Transport Layer Security (TLS/SSL), and all data at rest in Firestore is encrypted using Firebase's default AES-256 encryption; and (4) an audit logging mechanism records all significant system actions, including login events, performance rating entries, training recommendation deliveries, and regularization recommendation accesses, providing a tamper-evident record that supports legal defensibility under Article 296.
+Data Tier
+The Data Tier consists of Firebase Firestore, a NoSQL cloud database that stores all system data including employee profiles, KPI configurations, weekly performance ratings, monthly aggregates, AI-generated training recommendations, regularization recommendation records, and audit logs. Firestore's real-time synchronization capabilities support the live dashboard updates displayed in the Presentation Tier. Firebase Hosting delivers the web application to end users.
+
+
+Figure 2.
+System Architecture
+
+
+
+Definition of Terms
+
+
+
+Chapter 3
+Research Methodology
+This study employs a developmental research methodology combined with a design and development (D&D) approach, which is appropriate for creating and evaluating an AI-supported information system that provides a solution to an organizational problem. Peffers et al. (2007) stated that design science research in the information systems discipline consists of rigorously developed artifacts to solve specified organizational problems in an evaluative way. In this study, Performa is considered the artifact: a web-based, KPI-based probationary employee evaluation system for small and medium enterprises, taking into account the specific operational, legal, and resource requirements of Philippine SMEs.
+Choosing a developmental research method over a purely descriptive or correlational one is grounded in the nature of the research output. The primary deliverable of this study is a functional software system that addresses a real operational problem, not a set of statistical findings or theoretical propositions. The D&D approach requires the researchers to rigorously define the problem, design and develop the artifact in response to the defined problem, and evaluate the artifact against established quality criteria. In this study, system evaluation follows the ISO 25010 software quality model. The dataset to be used for training, testing and for validation is currently in the process of being collected from the contact organization, Small Steps Learning Center. The data to be gathered will consist of probationary employee KPI records. Once collected the dataset will be split into 70% for training, 15% for testing and the other 15% would be used for validation aligned with the standard machine learning practices for employee performance classification tasks (Raparthi, 2023; Sampath et al., 2024).
+
+Project Design
+Performa is designed as a web-based application using PHP, JavaScript, and CSS for the frontend interface and Firebase for backend services. Presentation Tier (PHP/JavaScript web application), a Logic Tier (business rules, Random Forest model, Gemini API integration, and security layer), and a Data Tier (Firebase Firestore). The three user roles, Employer, Supervisor, and Probationary Employee, each access a distinct set of interface modules corresponding to their authorized functions as defined in the Scope of the Study. The application is deployable to Firebase Hosting and accessible via any modern web browser without installation.
+
+Employer Login Page
+This shows the login screen of the Performa system which serves as the main entry point for employers who want to access the platform. The employer is required to enter their email address and password to sign in. Once the credentials are filled in the employer can click the Sign In as Employer button to proceed to the dashboard. A Forgot Password option is also available in case the employer cannot remember their credentials and a Contact IT Support link is provided for employers who are having trouble logging in.    
+
+
+Figure 3
+Employer Login Page
+
+
+
+
+
+
+
+Employer Dashboard
+This shows the main dashboard of the Performa system which the employer sees after successfully logging in. It displays a summary of all probationary employees including the total count, the number of employees nearing their regularization deadline, and the overall performance score of the team. The employer can also view the active evaluations table which shows each employee's timeline, KPI score, and current status. An AI Insight panel is shown on the right side which provides intervention suggestions and training recommendations for employees who need attention. The employer can navigate to other sections of the system such as Employees, KPIs, Reports, and Settings through the sidebar on the left. 
+
+
+
+
+
+
+
+
+
+
+
+
+Figure 4
+Employer Dashboard
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Employees Page (Employer)
+This shows the Employees screen where the supervisor can manage and organize the workforce directory. It displays a list of all employees along with their role, department, employment type, and current status. The supervisor can filter the list by department, status, and employment type to quickly find a specific employee. At the bottom of the screen a Team Overview Stats section is shown which displays the average department rating and the number of active tasks for the team. A pending approvals notification is also visible at the top right corner of the screen. 
+
+Figure 5
+Employees Page (Employer)
+
+KPI’s Page (Employer)
+Figure 6 shows the Key Performance Indicators screen for the supervisor where they can view and track the performance metrics of each team member. The supervisor can select a specific employee from the dropdown to view their Individual KPI records. The Performance Metrics table displays each KPI name along with the target score, current score, trend, and status showing whether the employee is Exceeding, Warning, or Below Target. Summary cards are shown at the bottom displaying the scores for Attendance Rate, Code Quality, and Team Collaboration with their corresponding statuses. Note that KPI templates are managed by the administrator and the supervisor needs to contact HR for any adjustments. 
+
+
+
+
+
+
+
+
+Figure 6
+KPI’s Page (Employer)
+
+
+Reports Page (Employer)
+Figure 7 shows the Employee Reports screen where the employer can generate and manage performance reports for each probationary employee. The employer can select a specific employee and choose a report type from the dropdown then click the Generate Report button to create a new report. The Generated Reports section displays a list of previously created reports showing the report title, date generated, and file size. Each report can be downloaded as a PDF or viewed directly on the screen. The current review period is shown at the top right corner of the screen. 
+
+Figure 7
+Reports Page (Employer)
+
+Settings Page (Employer)
+Figure 8 shows the Settings screen where the employer can manage their account preferences and system configurations. The Profile tab allows the employer to update their profile photo, full name, email address, role, and department. A Security and Password section is also available where the employer can set a new password. Once the changes are made the employer can click the Save Changes button to apply the updates. At the bottom of the screen there are two additional options which are the Two-Factor Authentication for adding an extra layer of security to the account and the Deactivate Account option for permanently removing the profile and data from the system. 
+
+Figure 8
+Settings Page (Employer)
+
+
+
+Supervisor Login Page
+Figure 9 shows the Supervisor Portal login screen which serves as the entry point for supervisors who want to access the Performa system. The supervisor is required to enter their work email and password to sign in. Once the credentials are filled in the supervisor can click the Sign In as Supervisor button to proceed. A Forgot Password option is also available in case the supervisor cannot remember their credentials. A Keep Me Signed In checkbox is provided for session convenience. A Quick Switch link is also visible which allows the user to switch to the Employer Portal if needed. A Supervisor Support Line chat button is available at the bottom right corner of the screen for supervisors who need assistance. 
+Figure 9
+Supervisor Login Page
+
+
+Supervisor Dashboard
+This shows the Supervisor Dashboard which displays the Probationary Overview of all employees under the supervisor's team. It shows a summary of the total number of probationary employees, the number of employees nearing their regularization deadline, and the overall performance score of the team. The Active Evaluations table lists each employee along with their timeline progress, KPI score, and a Grade button for submitting evaluations. An AI Insight panel on the right side displays intervention suggestions and training recommendations for employees who need attention. The supervisor can navigate to other sections of the system such as Employees, KPIs, Reports, Settings, and Notifications through the sidebar on the left. 
+Figure 10
+Supervisor Dashboard
+
+
+Employees Page (Supervisor)
+This shows the Employees screen where the supervisor can manage and organize the workforce directory. It displays a list of all employees along with their role, department, employment type, and current status. The supervisor can filter the list by department, status, and employment type to quickly find a specific employee. At the bottom of the screen a Team Overview Stats section is shown which displays the average department rating and the number of active tasks for the team. A pending approvals notification is also visible at the top right corner of the screen. 
+
+
+Figure 11
+Employees Page (Supervisor)
+
+
+
+
+
+KPI’s Page (Supervisor)
+This shows the Key Performance Indicators screen for the supervisor where they can view and track the performance metrics of each team member. The supervisor can select a specific employee from the dropdown to view their Individual KPI records. The Performance Metrics table displays each KPI name along with the target score, current score, trend, and status showing whether the employee is Exceeding, Warning, or Below Target. Summary cards are shown at the bottom displaying the scores for Attendance Rate, Code Quality, and Team Collaboration with their corresponding statuses. Note that KPI templates are managed by the administrator and the supervisor needs to contact HR for any adjustments.
+Figure 11
+KPIs Page (Supervisor)
+
+
+
+Probationary Employee Login Page
+This shows the Employee Portal login screen which serves as the entry point for employees who want to access the Performa system. The employee is required to enter their employee email and password to sign in. A Forgot Password option is also available in case the employee cannot remember their credentials. A Remember This Device checkbox is provided for session convenience. Once the credentials are filled in the employee can click the Sign In as Employee button to proceed. A reminder notification is also visible at the bottom right corner prompting the employee to review their roadmap after login. 
+
+Figure 12
+Probationary Employee Login Page
+
+Probationary Employee Dashboard
+This shows the Employee Dashboard which is the main screen that the employee sees after logging in to the Performa system. It displays a welcome message along with a notification about pending tasks and an upcoming performance review. The My KPI Scores section shows the employee's current scores for Customer Satisfaction, Productivity, Team Collaboration, and Technical Skills along with their target scores and progress. The My Attendance Record section displays the employee's real time time in and time out logs with a calendar view option and a Request Leave button. A Monthly Summary is also shown on the right side displaying the number of present, absent, late, and pending leave records. An Upcoming Review card is visible at the bottom right corner which shows the next evaluation date and a Prepare Now button. A Support panel is also available at the bottom left corner where the employee can contact HR for assistance. 
+
+
+
+Figure 13
+Probationary Employee Dashboard
+
+
+Design Discussion
+Three candidate dashboard designs for Performa were evaluated during the User Design phase of development. Design 1 is a PHP-based single-page application using CSS utility classes for layout and styling. Design 2 is a PHP-based application using a component library (shadcn/ui) for structured UI components. Design 3 is a PHP-based application using custom CSS modules. Each design was evaluated on three performance criteria: render time, memory usage, and file size. The results of this evaluation are presented in the Design Trade-Offs section below
+Figure 14
+Design 1
+
+
+
+Figure 14 displays Design 2, uses a dark background dashboard. Dark shades of gray are used for the navigation bar and sidebar light shades of white and cards are used for the content area for easy readability. New additions that are not seen in Design 1 include: Probationary Timeline section which will be used to display each employee’s progression on a bar of 5 months. Each color on the bar represents 'on track', 'caution', and 'critical' states with green, yellow, and red colors respectively. A Urgent Regularization warning bar can be seen at the top of the content area which should alert the user to the people with imminent deadlines. On the right, there is a Performance Summary section to showcase the top employee, most improved and most at-risk employee. There is a "Today's Ratings" section at the bottom where users get live prompts about performance appraisals and there is a "AI Insights" panel at the bottom to give suggestions. Though dark themes reduce the stress on the eyes for continuous use, which is a favored characteristic of all modern productivity tools, dark renders need more complex compositing than light ones which increases memory to 990,904 KB and render time to 372ms.
+Figure 15
+Design 2
+
+
+
+
+
+
+
+Figure 15 presents the Design 3 which is a white, light themed with purple as its prominent color. White as the main navigation with search bar and user link. Landing page displays a live greeting card which is styled with purple gradient showing the current logged in users name, pending evaluation count and a motivation statement. The 4 cards summarizes on: Count for active probationary employees, Average KPI Score, days left till the deadlines and a progress bar showing training completion percentage. Performa AI recommendation card is on the right and display particular AI recommendations based on each employee with 2 buttons "view details" and "schedule training" for each employee and the other section is ofRecent evaluations where employees are presented in cards, with color coded status and scores of employees are presented vertically. And on the right there is Upcoming Deadlines section which graphically represents employee deadlines like Gantt charts for employees for upcoming regularization. This design feels simple, elegant and professional. Since many components and the dynamic rendering of content made the memory consumption the highest (1,019,964 KB) compared to other two designs (288ms render time).
+
+Figure 16
+Design 3
+
+
+
+
+
+
+
+Table 1  
+Summary Of Constraints
+
+Algorithmic Trade-off Analysis 
+While traditional software engineering documentation evaluates generic hardware setups or architectural architectural patterns (such as Model-View-Controller vs. Microservices), the core predictive validation of Performa relies fundamentally on its machine learning engine. Consequently, a comprehensive algorithmic trade-off analysis was executed to justify selecting the Random Forest classification model over alternative machine learning algorithms, including Decision Trees, Support Vector Machines (SVM), and K-Nearest Neighbors (KNN).
+
+This comparative analysis is strictly bound, governed, and evaluated by the operational and structural constraints inherent to the specific scope of this project: 
+
+Data Volatility and Volume Constraints: The system operates within a small-scale, localized business environment (Small Steps Learning Center). The dataset consists of tabular KPI scorecards with a constrained sample population of 5 to 30 active employees rather than massive, enterprise-level big data infrastructure.
+
+Computational and Infrastructure Constraints: The platform runs entirely on standard commercial web hosting environments without specialized, highly expensive GPU acceleration or high-tier cloud computing resources.
+
+Interpretability & Legal Defense Constraints: Under Article 296 of the Philippine Labor Code, probationary employee appraisals must be completely transparent, objective, and documented. The underlying algorithm must provide an explainable decision path (feature weighting) to legally defend a training or regularization recommendation in the event of formal labor court disputes.
+
+Comparative Analysis of Machine Learning Algorithms
+The selection of an appropriate machine learning algorithm for the competency gap classification and regularization recommendation functions of Performa requires a systematic evaluation of candidate algorithms against criteria directly relevant to the system's data characteristics, interpretability requirements, and operational constraints. Five algorithms were evaluated: Random Forest, Decision Tree, Support Vector Machine (SVM), Logistic Regression, and Gradient Boosting. The evaluation criteria were defined based on the specific requirements of the Performa classification task: dataset size constraints typical of SME deployment, interpretability requirements for non-HR users, robustness to noisy and incomplete data, training time feasibility, and multi-class classification accuracy.
+Table 2 presents the comparative analysis of the five candidate algorithms across seven criteria relevant to the Performa use case. Each criterion is rated on a scale of 1 (poor) to 5 (excellent).
+Table 2
+Comparative Analysis of Machine Learning Algorithms for Performa Classification Task
+
+
+As shown in Table 2, Random Forest achieves the highest weighted total score of 33 across all seven criteria. Its principal advantages over competing algorithms are its robustness to overfitting on small tabular datasets, a critical constraint given that Performa is initially deployed in a single partner SME with a limited employee base, and its native production of feature importance scores, which enable the system to generate interpretable explanations of competency gap classifications for employer-users without HR or data science backgrounds (Breiman, 2001; Liaw & Wiener, 2002). Gradient Boosting achieves comparable multi-class accuracy but requires more complex hyperparameter tuning, longer training cycles, and does not natively produce the same level of interpretable output, making it a less suitable choice for the target deployment context (Tuhairwe et al., 2024). Decision Tree offers high interpretability but is prone to overfitting on small datasets without pruning, which reduces its reliability as a standalone classifier for performance data that may contain evaluator inconsistencies. SVM and Logistic Regression underperform on the mixed-feature-type data produced by Performa (continuous KPI scores combined with categorical job role and industry identifiers) and do not support the multi-class output required for the three-category competency classification (Meets Expectations, Needs Improvement, Critical Gap). 
+The algorithm comparison confirms that Random Forest is the most appropriate choice for the Performa classification task, consistent with the algorithm selection literature reviewed in Chapter 2 (Hamoud et al., 2018; Tuhairwe et al., 2024; Breiman, 2001; Liaw & Wiener, 2002). 
+Comparative Rationale and Algorithmic Superiority 
+The selection of the best machine learning (ML) classifier is a crucial point for processing human resource (HR) metrics and competency data to ensure their predictive accuracy. Literature from the last century clearly shows that Random Forest is consistently superior to individual decision trees and distance-based or linear algorithms in the context of workforce data stored in a structured, tabular data pool.
+
+But as per the comparative study by Tuhairwe et al. (2024) individual Decision Trees are very structurally unstable: if you change the rating data of a small part of the supervisors, you may have a radical change in the entire tree structure, overfitting it to this part dramatically. Random Forest addresses this problem by training hundreds of trees in parallel – using a technique known as Bootstrap Aggregation (Bagging) – and then "averaging" the predictions of each tree. The high classification stability that Decision Trees can't mathematically guarantee and the drastic reduction of model variance with this ensemble voting structure are the most notable attributes. 
+Moreover, empirical tests of the performance metrics of predictive HR analytics show that Random Forest provides significantly better measures of performance than Support Vector Machines (SVM) and K-Nearest Neighbors (KNN) in the instance of a KPI score being ordinal. Raparthi (2023) states that classifiers based on distance, such as KNN, are very sensitive to subjective assessment noise, outliers and data scaling anomalies often found in manually inputted supervisors. Another disadvantage of SVMs is their sensitivity to sparse tabular matrices, and the fact that they need to be mathematically transformed to be able to handle the inner operations and make it an un-auditable "black box. On the other hand, Random Forest is relatively robust to sample noise, is not affected by the curse of dimensionality, and automatically supports unscaled mixed data types without the need for complicated data pre-processing configurations (Raparthi, 2023).
+
+Perhaps most importantly, compared to the complex deep learning architectures, Random Forest is uniquely useful in the automated workforce intervention and recommendation paradigms because of its built-in explainability. By definition, as defined by (Sampath et al. 2024), Neural Networks or Multi-Layer Perceptrons (MLPs) require a large number of training samples and a high amount of processing in order to avoid overfitting, whereas Random Forest can be used with only a few thousand samples, and generates an implicit Feature Importance calculation. It can mathematically identify which specific aspects of performance contributed to a fall in competency classification, offering greater transparency into the system's data and enabling safe generation of contextual training recommendations using pipelines of large language models (LLM).
+
+Algorithmic Selection and Performance Analysis 
+The empirical comparison established in Table 2 validates that the Random Forest algorithm functions as the most statistically and operationally viable classification framework for Performa within the predefined boundaries of the study. Individual Decision Trees are structurally rejected due to their high variance and extreme susceptibility to data perturbation; a singular erratic score entered by a supervisor would cause structural instability across the split nodes, leading to brittle tracking outputs (Tuhairwe et al., 2024). 
+
+Furthermore, distance-based and boundary-separating models like K-Nearest Neighbors (KNN) and Support Vector Machines (SVM) are mathematically unsuited for the platform's core compliance tracks. KNN is heavily disrupted by unscaled categorical markers and evaluation noise, meaning a minor outlier can skew local neighborhood voting metrics. SVM operates within a mathematically transformed hyperplane, hiding its structural decision paths from non-technical users. This creates a critical "black box" operational vulnerability that prevents small business owners from auditing or proving the objective validity of a performance gap in formal labor settings (Raparthi, 2023).
+
+By selecting the Random Forest ensemble framework, Performa balances predictive generalization with operational safety. The model aggregates a forest of uncorrelated estimators using bootstrap aggregating (bagging), allowing it to effectively filter out subjective evaluation noise and maintain high classification accuracy on small tabular tables (Tuhairwe et al., 2024). Most importantly, it natively extracts Gini Impurity Feature Importance rankings. This feature isolates the exact performance indices (such as a drop in Quality of Work) that triggered the deficiency, establishing a transparent data trail to safely feed the Google Gemini API pipeline for generating targeted, legally defensible training recommendation workflows (Sampath et al., 2024). 
+Table 3 
+Comparative Trade-off Matrix of ML Algorithms 
+
+
+
+
+
+
+Model Validation and Sensitivity Analysis
+To guarantee the structural reliability, generalization capacity, and algorithmic stability of the Random Forest model within Performa, a systematic sensitivity analysis was conducted. In machine learning architectures, sensitivity analysis functions as an empirical validation track to evaluate how variations in independent hyperparameter settings or inputs affect the dependent performance metrics (Accuracy, Precision, Recall, and F1-Score) of the classifier. This prevents the deployment of an arbitrarily configured "black-box" model and ensures that the probationary competency classifications are highly optimized and mathematically stable under changing data conditions.
+The sensitivity analysis for Performa explicitly monitors the impact of varying three critical structural hyperparameters of the Random Forest model:
+Ensemble Volume ($n\_estimators$): Testing the model's sensitivity to the total number of decision trees constructed within the forest (ranging from 10 to 200 trees).
+Structural Depth ($max\_depth$): Monitoring how varying the maximum allowable levels of the decision branches impacts overfitting thresholds on localized SME tabular matrices.
+Node Partition Limits ($min\_samples\_split$): Evaluating model behavior when adjusting the minimum number of data samples required to execute a node split.
+
+
+
+Table 4
+Sensitivity Analysis Matrix of Hyperparameter Configurations 
+
+
+
+Input Sensitivity and Explainable Legal Defensibility 
+Beyond structural hyperparameter tuning, sensitivity analysis is applied to the input features (the five core KPI competency categories) to determine which performance metrics exert the heaviest mathematical weight on the final training recommendations. By utilizing Gini Impurity and Permutation Feature Importance calculations, the system checks how sensitive the final classification is to fluctuations within specific KPI indices.
+This directly satisfies the legal compliance requirements of Article 296 of the Philippine Labor Code. If an employee challenges a Needs Improvement classification or an automated training pathway recommendation, the platform's input sensitivity analysis provides a completely auditable math log. This output confirms that the classification was driven objectively by systemic features (e.g., a 45% drop in "Quality of Work" metrics) rather than supervisor bias or erratic tracking anomalies.
+
+Project Development
+	Performa is developed using the Rapid Application Development (RAD) Model, which uses iterative prototype development, feedback from users and fast delivery. This model is especially attractive for web applications such as Performa, since these users can feed back to the model to make continuous improvements, minimize the chance of diverging requirements, and receive a working prototype earlier in the development cycle. The RAD model has four stages: Requirements Planning, User Design, Construction and Cutover, as shown in Figure 13.
+Figure 17
+Rapid Application Development (RAD) Model
+
+
+Phase 1: Requirements Planning
+The Requirements Planning phase encompasses the identification and documentation of all system requirements through the partner institution interview, the preliminary survey, and the literature review. Key outputs of this phase include the system requirements specification, the legal compliance checklist based on Article 296, the KPI template library, and the finalized list of user roles and module permissions. This phase is conducted during May to June 2026.
+
+Phase 2: User Design
+The User Design phase encompasses the development of UI wireframes and prototypes for all three user types (Employer, Supervisor, and Probationary Employee), the presentation of prototypes to the partner institution for feedback, and the finalization of UI specifications and the component library. The design trade-off analysis described in the Design Trade-Offs section above is conducted during this phase to select the optimal frontend design. This phase is conducted during June to August 2026.
+Phase 3: Construction
+The Construction phase encompasses eight iterative development cycles, each delivering a working software increment: (1) user management and Firebase Authentication; (2) KPI configuration and employee management modules; (3) weekly rating engine and score aggregation; (4) Random Forest model training and system integration; (5) Gemini API training recommendation engine; (6) regularization recommendation module; (7) 180-day deadline tracker and notification system; and (8) PDF report export module. A dedicated cybersecurity integration cycle implements role-based access control, Firebase Security Rules, TLS/SSL encryption, and audit logging. This phase is conducted during August to December 2026.
+
+Phase 4: Cutover
+The Cutover phase encompasses deployment to Firebase Hosting, user acceptance testing using the ISO 25010 evaluation framework with 30 respondents across the three user groups, evaluation data analysis, final system revisions, and completion of final documentation. This phase is conducted during January to April 2027.
+Testing and Operational Procedures
+System testing follows a multi-stage approach: unit testing of individual modules, integration testing of module interactions, and user acceptance testing with actual end users from the partner institution and the SME respondent pool. Operating procedures are documented in the system user manual, which covers account setup, KPI configuration, weekly rating entry, training recommendation review, and PDF report export for each user role.
+
+
+
+
+Project Evaluation
+	The system is evaluated using the ISO 25010 software quality model, which assesses eight quality characteristics: functional suitability, performance efficiency, compatibility, usability, reliability, security, maintainability, and portability. An evaluation instrument using a five-point Likert scale is administered to 30 respondents: 10 employers, 10 supervisors, and 10 probationary employees recruited from the partner institution and SME respondent pool. The distribution of respondents and the selected evaluation criteria are presented in the evaluation tables preserved from the original document.
+
+Selected Evaluation Criteria
+	The evaluation of Performa will focus on the following five quality criteria based on ISO/IEC 25010, as these are the most relevant to a web-based employee evaluation platform:
+
+
+
+Table 5
+Selected Evaluation Criteria
+
+
+
+
+
+Figure 18
+ISO 25010
+
+
+
+
+
+
+
+
+Table 6
+Likert Scale
+
+
+Table 7
+Distribution of Respondents
+
+
+
+Comparative Analysis for Existing Systems
+	A review of existing performance management and HR evaluation platforms reveals that while several commercial tools offer KPI-based evaluation or AI-assisted HR features, none adequately address the specific legal, operational, and financial constraints of Philippine SMEs managing probationary employees. Table 1 presents a comparative analysis of four existing systems against the proposed Performa platform across eight criteria relevant to the target context.
+
+Novelty of the Proposed System
+The novelty of Performa lies in the integration of four distinct but interrelated functions within a single, accessible platform designed specifically for the Philippine SME context: (1) a customizable, role-based KPI performance tracking system aligned with the legal requirements of probationary employment under Philippine law; (2) an AI-driven training recommendation engine that generates individualized monthly training suggestions based on classified competency gaps identified by a Random Forest model; (3) an AI-assisted regularization recommendation mechanism that synthesizes five months of cumulative performance data to produce a timely, evidence-based decision-support output at the middle of the fifth month of employment; and (4) an automated 180-day probationary deadline tracking system with milestone alerts, designed to ensure that employers meet their legal obligations under Article 296 without requiring HR expertise.
+Unlike existing platforms such as BambooHR, Leapsome, and 365Talents, which are designed for large organizations with established HR departments and do not account for the six-month probationary employment framework mandated under Philippine labor law, Performa is purpose-built for the non-HR user in an SME setting. The combination of legal compliance automation, predictive performance classification, and personalized AI-generated training recommendations within a system targeting the underserved Philippine SME market represents a contribution not previously addressed in the existing literature or available commercial tools.
+
+
+
+Table 8
+Comparative analysis of Existing HR Evaluation Systems and Performa
+
+
+As shown in Table 15, no existing platform reviewed addresses the full combination of requirements faced by Philippine SMEs managing probationary employees. BambooHR offers comprehensive HR management but targets medium to large organizations and does not support Philippine labor law compliance or probationary deadline tracking. Leapsome and 365Talents provide AI-assisted features but are designed for enterprise-level organizations with dedicated HR teams, and neither supports the specific legal framework governing probationary employment in the Philippines. Engagedly offers partial KPI customization but similarly lacks compliance features and affordability for the SME market. Performa directly addresses all ten criteria identified as critical for the target context, representing a distinct and underserved position in the Philippine HR technology landscape.
+ Potential for Commercialization
+Performa has significant commercialization potential within the Philippine SME market. The platform addresses a documented gap between the legal compliance requirements of Philippine labor law and the performance management capabilities of micro and small businesses, a gap that affects over 1.2 million registered establishments nationally (Philippine Statistics Authority, 2023). The following sections outline the market model, measurable benefits, three-year product roadmap, go-to-market strategy, and business model for Performa.
+Work Plan
+The development of Performa follows the four phases of the Rapid Application Development (RAD) model described in the Project Development section. The work plan spans from May 2026 through April 2027, consistent with the Summer 2026 to April 2027 academic timeline. Table 4 presents the complete project timeline with phase names, activities, deliverables, and responsible team members for each activity.
+
+Figure 19
+Work Plan
+Market Model
+TAM: The total available market for Performa encompasses all registered micro and small business establishments in the Philippines that employ at least one worker. Based on the 2023 Philippine MSME Statistics published by the Philippine Statistics Authority, there are approximately 1.07 million micro businesses and 158,000 small businesses registered in the country, bringing the combined total to over 1.2 million establishments (Philippine Statistics Authority, 2023).
+SAM: The serviceable available market is narrowed to establishments with 5 to 30 employees in sectors with high employee turnover and regular use of probationary employment, specifically retail, food service, BPO, logistics, and tutorial and learning services. This narrows the SAM to approximately 300,000 establishments.
+SOM: The serviceable obtainable market for Year 1 is conservatively estimated at 0.5% of the SAM, or approximately 1,500 establishments, based on projected digital marketing reach and direct partnership outreach. This estimate is subject to revision based on actual deployment and user acquisition data.
+Figure 20
+Market Model
+
+
+Table 9
+Measurable Benefits
+
+
+Table 10
+Three-Year Product Roadmap
+
+Go-To-Market Strategy
+The go-to-market strategy for Performa targets three primary channels: direct institutional partnerships with SME associations and business development organizations in the Philippines; digital marketing via LinkedIn and Facebook targeting SME owners and HR practitioners; and referral partnerships with accounting and payroll software providers whose clients represent the SME target market.
+Figure 21
+Market Strategy
+
+
+
+
+
+
+Business Model
+Performa will operate on a subscription-based Software-as-a-Service (SaaS) business model with tiered pricing based on the number of active probationary employees tracked. The base tier (up to 5 active probationary employees) is priced at PHP 499 per month. The standard tier (6 to 15 active probationary employees) is priced at PHP 999 per month. The professional tier (16 to 30 active probationary employees) is priced at PHP 1,799 per month. All tiers include full access to all system features including KPI configuration, AI training recommendations, regularization recommendation, and PDF report export.
+
+
+Figure 22
+Business Model
+
+
+
+
+
+
+
+
+             References
+AIHR. (2023). How AI in HR is transforming employee performance management. AIHR. https://www.aihr.com/blog/ai-in-hr/
+Betterworks. (2024). The pivotal role of AI in performance management. https://www.betterworks.com/magazine/ai-performance-management
+Binghay, V. C., & Gumiran, B. A. L. (2023). Charting a course for excellence: Exploring performance management in the Philippines. Philippine Journal of Labor and Industrial Relations. https://www.researchgate.net/publication/376984622
+Breiman, L. (2001). Random forests. Machine Learning, 45(1), 5-32. https://doi.org/10.1023/A:1010933404324
+Britanico, A. F. C. (2025, January 11). Probationary employees: Due process and legal termination in the Philippines. Lawyers in the Philippines. https://lawyerphilippines.org/probationary-employees-and-due-process-in-termination/
+Chambers & Partners. (2023). Probationary employment in the Philippines. https://chambers.com/legal-trends/legal-insights-on-probationary-employment-in-the-philippines
+ThriveSparrow. (2023). Performance management statistics. ThriveSparrow Blog. https://www.thrivesparrow.com/blog/performance-management-statistics
+Gavanelli, M., Lamma, E., Mello, P., & Riguzzi, F. (2011). Rule-based and logic-based decision support systems for strategic environmental assessment. Lecture Notes in Computer Science. https://www.researchgate.net/publication/403117783
+Hamoud, A., Hashim, A. S., & Awedh, W. A. (2018). Predicting student performance using data mining and learning analytics techniques: A systematic literature review. Applied Computational Intelligence and Soft Computing, 2018, Article 8462092. https://doi.org/10.1155/2018/8462092
+Liaw, A., & Wiener, M. (2002). Classification and regression by randomForest. R News, 2(3), 18-22. https://cran.r-project.org/doc/Rnews/
+Lim, S.-Y., Hashim, N., & Thanh, L. L. (2025). Recommender systems: A comprehensive review of models, approaches and evaluation metrics. Journal of Informatics and Web Engineering, 4(3), 166-190. https://doi.org/10.33093/jiwe.2025.4.3.10
+Lubon, C. K. F. (2023). Employee's performance in small and medium enterprises: A human resource management critical analysis. Philippine E-Journals. https://ejournals.ph/article.php?id=17470
+Otoo, F. N. K., & Rather, R. A. (2024). Human resource development practices and employee performance. Rajagiri Management Journal, 18(3), 202-215. https://doi.org/10.1108/RAMJ-06-2023-0108
+Philippine Statistics Authority. (2023). 2023 Philippine MSME statistics. https://psa.gov.ph
+Raparthi, M. (2023). Artificial intelligence in employee performance evaluation and its managerial implication. Journal of Informatics Education and Research, 4(1), 55-63. https://www.researchgate.net/publication/377729689_Artificial_Intelligence_in_Employee_Performance_Evaluation_and_Its_Managerial_Implication
+Respicio & Co. (2025). Understanding probationary employment, mandatory benefits, and contractual obligations under Philippine labor law. https://www.lawyer-philippines.com/articles/understanding-probationary-employment
+Sampath, K., Devi, K., Ambuli, T. V., & Venkatesan, S. (2024). AI-powered employee performance evaluation systems in HR management. In 2024 7th International Conference on Circuit Power and Computing Technologies (ICCPCT) (pp. 703-708). IEEE. https://doi.org/10.1109/ICCPCT61902.2024.10673159 https://www.researchgate.net/publication/384221879_AI-Powered_Employee_Performance_Evaluation_Systems_in_HR_Management
+Sudaryanto. (2024). Peran KPI dalam mendorong kinerja karyawan dan produktivitas organisasi. Jurnal Inovasi Manajemen, Kewirausahaan, Bisnis Dan Digital, 1(2), 61-72. https://doi.org/10.61132/jimakebidi.v1i2.67
+Talentnet Group. (2024). Performance management KPIs structural tracking system. https://www.talentnetgroup.com/featured-insights/employee-experience/performance-management-kpis-structural-tracking-system
+The World Law Group. (2025). A cautionary tale on probationary employment. The World Law Group. https://www.theworldlawgroup.com/membership/news/a-cautionary-tale-on-probationary-employment
+Tuhairwe, J., Mukisa, J. K., & Al-Absi, A. A. (2024). Web-based employee promotion prediction using Random Forest classifier. In P. K. Pattnaik, M. Sain, & A. A. Al-Absi (Eds.), Proceedings of 3rd International Conference on Smart Computing and Cyber Security (SMARTCYBER 2023). Lecture Notes in Networks and Systems, vol. 914 (pp. 459-475). Springer, Singapore. https://doi.org/10.1007/978-981-97-0573-3_37   
+ 
+Appendices
+Appendix A. Letter For Cooperation
+
+
+
+Appendix B. Transcript of Interview
+Interview Title: Performa Interview
+Interview Date: June 3, 2026
+Interviewee: Mrs. Ma. Cecile F. Robelo, Chief Instructor, Kumon Angono Center
+Interviewer: Jarl Valiant F. Robelo, Gerald Tegio
+Interview Location: Google Meet
+Recording Method: Voice Recording [Duration: 10:33]
+
+
+Signed by:
+
+
+
+
+Mrs. Ma. Cecile F. Robelo
+Chief Instructor
+Kumon Angono Center
+Email: cfrobelo@yahoo.com
+
+
+Interviewee’s ID:
+
+
+
+
+
+
+Appendix C. Endorsement Letter
+
