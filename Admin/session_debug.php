@@ -8,6 +8,7 @@ require_login();
 // headers (which carry cookies) — admin-only. Never relax this to a wider
 // role: it exists for troubleshooting, not for regular use.
 require_role('admin');
+require_password_reset('settings.php');
 
 header('Content-Type: text/plain; charset=utf-8');
 echo "PHP Session:\n";

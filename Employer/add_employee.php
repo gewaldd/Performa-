@@ -101,6 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'department' => $department,
                         'status' => 'Active',
                         'createdAt' => date('c'),
+                        // Single-org pilot ownership: the creating employer
+                        // owns this account. Enforced at the dangerous points
+                        // (employee_view, assign_course, rate_employee);
+                        // docs without these fields are treated as legacy
+                        // global so pre-existing rows keep working.
+                        'createdBy' => $_SESSION['uid'] ?? null,
+                        'managedByOrg' => $_SESSION['uid'] ?? null,
                         // Server-generated temporary password: force the new
                         // user to choose their own on first login.
                         'mustChangePassword' => true,

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_login();
 require_role('supervisor');
+require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
 

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../audit_log.php';
 
 require_login();
 require_role('admin');
+require_password_reset('settings.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   header('Content-Type: application/json; charset=utf-8');

@@ -103,6 +103,11 @@ if (
                 $uid
             ) ?? [];
 
+        require_employer_owns_user(
+            $existing + ['uid' => $uid],
+            'dashboard:assign_course'
+        );
+
         $existing['assignedTraining'] = $course;
         $existing['assignedTrainingAt'] = date('c');
 

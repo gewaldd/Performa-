@@ -32,6 +32,7 @@ $action = $_POST['action'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_profile') {
   $existing = firestore_get_document('Users', $uid) ?? [];
+  require_employer_owns_user($existing + ['uid' => $uid], 'employee_view:save_profile');
   $existing['name'] = trim($_POST['name'] ?? ($existing['name'] ?? ''));
   $existing['email'] = trim($_POST['email'] ?? ($existing['email'] ?? ''));
   $existing['department'] = trim($_POST['department'] ?? ($existing['department'] ?? ''));
@@ -50,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_profile') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'toggle_status') {
   $existing = firestore_get_document('Users', $uid) ?? [];
+  require_employer_owns_user($existing + ['uid' => $uid], 'employee_view:toggle_status');
   $currentlyDisabled = ($existing['status'] ?? 'Active') === 'Disabled';
   try {
     identitytoolkit_disable_user($uid, !$currentlyDisabled);
@@ -65,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'toggle_status') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_regularization') {
   $existing = firestore_get_document('Users', $uid) ?? [];
+  require_employer_owns_user($existing + ['uid' => $uid], 'employee_view:save_regularization');
   $existing['regularizationRecommendation'] = $_POST['recommendation'] ?? '';
   $existing['regularizationNotes'] = trim($_POST['notes'] ?? '');
   $existing['regularizationDecidedAt'] = date('c');
@@ -86,6 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_feedback') {
     $messageTone = 'error';
   } else {
     try {
+      $target = firestore_get_document('Users', $uid) ?? [];
+      require_employer_owns_user($target + ['uid' => $uid], 'employee_view:save_feedback');
       firestore_write_document('Feedback', $uid . '_' . time(), [
         'employeeUid' => $uid,
         'sender' => $_SESSION['name'] ?? 'Employer',
@@ -108,6 +113,7 @@ if (!$profile) {
   header('Location: employees.php');
   exit;
 }
+require_employer_owns_user($profile + ['uid' => $uid], 'employee_view:read');
 
 $roleKey = normalize_role_key($profile['role'] ?? null);
 $isProbationary = $roleKey === 'probationary';

@@ -39,7 +39,10 @@ function get_cached_collection($collectionName, $ttlSeconds = 600)
   // Ratings, Reports). The disk file is the cross-request cache; this avoids
   // decoding the same large JSON file repeatedly in one request.
   static $memo = [];
-  $memoKey = $collectionName . '|' . $ttlSeconds;
+  // Per-tenant salt: on shared hosting two concurrent employers must never
+  // swap directories via a shared cache file.
+  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
+  $memoKey = $tenant . '|' . $collectionName . '|' . $ttlSeconds;
   if (isset($memo[$memoKey])) {
     return $memo[$memoKey];
   }
@@ -47,7 +50,7 @@ function get_cached_collection($collectionName, $ttlSeconds = 600)
   $cacheFile =
     sys_get_temp_dir() .
     '/performa_' .
-    md5($collectionName) .
+    md5($tenant . '|' . $collectionName) .
     '.json';
 
   if (
@@ -101,10 +104,11 @@ function get_cached_collection($collectionName, $ttlSeconds = 600)
 
 function clear_collection_cache($collectionName)
 {
+  $tenant = (string) ($_SESSION['uid'] ?? 'guest');
   $cacheFile =
     sys_get_temp_dir() .
     '/performa_' .
-    md5($collectionName) .
+    md5($tenant . '|' . $collectionName) .
     '.json';
 
   if (file_exists($cacheFile)) {

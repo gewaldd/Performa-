@@ -6,6 +6,7 @@ require_once __DIR__ . '/../audit_log.php';
 
 require_login();
 require_role('admin');
+require_password_reset('settings.php');
 
 $message = '';
 $message_type = '';
@@ -38,6 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             if ($role === 'probationary_employee') {
                 $userData['industry'] = $industry;
+            }
+            if ($role === 'employer') {
+                // An employer account is the root of its own org: it owns
+                // itself so the employer-side ownership checks pass for
+                // self-writes, while admin-created staff stay global
+                // (legacy) for the single-org pilot.
+                $userData['managedByOrg'] = $uid;
             }
             firestore_write_document('Users', $uid, $userData);
             record_audit_event(

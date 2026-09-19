@@ -9,6 +9,8 @@ require_once __DIR__ . '/employer_layout.php';
 
 require_login();
 require_role('employer');
+// Ownership helpers + forced-reset gate (same as every other Employer page).
+require_once __DIR__ . '/includes/auth.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -29,6 +31,8 @@ try {
         'uid' => $doc['uid'] ?? '',
         'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
         'industry' => $doc['industry'] ?? 'retail',
+        'createdBy' => $doc['createdBy'] ?? null,
+        'managedByOrg' => $doc['managedByOrg'] ?? null,
       ];
     }
   }
@@ -53,6 +57,7 @@ $template = $selectedEmployee ? kpi_template_for($selectedEmployee['industry']) 
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
+  require_employer_owns_user($selectedEmployee, 'rate_employee:save_rating');
   $weekOf = date('Y-\WW');
   $scores = [];
   foreach ($template['kpis'] as $kpi) {
@@ -61,36 +66,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   }
   $docId = $selectedUid . '_' . date('Y-m-d');
   try {
-    firestore_write_document('Ratings', $docId, [
-      'employeeUid' => $selectedUid,
-      'employeeName' => $selectedEmployee['name'],
-      'industry' => $selectedEmployee['industry'],
-      'weekOf' => $weekOf,
-      'ratedAt' => date('c'),
-      'ratedBy' => $_SESSION['uid'],
-      'scores' => $scores,
-    ]);
-    firestore_write_document('Acknowledgements', $selectedUid . '_' . date('Y-m'), [
-      'employeeUid' => $selectedUid,
-      'month' => date('F Y'),
-      'status' => 'Pending',
-      'timestamp' => null,
-      'createdAt' => date('c'),
-    ]);
-    firestore_write_document('notifications', $selectedUid . '_' . date('Y-m') . '_summary', [
-      'employeeUid' => $selectedUid,
-      'title' => 'Performance summary ready',
-      'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
-      'type' => 'info',
-      'createdAt' => date('c'),
-    ]);
-    firestore_write_document('Feedback', $selectedUid . '_' . date('Y-m') . '_employer', [
-      'employeeUid' => $selectedUid,
-      'sender' => $_SESSION['name'] ?? 'Employer',
-      'role' => 'Employer',
-      'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
-      'status' => 'Received',
-      'createdAt' => date('c'),
+    // Single atomic commit: either all four docs land or none does, in one
+    // round-trip (also a lag win over 4 sequential HTTPS calls). A failure
+    // throws before anything is applied, so no partial state is possible.
+    firestore_batch_write([
+      [
+        'collection' => 'Ratings',
+        'documentId' => $docId,
+        'data' => [
+          'employeeUid' => $selectedUid,
+          'employeeName' => $selectedEmployee['name'],
+          'industry' => $selectedEmployee['industry'],
+          'weekOf' => $weekOf,
+          'ratedAt' => date('c'),
+          'ratedBy' => $_SESSION['uid'],
+          'scores' => $scores,
+        ],
+      ],
+      [
+        'collection' => 'Acknowledgements',
+        'documentId' => $selectedUid . '_' . date('Y-m'),
+        'data' => [
+          'employeeUid' => $selectedUid,
+          'month' => date('F Y'),
+          'status' => 'Pending',
+          'timestamp' => null,
+          'createdAt' => date('c'),
+        ],
+      ],
+      [
+        'collection' => 'notifications',
+        'documentId' => $selectedUid . '_' . date('Y-m') . '_summary',
+        'data' => [
+          'employeeUid' => $selectedUid,
+          'title' => 'Performance summary ready',
+          'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
+          'type' => 'info',
+          'createdAt' => date('c'),
+        ],
+      ],
+      [
+        'collection' => 'Feedback',
+        'documentId' => $selectedUid . '_' . date('Y-m') . '_employer',
+        'data' => [
+          'employeeUid' => $selectedUid,
+          'sender' => $_SESSION['name'] ?? 'Employer',
+          'role' => 'Employer',
+          'message' => 'Your ' . date('F Y') . ' KPI rating has been submitted. Review your performance summary and acknowledgement.',
+          'status' => 'Received',
+          'createdAt' => date('c'),
+        ],
+      ],
     ]);
     $message = 'Rating saved for ' . htmlspecialchars($selectedEmployee['name']) . '.';
   } catch (\Throwable $e) {

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_login();
 require_role('supervisor');
+require_password_reset('settings.php');
 
 $supervisorUid = $_SESSION['uid'];
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
@@ -38,6 +39,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             identitytoolkit_update_password($supervisorUid, $newPassword);
+            // Password is now user-chosen: lift any forced-reset flag both
+            // in Firestore (source of truth, read at next login) and in the
+            // live session (so the reset gate releases immediately).
+            try {
+                $self = firestore_get_document('Users', $supervisorUid) ?? [];
+                if (!empty($self['mustChangePassword'])) {
+                    $self['mustChangePassword'] = false;
+                    firestore_write_document('Users', $supervisorUid, $self);
+                }
+            } catch (\Throwable $e) {
+                error_log('Supervisor settings mustChangePassword clear failed: ' . $e->getMessage());
+            }
+            unset($_SESSION['must_change_password']);
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+            $_SESSION['login_at'] = time();
             $message = 'Password updated successfully.';
         } catch (\Throwable $e) {
             $message = 'Failed to update password: ' . $e->getMessage();

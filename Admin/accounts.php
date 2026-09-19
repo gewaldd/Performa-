@@ -3,6 +3,7 @@ require_once __DIR__ . '/../auth.php';
 
 require_login();
 require_role('admin');
+require_password_reset('settings.php');
 
 $navItems = [
   ['label' => 'Dashboard', 'href' => 'admin_dashboard.php', 'active' => false],

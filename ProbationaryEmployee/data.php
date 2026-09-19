@@ -4,6 +4,7 @@ require_once __DIR__ . '/../firebase_init.php';
 
 require_login();
 require_role('probationary_employee');
+require_password_reset('probationary_employee_profile.php');
 
 function probationary_uid(): string
 {

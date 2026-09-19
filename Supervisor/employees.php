@@ -4,6 +4,7 @@ require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
 require_login();
 require_role('supervisor');
+require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
 

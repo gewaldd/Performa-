@@ -342,6 +342,57 @@ function firestore_write_document(string $collection, string $documentId, array 
     }
 }
 
+// Pure payload builder for firestore_batch_write(), kept separate so the
+// single-round-trip shape (one commit, N writes) is unit-testable without
+// touching the network.
+function firestore_batch_commit_payload(array $operations, string $projectId): array
+{
+    $writes = [];
+    foreach ($operations as $op) {
+        $fields = [];
+        foreach (($op['data'] ?? []) as $k => $v) {
+            $fields[$k] = php_to_firestore_fields($v);
+        }
+        $writes[] = [
+            'update' => [
+                'name' => "projects/{$projectId}/databases/(default)/documents/{$op['collection']}/{$op['documentId']}",
+                'fields' => empty($fields) ? new stdClass() : $fields,
+            ],
+        ];
+    }
+    return ['writes' => $writes];
+}
+
+// Atomic multi-document write: all operations commit in a SINGLE HTTPS
+// round-trip. Either every document lands or none does — a mid-loop failure
+// can never leave partial state (unlike sequential writes). Throws on any
+// non-2xx response without applying anything.
+function firestore_batch_write(array $operations): void
+{
+    if (!$operations) {
+        return;
+    }
+    $svc = load_service_account();
+    $projectId = getenv('FIREBASE_PROJECT_ID') ?: ($svc['project_id'] ?? null);
+    if (!$projectId)
+        throw new RuntimeException('FIREBASE_PROJECT_ID not set');
+    $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents:commit";
+
+    $token = get_service_account_access_token();
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(firestore_batch_commit_payload($operations, $projectId)));
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($code < 200 || $code >= 300) {
+        throw new RuntimeException('Firestore batch commit failed: ' . $resp);
+    }
+}
+
 function firestore_get_document(string $collection, string $documentId): ?array
 {
     $svc = load_service_account();

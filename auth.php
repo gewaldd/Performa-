@@ -140,6 +140,32 @@ function require_role(string $role): void
     }
 }
 
+// Forced password reset gate, shared by every role module. Accounts created
+// with a server-generated temporary password carry must_change_password
+// until they set their own; such users may only visit their settings page
+// (where the change happens) and bounce back there from everything else.
+// Pure target computation lives in password_reset_redirect_target() so the
+// matrix is unit-testable without triggering header()/exit.
+function password_reset_redirect_target(?string $scriptName, string $settingsFile): ?string
+{
+    if (empty($_SESSION['must_change_password'])) {
+        return null;
+    }
+    if (basename((string) $scriptName) === basename($settingsFile)) {
+        return null;
+    }
+    return $settingsFile . '?force_reset=1';
+}
+
+function require_password_reset(string $settingsFile): void
+{
+    $target = password_reset_redirect_target((string) ($_SERVER['SCRIPT_NAME'] ?? ''), $settingsFile);
+    if ($target !== null) {
+        header('Location: ' . $target);
+        exit;
+    }
+}
+
 function logout(): void
 {
     $_SESSION = [];
