@@ -24,22 +24,35 @@ $evaluationDocuments = probationary_owned_documents('evaluations');
 $ratingDocuments = probationary_owned_documents('Ratings');
 $latestEvaluation = $evaluationDocuments[0] ?? $ratingDocuments[0] ?? [];
 $latestScore = probationary_evaluation_score($latestEvaluation);
+
+// Fetch Manager-Approved AI Recommendations
+$approvedAiRecs = null;
+foreach ($ratingDocuments as $ratingDoc) {
+    if (
+        isset($ratingDoc['aiRecommendations']) &&
+        is_array($ratingDoc['aiRecommendations']) &&
+        ($ratingDoc['aiRecommendations']['status'] ?? '') === 'approved'
+    ) {
+        $approvedAiRecs = $ratingDoc['aiRecommendations'];
+        break; // Get the most recent approved recommendation
+    }
+}
+
 $dashboardSummary = [
     ['label' => 'Performance Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
     ['label' => 'Goals On Track', 'value' => (string) count(array_filter(probationary_owned_documents('goals'), static fn(array $goal): bool => strtolower((string) ($goal['status'] ?? '')) === 'on track')), 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
     ['label' => 'Review Date', 'value' => probationary_date($user['reviewDate'] ?? null, 'Not scheduled'), 'badge' => 'Upcoming', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
 ];
-$dashboardInsightTitle = 'Profile Snapshot';
-$dashboardInsightText = $latestEvaluation['notes'] ?? 'No performance insight has been recorded yet.';
-$dashboardRecommendation = $user['profileRecommendation'] ?? 'Keep your contact and role information current.';
+
+$dashboardInsightTitle = 'Performance Insight';
+$dashboardInsightText = $approvedAiRecs['summary'] ?? ($latestEvaluation['notes'] ?? 'No performance insight has been recorded yet.');
+$dashboardRecommendation = $approvedAiRecs ? 'Review your approved targeted training plan below.' : ($user['profileRecommendation'] ?? 'Keep your contact and role information current.');
+
 $acknowledgements = probationary_owned_documents('Acknowledgements');
 $acknowledgementIds = array_fill_keys(array_map(static fn(array $ack): string => (string) ($ack['uid'] ?? ''), $acknowledgements), true);
-// Hoisted (L1b): the old code re-downloaded the whole Feedback collection
-// inside the per-rating loop below — build the existing-ID set once here.
+
 $existingFeedbackIds = array_fill_keys(array_map(static fn(array $feedback): string => (string) ($feedback['uid'] ?? ''), probationary_owned_documents('Feedback')), true);
-// Batched backfills (L1c): collect ops per category, commit once each.
-// Local arrays merge only on commit success, so end state matches the old
-// sequential behavior on success and is cleaner on failure (no partials).
+
 $ackBackfillOps = [];
 $ackBackfillLocal = [];
 $feedbackBackfillOps = [];
@@ -100,6 +113,7 @@ if ($feedbackBackfillOps) {
     } catch (Throwable $e) {
     }
 }
+
 $summaryMetrics = [
     ['label' => 'Current KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
     ['label' => 'Acknowledgements', 'value' => '0/' . count($acknowledgements), 'badge' => 'Pending', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
@@ -126,7 +140,7 @@ foreach (probationary_owned_documents('notifications') as $notification) {
     $notifications[] = ['title' => $notification['title'] ?? 'Notification', 'detail' => $notification['detail'] ?? $notification['message'] ?? '', 'date' => probationary_date($notification['createdAt'] ?? null), 'type' => $notification['type'] ?? 'info'];
 }
 $notificationIds = array_fill_keys(array_map(static fn(array $notification): string => (string) ($notification['uid'] ?? ''), probationary_owned_documents('notifications')), true);
-// Batched backfill (L1c): one commit for all missing summary notifications.
+
 $notificationBackfillOps = [];
 $notificationBackfillLocal = [];
 foreach ($ratingDocuments as $rating) {
@@ -176,9 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])
                 ? $requestedAcknowledgementId
                 : (string) ($acknowledgement['uid'] ?? ($currentUserUid . '_' . date('Y-m', $monthTimestamp)));
             try {
-                // Single write; the exception path reports failure (L1d: the
-                // old immediate re-GET verify cost a round trip per action
-                // for what exceptions already prove).
                 $acknowledgementData = ['employeeUid' => $currentUserUid, 'month' => $requestedMonth, 'status' => 'Acknowledged', 'timestamp' => $acknowledgedAt];
                 firestore_write_document('Acknowledgements', $acknowledgementId, $acknowledgementData);
                 $acknowledgement['status'] = 'Acknowledged';
@@ -324,6 +335,35 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                             <p>Your KPI scores and trend data are read-only for self-monitoring.</p>
                         </div>
                     </div>
+
+                    <?php if ($approvedAiRecs && !empty($approvedAiRecs['training_recommendations'])): ?>
+                        <!-- Manager-Approved Training Interventions Section -->
+                        <div class="summary-card" style="border-left: 4px solid #10b981; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h3 style="margin: 0; color: #065f46;">Approved Training & Development Plan</h3>
+                                <span class="metric-badge positive">Manager Approved</span>
+                            </div>
+                            <p style="font-size: 0.95rem; color: #374151; margin-bottom: 12px;">
+                                <?php echo htmlspecialchars($approvedAiRecs['summary'] ?? ''); ?>
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <?php foreach ($approvedAiRecs['training_recommendations'] as $rec): ?>
+                                    <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                                        <div style="font-weight: 600; text-transform: capitalize; color: #111827;">
+                                            <?php echo htmlspecialchars(str_replace('_', ' ', $rec['competency_area'] ?? '')); ?>
+                                            <span style="font-weight: normal; color: #6b7280; font-size: 0.85rem;">
+                                                (<?php echo htmlspecialchars($rec['training_type'] ?? 'Coaching'); ?> · Timeline: <?php echo htmlspecialchars($rec['timeline'] ?? '2-4 weeks'); ?>)
+                                            </span>
+                                        </div>
+                                        <div style="font-size: 0.9rem; color: #374151; margin-top: 4px;">
+                                            <?php echo htmlspecialchars($rec['description'] ?? ''); ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="summary-card">
                         <h3>Monthly trend</h3>

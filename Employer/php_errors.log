@@ -104,3 +104,92 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in D:\Downloads\odysseus-dev\Performa-\Employer\employer_dashboard.php on line 4
+[19-Sep-2026 16:27:33 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=eJvKzM5XdKRxt2a2gP39C6K98x92 ctx=rate_employee:save_rating
+[19-Sep-2026 16:28:46 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=Bk07tesFaFWaECDWc42B8fbQZf13 ctx=employee_view:read
+[19-Sep-2026 16:28:49 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=2ikiLw2QF5N3To0M4j0tgGfft7x1 ctx=employee_view:read
+[19-Sep-2026 16:28:51 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=2orGM9l9CcPObIehNnXFNYbc4Mk2 ctx=employee_view:read
+[19-Sep-2026 17:07:22 UTC] Python Execution Error: Traceback (most recent call last):
+  File "D:\Downloads\odysseus-dev\Performa-\ml\gemini_recommender.py", line 11, in <module>
+    from google import genai
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\__init__.py", line 23, in <module>
+    from .client import Client
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\client.py", line 18, in <module>
+    import asyncio
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\__init__.py", line 45, in <module>
+    from .windows_events import *
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\windows_events.py", line 8, in <module>
+    import _overlapped
+OSError: [WinError 10106] The requested service provider could not be loaded or initialized
+
+[19-Sep-2026 17:11:16 UTC] Python Execution Error: Traceback (most recent call last):
+  File "D:\Downloads\odysseus-dev\Performa-\ml\gemini_recommender.py", line 11, in <module>
+    from google import genai
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\__init__.py", line 23, in <module>
+    from .client import Client
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\client.py", line 18, in <module>
+    import asyncio
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\__init__.py", line 45, in <module>
+    from .windows_events import *
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\windows_events.py", line 8, in <module>
+    import _overlapped
+OSError: [WinError 10106] The requested service provider could not be loaded or initialized
+
+[19-Sep-2026 17:11:45 UTC] Python Execution Error: Traceback (most recent call last):
+  File "D:\Downloads\odysseus-dev\Performa-\ml\gemini_recommender.py", line 11, in <module>
+    from google import genai
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\__init__.py", line 23, in <module>
+    from .client import Client
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\genai\client.py", line 18, in <module>
+    import asyncio
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\__init__.py", line 45, in <module>
+    from .windows_events import *
+  File "C:\Users\andrew\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\windows_events.py", line 8, in <module>
+    import _overlapped
+OSError: [WinError 10106] The requested service provider could not be loaded or initialized
+
+[19-Sep-2026 17:14:06 UTC] Python Execution Log/Error: 'python' is not recognized as an internal or external command,
+operable program or batch file.
+
+[19-Sep-2026 17:14:18 UTC] Python Execution Log/Error: 'python' is not recognized as an internal or external command,
+operable program or batch file.
+
+[19-Sep-2026 17:16:28 UTC] Python STDOUT: 
+[19-Sep-2026 17:16:28 UTC] Python STDERR: 'python' is not recognized as an internal or external command,
+operable program or batch file.
+
+[19-Sep-2026 17:16:32 UTC] Python STDOUT: 
+[19-Sep-2026 17:16:32 UTC] Python STDERR: 'python' is not recognized as an internal or external command,
+operable program or batch file.
+
+[19-Sep-2026 17:46:46 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=eJvKzM5XdKRxt2a2gP39C6K98x92 ctx=rate_employee:save_rating
+[19-Sep-2026 17:50:26 UTC] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in D:\Downloads\odysseus-dev\Performa-\Employer\rate_employee.php on line 80
+Stack trace:
+#0 D:\Downloads\odysseus-dev\Performa-\Employer\rate_employee.php(80): stream_get_contents(Resource id #17)
+#1 D:\Downloads\odysseus-dev\Performa-\Employer\rate_employee.php(172): run_ml_recommendation('G1VjQ1iUkgcD4cA...', '2026-09', Array, 'Probationary Em...', 'food_service')
+#2 {main}
+[19-Sep-2026 17:57:26 UTC] Python Execution Warning/Error: [WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+Python install manager was successfully updated to 26.3.
+
+Additional shebang configuration is now available. Please see
+https://docs.python.org/using/windows#shebang-lines for more information.
+
+********************************************************************************
+The signature for https://www.python.org/ftp/python/index-windows.json was successfully verified.
+Installing Python 3.14.7.
+Installing Python 3.14.7.
+Preserving Lib\site-packages during update.
+Restored site-packages
+To see all available commands, run 'py help'
+********************************************************************************
+[WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+Traceback (most recent call last):
+  File "D:\Downloads\odysseus-dev\Performa-\ml\gemini_recommender.py", line 11, in <module>
+    from google import genai
+ModuleNotFoundError: No module named 'google'
+
+[19-Sep-2026 17:58:10 UTC] Python Execution Warning/Error: [WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+Traceback (most recent call last):
+  File "D:\Downloads\odysseus-dev\Performa-\ml\gemini_recommender.py", line 11, in <module>
+    from google import genai
+ModuleNotFoundError: No module named 'google'
+

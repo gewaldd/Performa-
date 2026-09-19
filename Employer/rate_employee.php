@@ -22,6 +22,99 @@ if (empty($_SESSION['uid'])) {
   exit;
 }
 
+/**
+ * Invokes the Python ML Pipeline via proc_open & STDIN
+ */
+function run_ml_recommendation(string $empUid, string $evalMonth, array $scores, string $jobRole, string $industry): array {
+  $scriptPath = realpath(__DIR__ . "/../ml/gemini_recommender.py");
+
+  if (!$scriptPath || !file_exists($scriptPath)) {
+    return [
+      "status" => "error",
+      "message" => "ML script not found at expected location."
+    ];
+  }
+
+  $payload = [
+    "employee_uid" => $empUid,
+    "evaluation_month" => $evalMonth,
+    "job_role" => $jobRole,
+    "industry" => $industry,
+    "category_scores" => $scores
+  ];
+
+  $descriptors = [
+    0 => ["pipe", "r"], // STDIN
+    1 => ["pipe", "w"], // STDOUT
+    2 => ["pipe", "w"]  // STDERR
+  ];
+
+  // Preserve core Windows system environment variables so Winsock initializes properly under Apache
+  $systemEnv = array_filter($_ENV);
+  if (isset($_SERVER)) {
+    $systemEnv = array_merge($_SERVER, $systemEnv);
+  }
+
+  $env = array_merge($systemEnv, [
+    'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+    'SystemDrive' => getenv('SystemDrive') ?: 'C:',
+    'windir' => getenv('windir') ?: 'C:\\Windows',
+    'PATH' => getenv('PATH') ?: 'C:\\Windows\\system32;C:\\Windows',
+    'GEMINI_API_KEY' => getenv('GEMINI_API_KEY') ?: '',
+    'PYTHONIOENCODING' => 'utf-8'
+  ]);
+
+  // Try multiple python paths for robustness across local and service environments
+  $candidatePythonExecs = [
+    "python",
+    "C:\\Python314\\python.exe",
+    "C:\\Users\\andrew\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+  ];
+
+  $process = false;
+  $pipes = [];
+
+  foreach ($candidatePythonExecs as $pythonExec) {
+    $cmd = "\"" . $pythonExec . "\" \"" . $scriptPath . "\" --input-stdin";
+    $process = proc_open($cmd, $descriptors, $pipes, dirname($scriptPath), $env);
+    if (is_resource($process)) {
+      break;
+    }
+  }
+
+  if (is_resource($process)) {
+    fwrite($pipes[0], json_encode($payload));
+    fclose($pipes[0]);
+
+    $output = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
+
+    proc_close($process);
+
+    if (!empty($stderr)) {
+      error_log("Python Execution Warning/Error: " . $stderr);
+    }
+
+    $cleanOutput = preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', trim($output));
+    $decoded = json_decode($cleanOutput, true);
+
+    if (json_last_error() === JSON_ERROR_NONE && !empty($decoded) && isset($decoded['summary'])) {
+      return [
+        "status" => "success",
+        "data" => $decoded
+      ];
+    }
+  }
+
+  return [
+    "status" => "error",
+    "message" => "Failed to execute Python ML process."
+  ];
+}
+
 // Load probationary employees for the picker
 $employees = [];
 try {
@@ -32,6 +125,7 @@ try {
         'uid' => $doc['uid'] ?? '',
         'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
         'industry' => $doc['industry'] ?? 'retail',
+        'jobRole' => $doc['jobRole'] ?? 'Probationary Employee',
         'createdBy' => $doc['createdBy'] ?? null,
         'managedByOrg' => $doc['managedByOrg'] ?? null,
       ];
@@ -58,8 +152,7 @@ $template = $selectedEmployee ? kpi_template_for($selectedEmployee['industry']) 
 
 /*
  * Read-only history reference (UX #3): the selected employee's latest
- * rating on file, shown per KPI under each slider. Single disk-cached
- * Ratings load; never submitted, never touches slider defaults (3.0).
+ * rating on file, shown per KPI under each slider.
  */
 $prevScores = [];
 
@@ -79,16 +172,39 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   require_employer_owns_user($selectedEmployee, 'rate_employee:save_rating');
   $weekOf = date('Y-\WW');
+  $evalMonth = date('Y-m');
   $scores = [];
   foreach ($template['kpis'] as $kpi) {
     $raw = $_POST['score_' . $kpi['key']] ?? null;
     $scores[$kpi['key']] = $raw !== null ? (float) $raw : 0.0;
   }
+
+  // Execute ML Pipeline
+  $jobRole = $selectedEmployee['jobRole'] ?? 'Probationary Employee';
+  $industry = $selectedEmployee['industry'] ?? 'retail';
+  $mlResponse = run_ml_recommendation($selectedUid, $evalMonth, $scores, $jobRole, $industry);
+
+  // Fallback payload structure if Python script execution fails
+  $aiRecommendationsData = [
+    'summary' => 'Performance evaluation saved. AI recommendation service unavailable at this time.',
+    'training_recommendations' => [],
+    'generated_by' => 'fallback',
+    'status' => 'pending_approval'
+  ];
+
+  if ($mlResponse['status'] === 'success' && isset($mlResponse['data']) && is_array($mlResponse['data'])) {
+    $aiData = $mlResponse['data'];
+    $aiRecommendationsData = [
+      'summary' => $aiData['summary'] ?? 'Evaluation recorded successfully.',
+      'training_recommendations' => $aiData['training_recommendations'] ?? [],
+      'generated_by' => $aiData['generated_by'] ?? 'gemini_api',
+      'status' => 'pending_approval' // Human-in-the-Loop constraint
+    ];
+  }
+
   $docId = $selectedUid . '_' . date('Y-m-d');
   try {
-    // Single atomic commit: either all four docs land or none does, in one
-    // round-trip (also a lag win over 4 sequential HTTPS calls). A failure
-    // throws before anything is applied, so no partial state is possible.
+    // Single atomic commit: Rating + ML recommendations + Notifications
     firestore_batch_write([
       [
         'collection' => 'Ratings',
@@ -101,6 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           'ratedAt' => date('c'),
           'ratedBy' => $_SESSION['uid'],
           'scores' => $scores,
+          'aiRecommendations' => $aiRecommendationsData
         ],
       ],
       [
@@ -138,7 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         ],
       ],
     ]);
-    $message = 'Rating saved for ' . htmlspecialchars($selectedEmployee['name']) . '.';
+    
+    if ($aiRecommendationsData && ($aiRecommendationsData['status'] ?? '') === 'pending_approval') {
+      $message = 'Rating & AI Recommendations saved for ' . htmlspecialchars($selectedEmployee['name']) . ' (Pending Manager Approval).';
+    } else {
+      $message = 'Rating saved for ' . htmlspecialchars($selectedEmployee['name']) . '.';
+    }
   } catch (\Throwable $e) {
     $message = 'Failed to save rating: ' . $e->getMessage();
   }
@@ -232,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             </div>
             <div class="form-actions">
               <a class="ghost-button" href="kpis.php">Cancel</a>
-              <button class="btn-primary" type="submit">Save Rating</button>
+              <button class="btn-primary" type="submit">Save Rating & Generate AI Plan</button>
             </div>
           </form>
         <?php endif; ?>
@@ -241,8 +363,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   </div>
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
   <script>
-    // Targets for the live average preview (presentation only; the server
-    // re-derives everything from the template on POST).
     window.__pfRateTargets = <?php
       $rateTargets = [];
       foreach ($template['kpis'] as $rateKpi) {
@@ -255,7 +375,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     ?>;
   </script>
   <script>
-    // Slider <-> number sync (presentation only; submitted name stays score_*).
     document.querySelectorAll('[data-rate-slider]').forEach(function (slider) {
       var target = document.getElementById(slider.getAttribute('data-rate-slider'));
       if (!target) return;
@@ -266,9 +385,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       });
     });
 
-    // Live average preview + below-target confirm. Ratings write four docs
-    // atomically with no undo, so a stray 1.0 deserves a second glance.
-    // Reuses the shared .modal-backdrop/.confirm-dialog chrome from script.js.
     (function () {
       var form = document.getElementById('rateForm');
       var preview = document.getElementById('ratePreview');
@@ -301,8 +417,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       function paint() {
         var s = summarize();
         if (s.avg === null) { preview.textContent = ''; return; }
-        // Non-breaking spans keep each figure group on one line at narrow
-        // widths; visible text and aria-live announcement are unchanged.
         preview.innerHTML = '';
         preview.append('Average ');
         var avgSpan = document.createElement('span');
