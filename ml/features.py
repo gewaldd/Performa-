@@ -7,13 +7,22 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from config import (
-    COMPETENCY_CATEGORIES,
-    KPI_COMPETENCY_MAPPING,
-    MAX_SCORE,
-    MIN_RATINGS_FOR_AGGREGATION,
-    MIN_SCORE,
-)
+try:
+    from config import (
+        COMPETENCY_CATEGORIES,
+        KPI_COMPETENCY_MAPPING,
+        MAX_SCORE,
+        MIN_RATINGS_FOR_AGGREGATION,
+        MIN_SCORE,
+    )
+except ImportError:  # allow `python ml/*.py` from repo root
+    from ml.config import (
+        COMPETENCY_CATEGORIES,
+        KPI_COMPETENCY_MAPPING,
+        MAX_SCORE,
+        MIN_RATINGS_FOR_AGGREGATION,
+        MIN_SCORE,
+    )
 
 
 CompetencyScores = Dict[str, float]

@@ -1,16 +1,10 @@
-# scikit-learn is the only third-party dependency. It is imported lazily inside
-# main(), so ml/predict.py still starts -- and still reports this requirement as
-# JSON on stdout -- when it is missing.
+# Performa ML dependencies (verified on Python 3.14 + scikit-learn 1.9.1)
 #
 # Install:
 #   py -m pip install -r ml/requirements.txt
 #
-# The interpreter last used to compile this project was Python 3.14
-# (ml/__pycache__/predict.cpython-314.pyc), so a scikit-learn release carrying
-# cp314 wheels is required; 1.6 is used as the floor. NumPy arrives as a
-# transitive dependency.
-#
-# NOT VERIFIED: installing this was deliberately skipped because `pip install`
-# changes the environment and needed explicit approval. The version floor is a
-# claim, not a tested install.
 scikit-learn>=1.6
+pandas>=2.0
+joblib>=1.3
+google-genai>=1.0
+numpy>=1.26

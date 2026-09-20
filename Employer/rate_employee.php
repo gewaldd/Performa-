@@ -22,8 +22,12 @@ if (empty($_SESSION['uid'])) {
   exit;
 }
 
+require_once $rootDir . '/backend/ml_bridge.php';
+
 /**
- * Invokes the Python ML Pipeline via proc_open & STDIN
+ * Invokes the Python ML Pipeline via shared bridge (manuscript: RF -> Gemini).
+ * Preserves raw KPI-key scores passthrough; Python KEY_ALIASES normalizes to
+ * canonical competencies. Human-in-loop pending_approval handled by caller.
  */
 function run_ml_recommendation(string $empUid, string $evalMonth, array $scores, string $jobRole, string $industry): array {
   $scriptPath = realpath(__DIR__ . "/../ml/gemini_recommender.py");
@@ -35,6 +39,8 @@ function run_ml_recommendation(string $empUid, string $evalMonth, array $scores,
     ];
   }
 
+  // Raw KPI keys (e.g. food_safety, service_speed) pass through untouched;
+  // ml/predict.py KEY_ALIASES maps them to canonical competencies.
   $payload = [
     "employee_uid" => $empUid,
     "evaluation_month" => $evalMonth,
@@ -43,70 +49,41 @@ function run_ml_recommendation(string $empUid, string $evalMonth, array $scores,
     "category_scores" => $scores
   ];
 
-  $descriptors = [
-    0 => ["pipe", "r"], // STDIN
-    1 => ["pipe", "w"], // STDOUT
-    2 => ["pipe", "w"]  // STDERR
-  ];
+  $res = ml_invoke_stdin($scriptPath, $payload, ML_INVOKE_TIMEOUT_SECS);
 
-  // Preserve core Windows system environment variables so Winsock initializes properly under Apache
-  $systemEnv = array_filter($_ENV);
-  if (isset($_SERVER)) {
-    $systemEnv = array_merge($_SERVER, $systemEnv);
+  if (!$res['ok']) {
+    return [
+      "status" => "error",
+      "message" => "Failed to execute Python ML process."
+    ];
   }
 
-  $env = array_merge($systemEnv, [
-    'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
-    'SystemDrive' => getenv('SystemDrive') ?: 'C:',
-    'windir' => getenv('windir') ?: 'C:\\Windows',
-    'PATH' => getenv('PATH') ?: 'C:\\Windows\\system32;C:\\Windows',
-    'GEMINI_API_KEY' => getenv('GEMINI_API_KEY') ?: '',
-    'PYTHONIOENCODING' => 'utf-8'
-  ]);
-
-  // Try multiple python paths for robustness across local and service environments
-  $candidatePythonExecs = [
-    "python",
-    "C:\\Python314\\python.exe",
-    "C:\\Users\\andrew\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
-  ];
-
-  $process = false;
-  $pipes = [];
-
-  foreach ($candidatePythonExecs as $pythonExec) {
-    $cmd = "\"" . $pythonExec . "\" \"" . $scriptPath . "\" --input-stdin";
-    $process = proc_open($cmd, $descriptors, $pipes, dirname($scriptPath), $env);
-    if (is_resource($process)) {
-      break;
-    }
+  if ($res['timedOut']) {
+    error_log("ML recommendation timed out for employee {$empUid}");
+    return [
+      "status" => "error",
+      "message" => "Failed to execute Python ML process."
+    ];
   }
 
-  if (is_resource($process)) {
-    fwrite($pipes[0], json_encode($payload));
-    fclose($pipes[0]);
+  if (!empty($res['stderr'])) {
+    error_log("Python Execution Warning/Error: " . substr($res['stderr'], 0, 2000));
+  }
 
-    $output = stream_get_contents($pipes[1]);
-    fclose($pipes[1]);
+  $cleanOutput = preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', trim($res['output']));
+  $decoded = json_decode($cleanOutput, true);
 
-    $stderr = stream_get_contents($pipes[2]);
-    fclose($pipes[2]);
-
-    proc_close($process);
-
-    if (!empty($stderr)) {
-      error_log("Python Execution Warning/Error: " . $stderr);
-    }
-
-    $cleanOutput = preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', trim($output));
-    $decoded = json_decode($cleanOutput, true);
-
-    if (json_last_error() === JSON_ERROR_NONE && !empty($decoded) && isset($decoded['summary'])) {
-      return [
-        "status" => "success",
-        "data" => $decoded
-      ];
-    }
+  if (json_last_error() === JSON_ERROR_NONE && !empty($decoded) && isset($decoded['summary'])) {
+    ml_audit('ml_recommendation', $empUid, [
+      'month' => $evalMonth,
+      'industry' => $industry,
+      'model' => $decoded['model_version'] ?? 'unknown',
+      'exit' => $res['exit'],
+    ]);
+    return [
+      "status" => "success",
+      "data" => $decoded
+    ];
   }
 
   return [
@@ -198,8 +175,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       'summary' => $aiData['summary'] ?? 'Evaluation recorded successfully.',
       'training_recommendations' => $aiData['training_recommendations'] ?? [],
       'generated_by' => $aiData['generated_by'] ?? 'gemini_api',
-      'status' => 'pending_approval' // Human-in-the-Loop constraint
+      'status' => 'pending_approval', // Human-in-the-Loop constraint
+      // Audit trail (manuscript P.502-504): RF provenance + backend error cause.
+      // Existing readers use only the keys above; extra keys are additive.
+      'model_version' => $aiData['model_version'] ?? 'unknown',
+      'overall_prediction' => $aiData['overall_prediction']['classification'] ?? ($aiData['overall_prediction'] ?? 'unknown'),
+      'ml_error' => $aiData['error'] ?? null,
     ];
+    if (($aiRecommendationsData['generated_by'] ?? '') === 'fallback' && !empty($aiRecommendationsData['ml_error'])) {
+      error_log('ML fallback reason: ' . substr((string) $aiRecommendationsData['ml_error'], 0, 500));
+    }
   }
 
   $docId = $selectedUid . '_' . date('Y-m-d');
@@ -304,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         </div>
       </div>
 
-      <div class="settings-panel">
+      <div class="settings-panel pf-rate-panel">
         <?php if ($message): ?>
           <div class="alert alert-info" role="status"><?php echo $message; ?></div>
         <?php endif; ?>
@@ -337,14 +322,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             <div class="pf-rate-preview" id="ratePreview" aria-live="polite"></div>
             <div class="pf-rate-grid">
               <?php foreach ($template['kpis'] as $kpi): ?>
-                <div class="pf-rate-row">
-                  <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
-                    <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
-                    <span class="microcopy"> · target <?php echo number_format((float) $kpi['target'], 1); ?></span>
-                    <span class="microcopy"> · <?php echo isset($prevScores[$kpi['key']]) ? 'Last week: ' . number_format((float) $prevScores[$kpi['key']], 1) : 'No prior rating'; ?></span>
-                  </label>
+                <?php
+                $rateTarget = (float) $kpi['target'];
+                $rateDefault = 3.0;
+                $rateFill = max(0, min(100, (($rateDefault - 1) / 4) * 100));
+                $rateStatus = kpi_status_for_score($rateDefault, $rateTarget);
+                ?>
+                <div class="pf-rate-row" data-rate-row>
+                  <div class="pf-rate-head">
+                    <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
+                      <span class="pf-rate-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></span>
+                      <span class="pf-rate-meta microcopy">target <?php echo number_format($rateTarget, 1); ?> · <?php echo isset($prevScores[$kpi['key']]) ? 'Last week: ' . number_format((float) $prevScores[$kpi['key']], 1) : 'No prior rating'; ?></span>
+                    </label>
+                    <span class="status-pill pf-rate-pill <?php echo htmlspecialchars($rateStatus['statusClass'], ENT_QUOTES); ?>" data-rate-pill><?php echo htmlspecialchars($rateStatus['status'], ENT_QUOTES); ?></span>
+                  </div>
                   <div class="pf-rate-controls">
                     <input type="range" min="1" max="5" step="0.1" value="3.0" data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
+                      style="--pf-fill: <?php echo number_format($rateFill, 1); ?>%;"
                       aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> slider" />
                     <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" class="pf-rate-value" type="number" min="1"
                       max="5" step="0.1" value="3.0" required />
@@ -384,6 +378,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         if (!isNaN(v)) slider.value = Math.max(1, Math.min(5, v));
       });
     });
+
+    // Live card chrome: slider fill, per-card status pill, preview tone.
+    // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
+    // Existing sync/paint/submit logic above is untouched.
+    (function () {
+      var form = document.getElementById('rateForm');
+      var preview = document.getElementById('ratePreview');
+      if (!form) return;
+      var targets = window.__pfRateTargets || {};
+      function statusFor(v, t) {
+        if (isNaN(t)) return { text: '', cls: '' };
+        if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
+        if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
+        return { text: 'Below Target', cls: 'status-danger' };
+      }
+      function refresh() {
+        var below = 0, total = 0;
+        form.querySelectorAll('[data-rate-row]').forEach(function (row) {
+          var num = row.querySelector('input[name^="score_"]');
+          var slider = row.querySelector('[data-rate-slider]');
+          var pill = row.querySelector('[data-rate-pill]');
+          if (!num) return;
+          var v = parseFloat(num.value);
+          if (isNaN(v)) return;
+          v = Math.max(1, Math.min(5, v));
+          var key = num.name.replace(/^score_/, '');
+          var t = parseFloat(targets[key]);
+          total++;
+          if (!isNaN(t) && v < t) below++;
+          if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
+          if (pill && !isNaN(t)) {
+            var st = statusFor(v, t);
+            pill.textContent = st.text;
+            pill.classList.remove('status-good', 'status-warning', 'status-danger');
+            if (st.cls) pill.classList.add(st.cls);
+            row.setAttribute('data-status', st.cls || 'none');
+          }
+        });
+        if (preview) {
+          preview.removeAttribute('data-tone');
+          var dot = preview.querySelector(':scope > .pf-rate-dot');
+          if (total > 0) {
+            preview.setAttribute('data-tone', below <= 0 ? 'ok' : (below < total ? 'warn' : 'bad'));
+            if (!dot) {
+              dot = document.createElement('span');
+              dot.className = 'pf-rate-dot';
+              dot.setAttribute('aria-hidden', 'true');
+            }
+            preview.insertBefore(dot, preview.firstChild);
+          } else if (dot) {
+            dot.remove();
+          }
+        }
+      }
+      form.addEventListener('input', refresh);
+      refresh();
+    })();
 
     (function () {
       var form = document.getElementById('rateForm');

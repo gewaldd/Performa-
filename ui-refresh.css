@@ -903,14 +903,222 @@ select.perform-select.perform-select-native {
 .reports-page .reports-generation-form select.perform-select { min-height: 38px; }
 .reports-page .reports-generation-form > .btn-primary { min-height: 38px; }
 
-/* Rating sliders (rate_employee) */
-.pf-rate-grid { display: grid; gap: 14px; }
-.pf-rate-row { display: grid; gap: 8px; padding: 13px 14px; border: 1px solid var(--ui-border-soft); border-radius: 8px; background: var(--ui-soft); }
-.pf-rate-row label { font-weight: 600; font-size: 13px; }
-.pf-rate-controls { display: grid; grid-template-columns: 1fr 76px; gap: 12px; align-items: center; }
-.pf-rate-controls input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-blue); padding: 0; border: 0 !important; background: transparent !important; min-height: 0; }
+/* Rating sliders (Employer/rate_employee.php + Supervisor/ratings.php share these) */
+.pf-rate-grid { display: grid; gap: 16px; }
+.pf-rate-row {
+  display: grid; gap: 12px; padding: 16px 18px;
+  border: 1px solid var(--ui-border-soft); border-left-width: 3px;
+  border-radius: var(--ui-radius); background: #fff;
+  box-shadow: var(--ui-shadow);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.pf-rate-row:hover { border-color: #d7dee7; box-shadow: var(--ui-shadow-lg); }
+/* Severity accent reserved for genuine gaps only -- the card chrome stays calm otherwise. */
+.pf-rate-row[data-status="status-danger"] { border-left-color: var(--ui-red); }
+.pf-rate-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pf-rate-head label { font-weight: 600; font-size: 13px; min-width: 0; }
+.pf-rate-name { display: block; font-size: 14px; font-weight: 700; color: var(--ui-text); }
+.pf-rate-meta { display: block; margin-top: 2px; }
+.pf-rate-pill { flex: none; margin-top: 1px; }
+/* Quiet pills: neutral outline for Warning, soft tints for the rest. Text labels unchanged. */
+.pf-rate-pill.status-warning { background: transparent !important; border-color: #d7dee7 !important; color: var(--ui-muted) !important; }
+.pf-rate-pill.status-good { background: var(--ui-green-bg) !important; border-color: #bfe3cf !important; color: #0e5c38 !important; }
+.pf-rate-pill.status-danger { background: var(--ui-red-bg) !important; border-color: #f3c1bd !important; color: #8f1d17 !important; }
+.pf-rate-controls { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 12px; align-items: center; }
+/* Custom slider: filled progress. accent-color stays as fallback. */
+.pf-rate-controls input[type="range"] {
+  --pf-fill: 50%;
+  -webkit-appearance: none; appearance: none;
+  width: 100%; min-width: 0; height: 20px; margin: 0; padding: 0;
+  border: 0 !important; min-height: 0;
+  background: transparent !important;
+  accent-color: var(--ui-blue);
+  cursor: pointer;
+}
+.pf-rate-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(var(--ui-blue), var(--ui-blue)) 0 / var(--pf-fill) 100% no-repeat, #e2e8f0;
+}
+.pf-rate-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; margin-top: -6px; border-radius: 50%;
+  background: var(--ui-blue); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(20, 34, 54, .35);
+}
+.pf-rate-controls input[type="range"]::-moz-range-track { height: 6px; border-radius: 999px; background: #e2e8f0; }
+.pf-rate-controls input[type="range"]::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--ui-blue); }
+.pf-rate-controls input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--ui-blue); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(20, 34, 54, .35);
+}
 .pf-rate-controls input[type="range"]:focus { box-shadow: none !important; }
-.pf-rate-value { font-family: var(--ui-font-mono); font-weight: 700; text-align: center; }
+.pf-rate-controls input[type="range"]:focus-visible { box-shadow: var(--ui-focus-ring) !important; border-radius: 6px; }
+.pf-rate-value {
+  font-family: var(--ui-font-mono); font-weight: 700; text-align: center;
+  min-height: var(--control-h); border-radius: var(--ui-radius-sm);
+  background: var(--ui-soft) !important; border-color: var(--ui-border-soft) !important;
+}
+.pf-rate-value:out-of-range { border-color: var(--ui-red) !important; color: var(--ui-red); }
+@media (max-width: 480px) {
+  .pf-rate-row { padding: 14px; }
+  .pf-rate-controls { grid-template-columns: minmax(0, 1fr) 76px; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-rate-row { transition: none; }
+}
+/* Rating panel breathing room. The global .settings-panel rule zeroes padding,
+   which left form content flush against the rounded panel edges (cramped,
+   "cropped" look). Scoped class so the other settings/report panels keep
+   their existing spacing. */
+.pf-rate-panel { padding: 22px 22px 24px !important; }
+.pf-rate-panel > .alert:first-child { margin-top: 2px; }
+.pf-rate-panel .form-actions { padding-bottom: 2px; }
+@media (max-width: 480px) {
+  .pf-rate-panel { padding: 16px 14px 18px !important; }
+}
+
+/* ============================================================
+   ADD EMPLOYEE form (Employer/add_employee.php only)
+   Same zeroed-panel root cause as the rating pages: the global
+   .settings-panel rule strips padding, gluing the first row to the
+   panel top and the actions to its bottom. Scoped hooks keep every
+   other form on the site untouched.
+   ============================================================ */
+.pf-add-panel { padding: 22px 22px 24px !important; }
+.pf-add-panel > .alert:first-child { margin-top: 2px; }
+.pf-add-form .form-grid { gap: 16px 20px; }
+/* Password note: full-width info callout instead of a half-width orphan. */
+.pf-add-note {
+  grid-column: 1 / -1;
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--ui-blue-soft); border: 1px solid #d9e5f5;
+  border-radius: var(--ui-radius-sm);
+}
+.pf-add-note::before {
+  content: "i"; flex: none;
+  width: 20px; height: 20px; margin-top: 1px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--ui-blue); border-radius: 50%;
+  color: var(--ui-blue-dark); font-size: 12px; font-weight: 700; font-style: normal;
+}
+.pf-add-note .field-hint { font-size: 13px; color: var(--ui-blue-dark); }
+.pf-add-form .form-actions { padding-bottom: 2px; }
+@media (max-width: 480px) {
+  .pf-add-panel { padding: 16px 14px 18px !important; }
+}
+
+/* ============================================================
+   EMPLOYEE PROFILE view (Employer/employee_view.php only).
+   All rules scoped under .pf-employee-view so shared panels,
+   grids, and pills elsewhere keep their existing visuals.
+   ============================================================ */
+.pf-employee-view .pf-view-panel { padding: 22px 22px 24px !important; }
+.pf-employee-view .pf-view-panel > .alert:first-child { margin-top: 2px; }
+/* Identity hero: monogram + name/chips + status. */
+.pf-identity-hero { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+.pf-avatar {
+  flex: none; width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ui-blue-soft); color: var(--ui-blue-dark);
+  font-size: 20px; font-weight: 700;
+}
+.pf-identity-name { font-size: 20px; font-weight: 800; color: var(--ui-text); overflow-wrap: anywhere; }
+.pf-identity-sub { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.pf-chip {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--ui-soft); border: 1px solid var(--ui-border-soft); color: var(--ui-muted);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pf-identity-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; margin: 0 0 4px; padding: 0; }
+.pf-identity-facts dt { font-size: 12px; color: var(--ui-muted); margin-bottom: 2px; }
+.pf-identity-facts dd { margin: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+/* Probation countdown hero banner. Gradient nod to the Design 3 greeting card;
+   tone follows the 150/165/178-day bands. Text semantics unchanged. */
+.pf-countdown.pf-banner {
+  border-radius: var(--ui-radius); padding: 20px 22px; color: #fff;
+  background: linear-gradient(135deg, #3b2d8f 0%, #245fba 60%, #184a96 100%);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: var(--ui-shadow-lg);
+}
+.pf-countdown-number {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff;
+}
+.pf-countdown-number span { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, .78); }
+.pf-countdown-bar { position: relative; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .25); margin: 12px 0 10px; }
+.pf-countdown-fill { display: block; height: 100%; border-radius: 999px; background: #fff; }
+.pf-countdown[data-tone="warn"] .pf-countdown-fill { background: #f5c04a; }
+.pf-countdown[data-tone="bad"] .pf-countdown-fill { background: #ff8a80; }
+.pf-milestone {
+  position: absolute; top: -3px; bottom: -3px; width: 2px; transform: translateX(-50%);
+  background: rgba(255, 255, 255, .65); border-radius: 1px;
+}
+.pf-countdown-meta { margin: 0; color: rgba(255, 255, 255, .82); font-size: 13px; }
+/* Collapsible profile editor: facts read clean, editing one click away. */
+.pf-edit-details { margin-top: 4px; border: 1px solid var(--ui-border-soft); border-radius: var(--ui-radius-sm); background: var(--ui-soft); }
+.pf-edit-details > summary {
+  cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 13.5px; color: var(--ui-text);
+  display: flex; align-items: center; gap: 8px; list-style: none; border-radius: var(--ui-radius-sm);
+}
+.pf-edit-details > summary::-webkit-details-marker { display: none; }
+.pf-edit-details > summary::before {
+  content: "+"; flex: none; width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--ui-blue); border-radius: 50%;
+  color: var(--ui-blue-dark); font-size: 13px; font-weight: 700;
+}
+.pf-edit-details[open] > summary::before { content: "\2212"; }
+.pf-edit-details > summary:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.pf-edit-details > summary:hover { color: var(--ui-blue-dark); }
+.pf-edit-details > form { padding: 2px 14px 14px; }
+/* Read-only KPI meters. Fill + tick are % of the same bar div, exact by construction. */
+.pf-kpi-pills li { display: block; }
+.pf-meter-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pf-meter-top .microcopy { margin-left: auto; flex: none; }
+.pf-meter { position: relative; height: 8px; border-radius: 999px; background: #e2e8f0; margin-top: 7px; }
+.pf-meter-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--ui-blue); }
+.pf-kpi-pills li[data-status="status-good"] .pf-meter-fill { background: var(--ui-green); }
+.pf-kpi-pills li[data-status="status-warning"] .pf-meter-fill { background: var(--ui-amber); }
+.pf-kpi-pills li[data-status="status-danger"] .pf-meter-fill { background: var(--ui-red); }
+.pf-meter-tick {
+  position: absolute; top: -2px; bottom: -2px; width: 2px; transform: translateX(-50%);
+  background: var(--ui-muted); border-radius: 1px;
+}
+/* Recent-ratings mini chart. Values stay as text for screen readers. */
+ul.pf-chart { display: flex; gap: 12px; align-items: stretch; }
+ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pf-chart li strong { font-variant-numeric: tabular-nums; font-size: 14px; }
+.pf-chart-bar {
+  height: 96px; width: 100%; max-width: 46px;
+  background: var(--ui-soft); border: 1px solid var(--ui-border-soft); border-radius: 6px;
+  display: flex; align-items: flex-end; overflow: hidden;
+}
+.pf-chart-bar > span { display: block; width: 100%; background: var(--ui-blue); border-radius: 4px; }
+.pf-chart li .microcopy { font-size: 11px; text-align: center; overflow-wrap: anywhere; }
+/* Performance snapshot. */
+.pf-perf-hero { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.pf-perf-score { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ui-text); }
+.pf-perf-score small { font-size: 14px; font-weight: 600; color: var(--ui-muted); }
+.pf-kpi-pills { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; }
+.pf-kpi-pills li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pf-kpi-pills-name { flex: 1; min-width: 0; font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-history-head { margin-top: 16px; }
+.pf-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pf-history li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+/* Danger zone stays visually separated; button contract untouched. */
+.pf-danger-zone { border-color: #f3c1bd !important; background: #fff8f7 !important; }
+@media (max-width: 560px) {
+  .pf-employee-view .pf-view-panel { padding: 16px 14px 18px !important; }
+  .pf-identity-facts { grid-template-columns: 1fr; }
+  .pf-countdown-number { font-size: 28px; }
+  .pf-avatar { width: 48px; height: 48px; font-size: 17px; }
+  .pf-countdown.pf-banner { padding: 16px; }
+  .pf-chart-bar { height: 72px; }
+  ul.pf-chart { gap: 8px; }
+}
 
 /* ============================================================
    ALERTS / EMPTY / FOOTER / DIALOG
@@ -1190,7 +1398,23 @@ select.perform-select.perform-select-native {
 /* ============================================================
    WAVE 3 — rating preview, toast, empty-state actions
    ============================================================ */
-.pf-rate-preview { margin: 0 0 12px; font-size: 13.5px; color: var(--ui-muted, #64748b); font-variant-numeric: tabular-nums; }
+.pf-rate-preview {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  min-height: 42px; margin: 0 0 12px; padding: 9px 14px;
+  font-size: 13.5px; color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+  background: var(--ui-soft); border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius-sm);
+}
+/* Neutral chrome always; severity rides on the dot + text, never a full alert bar. */
+.pf-rate-preview .pf-rate-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ui-muted); }
+.pf-rate-preview[data-tone="ok"] .pf-rate-dot { background: var(--ui-green); }
+.pf-rate-preview[data-tone="warn"] .pf-rate-dot { background: var(--ui-amber); }
+.pf-rate-preview[data-tone="bad"] .pf-rate-dot { background: var(--ui-red); }
+.pf-rate-preview[data-tone="ok"] { color: #0e5c38; }
+.pf-rate-preview[data-tone="warn"] { color: var(--ui-amber); }
+.pf-rate-preview[data-tone="bad"] { color: #8f1d17; }
+.pf-rate-preview:empty { display: none; }
 .dashboard-empty .ghost-button { margin-top: 10px; }
 .pf-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);

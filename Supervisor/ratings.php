@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             );
             ?>
 
-            <div class="settings-panel supervisor-rate-card" style="margin-top: 20px;">
+            <div class="settings-panel supervisor-rate-card pf-rate-panel" style="margin-top: 20px;">
                 <?php if ($message): ?>
                     <div class="alert <?php echo $messageIsError ? 'alert-error' : 'alert-info'; ?>" role="status" style="margin-bottom: 20px;">
                         <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
@@ -195,22 +195,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                         <div class="pf-rate-grid">
                             <?php foreach ($template['kpis'] as $kpi): ?>
                                 <?php
-                                $valDefault = isset($prevScores[$kpi['key']]) ? number_format((float) $prevScores[$kpi['key']], 1) : '3.0';
+                                $valDefault = isset($prevScores[$kpi['key']]) ? (float) $prevScores[$kpi['key']] : 3.0;
+                                $rateTarget = (float) $kpi['target'];
+                                $rateFill = max(0, min(100, (($valDefault - 1) / 4) * 100));
+                                $rateStatus = kpi_status_for_score($valDefault, $rateTarget);
                                 ?>
-                                <div class="pf-rate-row">
-                                    <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
-                                        <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
-                                        <span class="microcopy"> · target <?php echo number_format((float) $kpi['target'], 1); ?></span>
-                                        <span class="microcopy"> · <?php echo isset($prevScores[$kpi['key']]) ? 'Last rating: ' . number_format((float) $prevScores[$kpi['key']], 1) : 'No prior rating'; ?></span>
-                                    </label>
+                                <div class="pf-rate-row" data-rate-row>
+                                    <div class="pf-rate-head">
+                                        <label for="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
+                                            <span class="pf-rate-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></span>
+                                            <span class="pf-rate-meta microcopy">target <?php echo number_format($rateTarget, 1); ?> · <?php echo isset($prevScores[$kpi['key']]) ? 'Last rating: ' . number_format($valDefault, 1) : 'No prior rating'; ?></span>
+                                        </label>
+                                        <span class="status-pill pf-rate-pill <?php echo htmlspecialchars($rateStatus['statusClass'], ENT_QUOTES); ?>" data-rate-pill><?php echo htmlspecialchars($rateStatus['status'], ENT_QUOTES); ?></span>
+                                    </div>
                                     <div class="pf-rate-controls">
-                                        <input type="range" min="1" max="5" step="0.1" value="<?php echo $valDefault; ?>"
+                                        <input type="range" min="1" max="5" step="0.1" value="<?php echo number_format($valDefault, 1); ?>"
                                             data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
+                                            style="--pf-fill: <?php echo number_format($rateFill, 1); ?>%;"
                                             aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> slider" />
                                         <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
                                             name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
                                             class="pf-rate-value" type="number" min="1" max="5" step="0.1"
-                                            value="<?php echo $valDefault; ?>" required />
+                                            value="<?php echo number_format($valDefault, 1); ?>" required />
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -353,6 +359,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                 document.addEventListener('keydown', handleKeydown);
                 saveButton.focus();
             });
+        })();
+
+        // Live card chrome: slider fill, per-card status pill, preview tone.
+        // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
+        // Existing sync/paint/submit logic above is untouched.
+        (function () {
+            var form = document.getElementById('rateForm');
+            var preview = document.getElementById('ratePreview');
+            if (!form) return;
+            var targets = window.__pfRateTargets || {};
+            function statusFor(v, t) {
+                if (isNaN(t)) return { text: '', cls: '' };
+                if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
+                if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
+                return { text: 'Below Target', cls: 'status-danger' };
+            }
+            function refresh() {
+                var below = 0, total = 0;
+                form.querySelectorAll('[data-rate-row]').forEach(function (row) {
+                    var num = row.querySelector('input[name^="score_"]');
+                    var slider = row.querySelector('[data-rate-slider]');
+                    var pill = row.querySelector('[data-rate-pill]');
+                    if (!num) return;
+                    var v = parseFloat(num.value);
+                    if (isNaN(v)) return;
+                    v = Math.max(1, Math.min(5, v));
+                    var key = num.name.replace(/^score_/, '');
+                    var t = parseFloat(targets[key]);
+                    total++;
+                    if (!isNaN(t) && v < t) below++;
+                    if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
+                    if (pill && !isNaN(t)) {
+                        var st = statusFor(v, t);
+                        pill.textContent = st.text;
+                        pill.classList.remove('status-good', 'status-warning', 'status-danger');
+                        if (st.cls) pill.classList.add(st.cls);
+                        row.setAttribute('data-status', st.cls || 'none');
+                    }
+                });
+                if (preview) {
+                    preview.removeAttribute('data-tone');
+                    var dot = preview.querySelector(':scope > .pf-rate-dot');
+                    if (total > 0) {
+                        preview.setAttribute('data-tone', below <= 0 ? 'ok' : (below < total ? 'warn' : 'bad'));
+                        if (!dot) {
+                            dot = document.createElement('span');
+                            dot.className = 'pf-rate-dot';
+                            dot.setAttribute('aria-hidden', 'true');
+                        }
+                        preview.insertBefore(dot, preview.firstChild);
+                    } else if (dot) {
+                        dot.remove();
+                    }
+                }
+            }
+            form.addEventListener('input', refresh);
+            refresh();
         })();
     </script>
 </body>

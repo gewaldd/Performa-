@@ -197,13 +197,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <div class="settings-panel">
+            <div class="settings-panel pf-add-panel">
                 <?php if ($message): ?>
                     <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>">
                         <?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
                 <?php endif; ?>
 
-                <form method="post" novalidate>
+                <form method="post" novalidate class="pf-add-form">
                     <?php echo csrf_field(); ?>
                     <div class="form-grid">
                         <div class="form-group">
@@ -259,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span class="field-hint">Only applies to probationary employees.
                                 <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group pf-add-note">
                             <span class="field-hint">A secure password is generated automatically and emailed to the
                                 new employee — there's no manual password field, they'll be asked to change it on
                                 first login.</span>

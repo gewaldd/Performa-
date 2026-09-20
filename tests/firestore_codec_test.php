@@ -130,13 +130,35 @@ assert_same(
   'a 0.0 score survives the round trip as 0.0'
 );
 
-// KNOWN WART, asserted so any change is deliberate: every PHP array is encoded
-// as a map ("assume associative -> mapValue"), so a sequential list comes back
-// with STRING keys rather than integer ones.
+// Regression: sequential (list) arrays must encode as arrayValue, not mapValue.
+// Firestore rejects map-encoded lists with "Cannot bind a list to map" -- this
+// broke the Ratings write the first time Gemini returned non-empty
+// training_recommendations (previously always [] and therefore unaffected).
 assert_same(
-  ['0' => 1, '1' => 2],
+  [1, 2],
   firestore_decode_value(php_to_firestore_fields([1, 2])),
-  'a sequential array round-trips as a map keyed "0","1" (existing behaviour, not a list)'
+  'a sequential array round-trips as a list'
+);
+assert_same(
+  ['arrayValue' => ['values' => [['integerValue' => '1'], ['integerValue' => '2']]]],
+  php_to_firestore_fields([1, 2]),
+  'a sequential array encodes as arrayValue'
+);
+
+// training_recommendations shape: a list of maps, each with string fields.
+$recs = [
+  ['competency_area' => 'task_completion', 'training_type' => 'workshop', 'timeline' => '2-3 weeks'],
+  ['competency_area' => 'attendance_punctuality', 'training_type' => 'mentoring', 'timeline' => '1-2 weeks'],
+];
+assert_same(
+  $recs,
+  firestore_decode_value(php_to_firestore_fields($recs)),
+  'a list of recommendation maps round-trips unchanged'
+);
+$recsJson = json_encode(php_to_firestore_fields(['training_recommendations' => $recs]));
+assert_true(
+  strpos($recsJson, '"training_recommendations":{"arrayValue":{"values":[') !== false,
+  'training_recommendations serializes as arrayValue, never mapValue'
 );
 
 /* =========================================================

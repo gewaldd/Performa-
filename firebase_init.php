@@ -286,18 +286,46 @@ function identitytoolkit_disable_user(string $uid, bool $disabled = true): void
     }
 }
 
+function php_array_is_list(array $value): bool
+{
+    if (function_exists('array_is_list')) {
+        return array_is_list($value);
+    }
+    $i = 0;
+    foreach (array_keys($value) as $k) {
+        if ($k !== $i++) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function php_to_firestore_fields($value)
 {
     if (is_array($value)) {
+        // PHP's json_encode turns an empty [] into JSON [] instead of {}.
+        // Firestore's mapValue.fields must always be a JSON object, even when empty,
+        // or the write is rejected as a list where a map is expected.
+        if (empty($value)) {
+            return ['mapValue' => ['fields' => new stdClass()]];
+        }
+        // Sequential (list) arrays must go out as arrayValue. Encoding them as
+        // mapValue makes Firestore reject the write with "Cannot bind a list
+        // to map" -- this bit us on Ratings.aiRecommendations.training_recommendations
+        // the first time Gemini returned a non-empty recommendation list.
+        if (php_array_is_list($value)) {
+            $values = [];
+            foreach ($value as $v) {
+                $values[] = php_to_firestore_fields($v);
+            }
+            return ['arrayValue' => ['values' => $values]];
+        }
         // assume associative -> mapValue
         $fields = [];
         foreach ($value as $k => $v) {
             $fields[$k] = php_to_firestore_fields($v);
         }
-        // PHP's json_encode turns an empty [] into JSON [] instead of {}.
-        // Firestore's mapValue.fields must always be a JSON object, even when empty,
-        // or the write is rejected as a list where a map is expected.
-        return ['mapValue' => ['fields' => empty($fields) ? new stdClass() : $fields]];
+        return ['mapValue' => ['fields' => $fields]];
     }
     if (is_string($value))
         return ['stringValue' => $value];

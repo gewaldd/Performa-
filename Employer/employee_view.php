@@ -142,7 +142,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
 <body>
   <div class="app-shell">
     <?php employer_render_shell('Employees'); ?>
-    <main class="main content-narrow">
+    <main class="main content-narrow pf-employee-view">
       <div class="page-header">
         <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
           <?php echo employer_icon('menu'); ?>
@@ -171,8 +171,50 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         <div class="alert <?php echo $messageTone === 'error' ? 'alert-error' : ($messageTone === 'success' ? 'alert-success' : 'alert-info'); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
       <?php endif; ?>
 
-      <div class="settings-panel">
+      <div class="settings-panel pf-view-panel">
+        <?php
+        $nameParts = preg_split('/\s+/', trim((string) ($profile['name'] ?? '')));
+        $profileInitials = strtoupper(substr((string) ($nameParts[0] ?? '?'), 0, 1) . substr((string) ($nameParts[1] ?? ''), 0, 1));
+        ?>
+        <div class="pf-identity-hero">
+          <span class="pf-avatar" aria-hidden="true"><?php echo htmlspecialchars($profileInitials, ENT_QUOTES); ?></span>
+          <div class="pf-identity-meta">
+            <div class="pf-identity-name"><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></div>
+            <div class="pf-identity-sub">
+              <span class="pf-chip"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES); ?></span>
+              <?php if (!empty($profile['department'])): ?>
+                <span class="pf-chip"><?php echo htmlspecialchars(pf_dept_label($profile['department']), ENT_QUOTES); ?></span>
+              <?php endif; ?>
+              <span class="status-pill <?php echo $statusLabel === 'Disabled' ? 'status-danger' : 'status-good'; ?>"><?php echo htmlspecialchars($statusLabel, ENT_QUOTES); ?></span>
+            </div>
+          </div>
+        </div>
+        <dl class="pf-identity-facts">
+          <div>
+            <dt>Email</dt>
+            <dd><?php echo htmlspecialchars($profile['email'] ?? '—', ENT_QUOTES); ?></dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd><?php echo pf_dept_label($profile['department'] ?? '') !== '' ? htmlspecialchars(pf_dept_label($profile['department']), ENT_QUOTES) : '—'; ?></dd>
+          </div>
+          <?php if ($isProbationary && !empty($profile['hireDate'])): ?>
+            <div>
+              <dt>Hire date</dt>
+              <dd><?php echo htmlspecialchars(pf_date($profile['hireDate'], ''), ENT_QUOTES); ?></dd>
+            </div>
+          <?php endif; ?>
+          <div>
+            <dt>Member since</dt>
+            <dd><?php echo $createdTime ? htmlspecialchars(pf_date($profile['createdAt'], ''), ENT_QUOTES) : '—'; ?></dd>
+          </div>
+        </dl>
+
+        <hr class="section-divider" />
+
         <h4 class="settings-subhead">Profile</h4>
+        <details class="pf-edit-details">
+          <summary>Edit profile</summary>
         <form method="post">
           <?php echo csrf_field(); ?>
           <input type="hidden" name="action" value="save_profile" />
@@ -210,38 +252,89 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
             <button class="btn-primary" type="submit">Save Changes</button>
           </div>
         </form>
+        </details>
 
-        <hr class="section-divider" />
-
-        <h4 class="settings-subhead">Account Status</h4>
-        <p class="microcopy">
-          <?php echo $statusLabel === 'Disabled' ? 'This account is disabled and cannot sign in.' : 'This account can sign in normally.'; ?>
-        </p>
-        <form method="post"
-          data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate ' . ($profile['name'] ?? 'this account') . '? They will be signed out immediately and unable to log in.', ENT_QUOTES); ?>"<?php echo $statusLabel === 'Disabled' ? '' : ' data-confirm-danger'; ?>>
-          <?php echo csrf_field(); ?>
-          <input type="hidden" name="action" value="toggle_status" />
-          <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
-          <button class="<?php echo $statusLabel === 'Disabled' ? 'ghost-button' : 'btn-danger'; ?>"
-            type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
-        </form>
       </div>
 
       <?php if ($isProbationary): ?>
-        <div class="settings-panel">
-          <h4 class="settings-subhead">Probation Progress</h4>
-          <p>Day <?php echo $daysSince; ?> of <?php echo $probationPeriodDays; ?> &middot; <?php echo $daysLeft; ?> days remaining</p>
+        <?php
+        $countdownTone = $daysLeft <= 0 ? 'bad' : ($daysLeft <= 15 ? 'warn' : 'ok');
+        $countdownPct = max(0, min(100, ($daysSince / $probationPeriodDays) * 100));
+        $latestScores = $ratingHistory[0]['scores'] ?? [];
+        $recentHistory = array_slice($ratingHistory, 0, 5);
+        $milestones = [];
+        foreach ([150, 165, 178] as $mDay) {
+          if ($mDay < $probationPeriodDays) {
+            $milestones[] = ['day' => $mDay, 'pct' => max(0, min(100, ($mDay / $probationPeriodDays) * 100))];
+          }
+        }
+        ?>
+        <div class="settings-panel pf-view-panel">
+          <h4 class="settings-subhead">Probation Countdown</h4>
+          <div class="pf-countdown pf-banner" data-tone="<?php echo $countdownTone; ?>">
+            <div class="pf-countdown-number"><?php echo $daysLeft; ?><span>days left</span></div>
+            <div class="pf-countdown-bar" role="progressbar" aria-valuemin="0" aria-valuemax="<?php echo $probationPeriodDays; ?>" aria-valuenow="<?php echo $daysSince; ?>" aria-label="Probation progress">
+              <span class="pf-countdown-fill" style="width: <?php echo number_format($countdownPct, 1); ?>%;"></span>
+              <?php foreach ($milestones as $ms): ?>
+                <i class="pf-milestone" style="left: <?php echo number_format($ms['pct'], 1); ?>%;" title="Day <?php echo $ms['day']; ?> review point"></i>
+              <?php endforeach; ?>
+            </div>
+            <p class="pf-countdown-meta">Day <?php echo $daysSince; ?> of <?php echo $probationPeriodDays; ?> &middot; <?php echo $daysLeft; ?> days remaining</p>
+          </div>
 
-          <h4 class="settings-subhead">Latest KPI Scores (<?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?>
+          <hr class="section-divider" />
+
+          <h4 class="settings-subhead">Performance Snapshot (<?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?>
             template)</h4>
           <?php if (!$summary['hasData']): ?>
             <p>No ratings submitted yet.</p>
           <?php else: ?>
-            <p>Average score: <strong><?php echo number_format($summary['score'], 1); ?></strong> / 5.0 (template target avg
-              <?php echo number_format($summary['targetAvg'], 1); ?>)
-              &middot; <?php echo $summary['ratingCount']; ?> rating<?php echo $summary['ratingCount'] === 1 ? '' : 's'; ?>
-              on file
-            </p>
+            <div class="pf-perf-hero">
+              <span class="pf-perf-score"><?php echo number_format($summary['score'], 1); ?><small>/ 5.0</small></span>
+              <span class="microcopy">template target avg <?php echo number_format($summary['targetAvg'], 1); ?>
+                &middot; <?php echo $summary['ratingCount']; ?> rating<?php echo $summary['ratingCount'] === 1 ? '' : 's'; ?>
+                on file</span>
+            </div>
+            <ul class="pf-kpi-pills">
+              <?php foreach ($template['kpis'] as $kpi): ?>
+                <?php
+                $kpiScore = isset($latestScores[$kpi['key']]) ? (float) $latestScores[$kpi['key']] : null;
+                $kpiStatus = $kpiScore === null ? null : kpi_status_for_score($kpiScore, (float) $kpi['target']);
+                $kpiFill = $kpiScore === null ? 0 : max(0, min(100, ($kpiScore / 5) * 100));
+                $kpiTick = max(0, min(100, (((float) $kpi['target'] - 1) / 4) * 100));
+                ?>
+                <li<?php echo $kpiStatus ? ' data-status="' . htmlspecialchars($kpiStatus['statusClass'], ENT_QUOTES) . '"' : ''; ?>>
+                  <div class="pf-meter-top">
+                    <span class="pf-kpi-pills-name"><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?></span>
+                    <span class="microcopy"><?php echo $kpiScore === null ? 'no data' : number_format($kpiScore, 1) . ' / target ' . number_format((float) $kpi['target'], 1); ?></span>
+                    <?php if ($kpiStatus): ?>
+                      <span class="status-pill <?php echo htmlspecialchars($kpiStatus['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($kpiStatus['status'], ENT_QUOTES); ?></span>
+                    <?php endif; ?>
+                  </div>
+                  <div class="pf-meter" role="img" aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>: <?php echo $kpiScore === null ? 'no data' : number_format($kpiScore, 1) . ' out of 5, target ' . number_format((float) $kpi['target'], 1); ?>">
+                    <span class="pf-meter-fill" style="width: <?php echo number_format($kpiFill, 1); ?>%;"></span>
+                    <span class="pf-meter-tick" style="left: <?php echo number_format($kpiTick, 1); ?>%;"></span>
+                  </div>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+            <?php if (count($recentHistory) > 1): ?>
+              <h4 class="settings-subhead pf-history-head">Recent ratings</h4>
+              <ul class="pf-history pf-chart" aria-label="Recent rating averages">
+                <?php foreach ($recentHistory as $h): ?>
+                  <?php
+                  $hScores = array_values(array_filter(array_map('floatval', (array) ($h['scores'] ?? [])), function ($v) { return $v > 0; }));
+                  $hAvg = $hScores ? array_sum($hScores) / count($hScores) : null;
+                  $hHeight = $hAvg === null ? 0 : max(4, min(100, ($hAvg / 5) * 100));
+                  ?>
+                  <li>
+                    <strong><?php echo $hAvg === null ? '—' : number_format($hAvg, 1); ?></strong>
+                    <span class="pf-chart-bar" aria-hidden="true"><span style="height: <?php echo number_format($hHeight, 1); ?>%;"></span></span>
+                    <span class="microcopy"><?php echo !empty($h['ratedAt']) ? htmlspecialchars(pf_date($h['ratedAt'], ''), ENT_QUOTES) : '—'; ?></span>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
           <?php endif; ?>
 
           <hr class="section-divider" />
@@ -300,12 +393,27 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
                   placeholder="Optional rationale" />
               </div>
             </div>
-            <div class="form-actions">
-              <button class="btn-primary" type="submit">Save Decision</button>
-            </div>
-          </form>
-        </div>
+          <div class="form-actions">
+            <button class="btn-primary" type="submit">Save Decision</button>
+          </div>
+        </form>
+      </div>
       <?php endif; ?>
+
+      <div class="settings-panel pf-view-panel pf-danger-zone">
+        <h4 class="settings-subhead">Account Status</h4>
+        <p class="microcopy">
+          <?php echo $statusLabel === 'Disabled' ? 'This account is disabled and cannot sign in.' : 'This account can sign in normally.'; ?>
+        </p>
+        <form method="post"
+          data-confirm="<?php echo htmlspecialchars($statusLabel === 'Disabled' ? 'Reactivate this account?' : 'Deactivate ' . ($profile['name'] ?? 'this account') . '? They will be signed out immediately and unable to log in.', ENT_QUOTES); ?>"<?php echo $statusLabel === 'Disabled' ? '' : ' data-confirm-danger'; ?>>
+          <?php echo csrf_field(); ?>
+          <input type="hidden" name="action" value="toggle_status" />
+          <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
+          <button class="<?php echo $statusLabel === 'Disabled' ? 'ghost-button' : 'btn-danger'; ?>"
+            type="submit"><?php echo $statusLabel === 'Disabled' ? 'Reactivate Account' : 'Deactivate Account'; ?></button>
+        </form>
+      </div>
     </main>
   </div>
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
