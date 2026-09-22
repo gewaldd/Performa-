@@ -217,12 +217,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES); ?>" required />
                         </div>
                         <div class="form-group">
-                            <label for="department">Department <span class="required-mark">*</span></label>
-                            <input id="department" name="department" type="text"
-                                value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>"
-                                placeholder="e.g. Customer Success" required />
-                        </div>
-                        <div class="form-group">
                             <label for="role">Role <span class="required-mark">*</span></label>
                             <select id="role" class="perform-select" name="role" required>
                                 <option value="" disabled <?php echo empty($_POST['role']) ? 'selected' : ''; ?>>Select
@@ -231,7 +225,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <option value="supervisor" <?php echo ($_POST['role'] ?? '') === 'supervisor' ? 'selected' : ''; ?>>Supervisor</option>
                             </select>
                         </div>
-                        <div class="form-group" id="industryField" aria-hidden="false">
+                        <div class="form-group">
+                            <label for="department">Department <span class="required-mark">*</span></label>
+                            <input id="department" name="department" type="text"
+                                value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>"
+                                placeholder="e.g. Customer Success" required />
+                        </div>
+                        <div class="pf-conditional" id="probationarySection">
+                            <div class="pf-conditional-head"><span>Probationary details</span></div>
+                            <div class="pf-conditional-grid">
+                        <div class="form-group" id="industryField">
                             <label for="industry">Industry (for KPI template)</label>
                             <select id="industry" class="perform-select" name="industry">
                                 <?php foreach (kpi_templates() as $key => $tpl): ?>
@@ -241,13 +244,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                             <span class="field-hint">Only applies to probationary employees.</span>
                         </div>
-                        <div class="form-group" id="hireDateField" aria-hidden="false">
+                        <div class="form-group" id="hireDateField">
                             <label for="hireDate">Hire Date <span class="required-mark">*</span></label>
                             <input id="hireDate" name="hireDate" type="date"
-                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
+                                max="<?php echo date('Y-m-d'); ?>"
+                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? date('Y-m-d'), ENT_QUOTES); ?>" />
                             <span class="field-hint">Only applies to probationary employees.</span>
                         </div>
-                        <div class="form-group" id="supervisorField" aria-hidden="false">
+                        <div class="form-group" id="supervisorField">
                             <label for="supervisorId">Assign Supervisor</label>
                             <select id="supervisorId" class="perform-select" name="supervisorId">
                                 <option value="">— No supervisor assigned yet —</option>
@@ -257,8 +261,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endforeach; ?>
                             </select>
                             <span class="field-hint">Only applies to probationary employees.
-                                <?php echo empty($supervisors) ? 'No supervisors exist yet — create one first.' : ''; ?></span>
+                                <?php echo empty($supervisors) ? 'No supervisors yet — create one by choosing the Supervisor role above.' : ''; ?></span>
                         </div>
+                            </div><!-- /.pf-conditional-grid -->
+                        </div><!-- /#probationarySection -->
                         <div class="form-group pf-add-note">
                             <span class="field-hint">A secure password is generated automatically and emailed to the
                                 new employee — there's no manual password field, they'll be asked to change it on
@@ -277,20 +283,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
     <script>
         // Industry, Hire Date, and Assign Supervisor only matter for probationary employees.
+        // They live inside #probationarySection, so toggling the wrapper hides the
+        // whole group at once (hidden subtrees leave the accessibility tree too).
         const roleSelect = document.getElementById('role');
-        const industryField = document.getElementById('industryField');
-        const hireDateField = document.getElementById('hireDateField');
-        const supervisorField = document.getElementById('supervisorField');
+        const probSection = document.getElementById('probationarySection');
         const hireDateInput = document.getElementById('hireDate');
 
         function syncIndustryVisibility() {
             const hidden = roleSelect.value !== 'probationary';
-            industryField.hidden = hidden;
-            industryField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
-            hireDateField.hidden = hidden;
-            hireDateField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
-            supervisorField.hidden = hidden;
-            supervisorField.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+            if (probSection) probSection.hidden = hidden;
             hireDateInput.required = !hidden;
         }
         roleSelect.addEventListener('change', syncIndustryVisibility);

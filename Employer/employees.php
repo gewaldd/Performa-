@@ -183,6 +183,8 @@ if ($cacheAvailable) {
        */
       $scoreValue = null;
 
+      $targetAvgValue = null;
+
       if ($roleKey === 'probationary') {
         $directoryUid =
           (string) (
@@ -204,6 +206,9 @@ if ($cacheAvailable) {
           if (!empty($directorySummary['hasData'])) {
             $scoreValue =
               (float) $directorySummary['score'];
+
+            $targetAvgValue =
+              (float) $directorySummary['targetAvg'];
           }
         }
       }
@@ -275,6 +280,22 @@ if ($cacheAvailable) {
 
         'scoreValue' =>
           $scoreValue,
+
+        'targetAvgValue' =>
+          $targetAvgValue,
+
+        'triageTone' =>
+          $daysLeftValue === null
+          ? ''
+          : (
+            $daysLeftValue <= 2
+            ? 'bad'
+            : (
+              $daysLeftValue <= 15
+              ? 'warn'
+              : 'ok'
+            )
+          ),
 
         'statusClass' =>
           $status === 'Disabled'
@@ -778,7 +799,7 @@ $pfPaletteJson =
 
                     <?php if (($person['type'] ?? '') === 'Probationary'): ?>
 
-                      <div class="employee-triage">
+                      <div class="employee-triage<?php echo !empty($person['triageTone']) ? ' triage-' . htmlspecialchars($person['triageTone'], ENT_QUOTES) : ''; ?>">
 
                         <?php if (isset($person['daySinceValue']) && isset($person['daysLeftValue'])): ?>
                           <?php echo htmlspecialchars(pf_day((int) $person['daySinceValue']), ENT_QUOTES); ?>
@@ -792,6 +813,10 @@ $pfPaletteJson =
                         <?php else: ?>
                           ·
                           Not yet rated
+                        <?php endif; ?>
+                        <?php if (isset($person['scoreValue'], $person['targetAvgValue'])): ?>
+                          <?php $triageScoreStatus = kpi_status_for_score((float) $person['scoreValue'], (float) $person['targetAvgValue']); ?>
+                          <span class="status-pill triage-score <?php echo htmlspecialchars($triageScoreStatus['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($triageScoreStatus['status'], ENT_QUOTES); ?></span>
                         <?php endif; ?>
 
                       </div>
@@ -824,12 +849,7 @@ $pfPaletteJson =
                   }
                   ?>
 
-                  <span class="dept-pill <?php
-                  echo htmlspecialchars(
-                    $person['deptClass'],
-                    ENT_QUOTES
-                  );
-                  ?>" title="<?php
+                  <span class="dept-pill" title="<?php
                   echo htmlspecialchars(
                     $person['dept'],
                     ENT_QUOTES

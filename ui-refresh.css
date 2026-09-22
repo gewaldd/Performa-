@@ -1004,6 +1004,23 @@ select.perform-select.perform-select-native {
   color: var(--ui-blue-dark); font-size: 12px; font-weight: 700; font-style: normal;
 }
 .pf-add-note .field-hint { font-size: 13px; color: var(--ui-blue-dark); }
+/* Probationary-only group: delineated sub-panel so the reveal reads as a
+   section, not stray rows. Toggled as one unit by syncIndustryVisibility(). */
+.pf-add-form .pf-conditional {
+  grid-column: 1 / -1;
+  border: 1px solid #d9e5f5; background: var(--ui-blue-soft);
+  border-radius: var(--ui-radius-sm); padding: 14px;
+}
+.pf-conditional-head { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.pf-conditional-head span {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ui-blue-dark); white-space: nowrap;
+}
+.pf-conditional-head::after { content: ""; flex: 1; height: 1px; background: #c9dbf2; }
+.pf-conditional-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+@media (max-width: 760px) {
+  .pf-conditional-grid { grid-template-columns: 1fr; }
+}
 .pf-add-form .form-actions { padding-bottom: 2px; }
 @media (max-width: 480px) {
   .pf-add-panel { padding: 16px 14px 18px !important; }
@@ -1078,12 +1095,16 @@ select.perform-select.perform-select-native {
 .pf-kpi-pills li { display: block; }
 .pf-meter-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pf-meter-top .microcopy { margin-left: auto; flex: none; }
-.pf-meter { position: relative; height: 8px; border-radius: 999px; background: #e2e8f0; margin-top: 7px; }
-.pf-meter-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--ui-blue); }
+.pf-kpi-pills .pf-meter {
+  position: relative; height: 8px; border-radius: 999px; background: #e2e8f0; margin-top: 7px;
+  /* Neutralize the layout-helper .pf-meter (max-width:130px flex meter): KPI meters span full width. */
+  max-width: none; flex: none; width: 100%; overflow: visible;
+}
+.pf-kpi-pills .pf-meter-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--ui-blue); }
 .pf-kpi-pills li[data-status="status-good"] .pf-meter-fill { background: var(--ui-green); }
 .pf-kpi-pills li[data-status="status-warning"] .pf-meter-fill { background: var(--ui-amber); }
 .pf-kpi-pills li[data-status="status-danger"] .pf-meter-fill { background: var(--ui-red); }
-.pf-meter-tick {
+.pf-kpi-pills .pf-meter-tick {
   position: absolute; top: -2px; bottom: -2px; width: 2px; transform: translateX(-50%);
   background: var(--ui-muted); border-radius: 1px;
 }
@@ -1102,8 +1123,7 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 .pf-perf-hero { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .pf-perf-score { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ui-text); }
 .pf-perf-score small { font-size: 14px; font-weight: 600; color: var(--ui-muted); }
-.pf-kpi-pills { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; }
-.pf-kpi-pills li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pf-kpi-pills { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 12px; }
 .pf-kpi-pills-name { flex: 1; min-width: 0; font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pf-history-head { margin-top: 16px; }
 .pf-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -1415,6 +1435,42 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 .pf-rate-preview[data-tone="warn"] { color: var(--ui-amber); }
 .pf-rate-preview[data-tone="bad"] { color: #8f1d17; }
 .pf-rate-preview:empty { display: none; }
+
+/* ============================================================
+   EMPLOYEES DIRECTORY (Employer/employees.php only).
+   Table DOM, ARIA roles, and employees.js hooks untouched;
+   presentation + triage tones only.
+   ============================================================ */
+.directory-panel .employee-triage.triage-warn { color: var(--ui-amber); font-weight: 600; }
+.directory-panel .employee-triage.triage-bad { color: var(--ui-red); font-weight: 700; }
+.directory-panel .triage-score { margin-left: 6px; font-size: 11px; min-height: 22px; padding: 0 8px; }
+.directory-panel .dept-pill { background: var(--ui-soft); border: 1px solid var(--ui-border-soft); color: var(--ui-muted); }
+/* Active-filter highlight, CSS-only progressive enhancement (no JS change). */
+.filter-bar .filter-select:has(> select > option:checked:not([value=""])):not(:has(> select#sortDirectory)),
+.filter-bar .filter-select:has(> select#sortDirectory > option:checked:not([value="default"])) {
+  outline: 2px solid var(--ui-blue); outline-offset: 1px; border-radius: 8px;
+}
+/* ---- Phase 2: card presentation. Same DOM/roles/JS: rows keep their 6-cell
+   grid (desktop) and stacked data-label layout (mobile); only the chrome
+   changes from flush separators to spaced cards. ---- */
+.directory-panel { padding: 16px; }
+.directory-panel .directory-head { border-radius: 8px; margin-bottom: 4px; }
+.directory-panel .directory-row {
+  background: #fff;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  box-shadow: var(--ui-shadow);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.directory-panel .directory-row:hover { background: #fff; border-color: #d7dee7; box-shadow: var(--ui-shadow-lg); }
+#directoryRows .directory-row:last-child { margin-bottom: 0; }
+@media (max-width: 480px) {
+  .directory-panel { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .directory-panel .directory-row { transition: none; }
+}
 .dashboard-empty .ghost-button { margin-top: 10px; }
 .pf-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);

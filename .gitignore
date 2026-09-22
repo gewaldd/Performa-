@@ -1,3 +1,6 @@
 /firebase-service-account.json
 /.env
 /vendor/
+__pycache__/
+*.py[cod]
+*$py.class
