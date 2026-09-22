@@ -22,19 +22,8 @@ $icons = [
   'download' => employer_icon('download'),
 ];
 
-$badgeCycle = [
-  'blue',
-  'purple',
-  'orange',
-  'green',
-];
-
-$accentCycle = [
-  'var(--color-success)',
-  'var(--color-info)',
-  'var(--color-warning)',
-  'var(--color-dept-purple)',
-];
+// Category cards are status-driven (kpi_status_for_score semantics); the old
+// index-based badge/accent color cycles carried no meaning and were removed.
 
 /* =========================================================
    FAST DISK-BACKED DATA CACHING (shared include — see
@@ -57,6 +46,8 @@ foreach ($allUsers as $doc) {
     'uid' => $doc['uid'] ?? '',
     'name' => $doc['name'] ?? ($doc['email'] ?? 'Unknown'),
     'industry' => $doc['industry'] ?? 'retail',
+    'createdAt' => $doc['createdAt'] ?? ($doc['hireDate'] ?? ''),
+    'period' => max(1, (int) ($doc['probationPeriodDays'] ?? 180)),
   ];
 }
 
@@ -262,6 +253,53 @@ if ($selectedEmployee) {
 }
 
 /* =========================================================
+   PICKER CONTEXT STRIP (selected employee at a glance; all values
+   derived from already-loaded collections — zero new reads)
+   ========================================================= */
+$pickerScoreVals = array_values(
+  array_filter(
+    array_map('floatval', $latestScores),
+    static function ($v): bool {
+      return $v > 0;
+    }
+  )
+);
+
+$pickerAvg = $pickerScoreVals
+  ? array_sum($pickerScoreVals) / count($pickerScoreVals)
+  : null;
+
+$pickerPeriod = max(1, (int) ($selectedEmployee['period'] ?? 180));
+
+$pickerCreatedTime = !empty($selectedEmployee['createdAt'])
+  ? strtotime($selectedEmployee['createdAt'])
+  : false;
+
+$pickerDaysLeft = $pickerCreatedTime
+  ? max(
+    0,
+    $pickerPeriod - max(
+      0,
+      (int) floor(
+        (time() - $pickerCreatedTime) / 86400
+      )
+    )
+  )
+  : null;
+
+$pickerTone = $pickerDaysLeft === null
+  ? ''
+  : (
+    $pickerDaysLeft <= 2
+    ? 'bad'
+    : (
+      $pickerDaysLeft <= 15
+      ? 'warn'
+      : 'ok'
+    )
+  );
+
+/* =========================================================
    KPI VIEW MODEL
    ========================================================= */
 $employeeKpis = [];
@@ -334,17 +372,12 @@ foreach ($template['kpis'] as $kpi) {
 }
 
 /* =========================================================
-   CATEGORY CARDS
+   STATUS SUMMARY CARDS — every KPI in the template, accents driven
+   by kpi_status_for_score() (no index-based colors, no 3-card cutoff)
    ========================================================= */
 $categoryCards = [];
 
-foreach (
-  array_slice(
-    $template['kpis'],
-    0,
-    3
-  ) as $i => $kpi
-) {
+foreach ($template['kpis'] as $kpi) {
   $current = isset(
     $latestScores[$kpi['key']]
   )
@@ -363,12 +396,6 @@ foreach (
     ];
 
   $categoryCards[] = [
-    'badge' => $template['label'],
-    'badgeClass' =>
-      $badgeCycle[
-        $i % count($badgeCycle)
-      ],
-    'icon' => 'clock',
     'title' => $kpi['name'],
     'target' => number_format(
       (float) $kpi['target'],
@@ -390,12 +417,7 @@ foreach (
         )
       )
       : 0,
-    'accentColor' =>
-      $accentCycle[
-        $i % count($accentCycle)
-      ],
     'status' => $statusInfo['status'],
-    'statusIcon' => 'dot',
     'statusClass' =>
       $statusInfo['statusClass'],
   ];
@@ -519,7 +541,7 @@ foreach (
                 </select>
               </form>
 
-              <a class="ghost-button kpi-rate-button"
+              <a class="btn-primary kpi-rate-button"
                 href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">
                 Rate this employee
               </a>
@@ -528,6 +550,30 @@ foreach (
             <span id="employeeSelectHint" class="sr-only">
               Changing this selection reloads the KPI information for that employee.
             </span>
+
+            <?php if ($selectedEmployee): ?>
+              <div class="kpi-picker-meta" aria-live="polite">
+                <span>
+                  Template:
+                  <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong>
+                </span>
+                <span aria-hidden="true">·</span>
+                <?php if ($pickerAvg !== null): ?>
+                  <span>
+                    Latest:
+                    <strong><?php echo number_format($pickerAvg, 1); ?> / 5.0</strong>
+                  </span>
+                <?php else: ?>
+                  <span>Not yet rated</span>
+                <?php endif; ?>
+                <?php if ($pickerDaysLeft !== null): ?>
+                  <span aria-hidden="true">·</span>
+                <span<?php echo $pickerTone !== '' ? ' class="tone-' . $pickerTone . '"' : ''; ?>>
+                  <?php echo (int) $pickerDaysLeft; ?> days left
+                </span>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
 
           <?php else: ?>
 
@@ -541,6 +587,61 @@ foreach (
           <?php endif; ?>
         </div>
       </section>
+
+      <?php if (!empty($categoryCards)): ?>
+        <section class="category-cards kpi-category-cards" aria-label="KPI status summary">
+          <?php foreach ($categoryCards as $card): ?>
+            <article class="category-card <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
+              <div class="category-card-top">
+                <span class="status-pill <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
+                  <?php
+                  echo htmlspecialchars(
+                    $card['status'],
+                    ENT_QUOTES
+                  );
+                  ?>
+                </span>
+              </div>
+
+              <h3 class="category-title">
+                <?php
+                echo htmlspecialchars(
+                  $card['title'],
+                  ENT_QUOTES
+                );
+                ?>
+              </h3>
+
+              <div class="category-target-row">
+                <span>
+                  Target:
+                  <?php
+                  echo htmlspecialchars(
+                    $card['target'],
+                    ENT_QUOTES
+                  );
+                  ?>
+                </span>
+
+                <strong>
+                  <?php
+                  echo htmlspecialchars(
+                    $card['current'],
+                    ENT_QUOTES
+                  );
+                  ?>
+                </strong>
+              </div>
+
+              <div class="category-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                aria-valuenow="<?php echo (int) $card['progress']; ?>"
+                aria-label="<?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?> progress">
+                <span style="width: <?php echo (int) $card['progress']; ?>%;"></span>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </section>
+      <?php endif; ?>
 
       <section class="metrics-panel kpi-metrics-panel" aria-labelledby="performanceMetricsTitle">
         <div class="metrics-panel-header">
@@ -741,80 +842,6 @@ foreach (
           </button>
         </form>
       </section>
-
-      <?php if (!empty($categoryCards)): ?>
-        <section class="category-cards kpi-category-cards" aria-label="KPI category summaries">
-          <?php foreach ($categoryCards as $card): ?>
-            <article class="category-card">
-
-              <div class="category-card-top">
-                <span class="category-badge <?php echo htmlspecialchars($card['badgeClass'], ENT_QUOTES); ?>">
-                  <?php
-                  echo htmlspecialchars(
-                    strtoupper($card['badge']),
-                    ENT_QUOTES
-                  );
-                  ?>
-                </span>
-
-                <span class="category-icon" aria-hidden="true">
-                  <?php echo $icons[$card['icon']]; ?>
-                </span>
-              </div>
-
-              <h3 class="category-title">
-                <?php
-                echo htmlspecialchars(
-                  $card['title'],
-                  ENT_QUOTES
-                );
-                ?>
-              </h3>
-
-              <div class="category-target-row">
-                <span>
-                  Target:
-                  <?php
-                  echo htmlspecialchars(
-                    $card['target'],
-                    ENT_QUOTES
-                  );
-                  ?>
-                </span>
-
-                <strong>
-                  <?php
-                  echo htmlspecialchars(
-                    $card['current'],
-                    ENT_QUOTES
-                  );
-                  ?>
-                </strong>
-              </div>
-
-              <div class="category-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                aria-valuenow="<?php echo (int) $card['progress']; ?>"
-                aria-label="<?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?> progress">
-                <span
-                  style="width: <?php echo (int) $card['progress']; ?>%; background: <?php echo htmlspecialchars($card['accentColor'], ENT_QUOTES); ?>;"></span>
-              </div>
-
-              <span class="category-status <?php echo htmlspecialchars($card['statusClass'], ENT_QUOTES); ?>">
-                <span aria-hidden="true">
-                  <?php echo $icons[$card['statusIcon']]; ?>
-                </span>
-                <?php
-                echo htmlspecialchars(
-                  strtoupper($card['status']),
-                  ENT_QUOTES
-                );
-                ?>
-              </span>
-
-            </article>
-          <?php endforeach; ?>
-        </section>
-      <?php endif; ?>
 
     </main>
   </div>

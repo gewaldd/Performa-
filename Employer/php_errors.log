@@ -232,3 +232,51 @@ Stack trace:
 [20-Sep-2026 17:34:23 UTC] ML fallback reason: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash\nPlease retry in 21.766740884s.', 'status': 'RESOURCE_EXHAUSTED
 [20-Sep-2026 17:48:15 UTC] ML fallback reason: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash\nPlease retry in 29.707808664s.', 'status': 'RESOURCE_EXHAUSTED
 [20-Sep-2026 18:09:55 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=2ikiLw2QF5N3To0M4j0tgGfft7x1 ctx=employee_view:read
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badgeClass" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badge" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  strtoupper(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "icon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "accentColor" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "statusIcon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badgeClass" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badge" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  strtoupper(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "icon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "accentColor" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "statusIcon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badgeClass" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badge" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  strtoupper(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "icon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "accentColor" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "statusIcon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badgeClass" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 724
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "badge" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  strtoupper(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 727
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "icon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 734
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "accentColor" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 772
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "statusIcon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777

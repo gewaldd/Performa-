@@ -1130,6 +1130,57 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 .pf-history li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
 /* Danger zone stays visually separated; button contract untouched. */
 .pf-danger-zone { border-color: #f3c1bd !important; background: #fff8f7 !important; }
+
+/* ============================================================
+   KPI PAGE refresh (Employer/kpis.php only, body.kpi-page scope).
+   Summary-first narrative: status-driven cards above the table.
+   Statuses reuse kpi_status_for_score() semantics; no new states.
+   ============================================================ */
+.kpi-page .kpi-category-cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 14px; }
+.kpi-page .kpi-category-cards .category-card {
+  border: 1px solid var(--ui-border-soft);
+  border-top: 3px solid var(--ui-border-soft);
+  border-radius: 10px; background: #fff;
+  box-shadow: var(--ui-shadow);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.kpi-page .kpi-category-cards .category-card:hover { border-color: #d7dee7; box-shadow: var(--ui-shadow-lg); }
+.kpi-page .kpi-category-cards .category-card.status-good { border-top-color: var(--ui-green); }
+.kpi-page .kpi-category-cards .category-card.status-warning { border-top-color: var(--ui-amber); }
+.kpi-page .kpi-category-cards .category-card.status-danger { border-top-color: var(--ui-red); }
+.kpi-page .kpi-category-cards .category-bar { background: #e2e8f0; }
+.kpi-page .kpi-category-cards .category-bar > span { background: var(--ui-blue); }
+.kpi-page .kpi-category-cards .category-card.status-good .category-bar > span { background: var(--ui-green); }
+.kpi-page .kpi-category-cards .category-card.status-warning .category-bar > span { background: var(--ui-amber); }
+.kpi-page .kpi-category-cards .category-card.status-danger .category-bar > span { background: var(--ui-red); }
+/* Fill the two semantic gaps: danger tint + neutral state. */
+.kpi-page .status-pill.status-danger { background: var(--ui-red-bg) !important; border-color: #f3c1bd !important; color: #8f1d17 !important; }
+.kpi-page .status-pill.status-neutral { background: transparent !important; border-color: #d7dee7 !important; color: var(--ui-muted) !important; }
+/* Table polish: calmer head, row hover. */
+.kpi-page .kpi-metrics-panel .kpi-table-head { color: var(--ui-muted); }
+.kpi-page .kpi-metrics-panel .kpi-row { border-radius: 8px; transition: background .15s ease, box-shadow .15s ease; }
+.kpi-page .kpi-metrics-panel .kpi-row:hover { background: #fff; box-shadow: var(--ui-shadow); }
+/* Add-KPI panel: grouped callout rhythm. */
+.kpi-page .kpi-add-panel { border: 1px solid #d9e5f5; background: var(--ui-blue-soft); }
+.kpi-page .kpi-add-panel h2 { color: var(--ui-blue-dark); }
+.kpi-page .kpi-add-panel > p { color: var(--ui-muted); }
+@media (max-width: 760px) {
+  .kpi-page .kpi-category-cards { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kpi-page .kpi-category-cards .category-card,
+  .kpi-page .kpi-metrics-panel .kpi-row { transition: none; }
+}
+/* Picker context strip: selected-employee standing at a glance. */
+.kpi-page .kpi-picker-meta {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+  margin-top: 10px; font-size: 13px; color: var(--ui-muted);
+  font-variant-numeric: tabular-nums;
+}
+.kpi-page .kpi-picker-meta strong { color: var(--ui-text); }
+.kpi-page .kpi-picker-meta .tone-ok { color: var(--ui-green); font-weight: 600; }
+.kpi-page .kpi-picker-meta .tone-warn { color: var(--ui-amber); font-weight: 600; }
+.kpi-page .kpi-picker-meta .tone-bad { color: var(--ui-red); font-weight: 700; }
 @media (max-width: 560px) {
   .pf-employee-view .pf-view-panel { padding: 16px 14px 18px !important; }
   .pf-identity-facts { grid-template-columns: 1fr; }
