@@ -1,8 +1,6 @@
 const searchInput = document.getElementById("dashboardSearch");
 const rows = Array.from(document.querySelectorAll(".table-row"));
 const chips = Array.from(document.querySelectorAll(".filter-chip"));
-const assignButton = document.getElementById("assignCourseButton");
-const recommendationTitle = document.getElementById("recommendationTitle");
 
 let activeFilter = "all";
 
@@ -76,16 +74,5 @@ chips.forEach((chip) => {
     applyFilters();
   });
 });
-
-if (assignButton && recommendationTitle) {
-  assignButton.addEventListener("click", () => {
-    const completedLabel = assignButton.dataset.completedLabel || "Completed";
-    const confirmationText = assignButton.dataset.confirmText || "Action completed.";
-
-    recommendationTitle.textContent = confirmationText;
-    assignButton.textContent = completedLabel;
-    assignButton.disabled = true;
-  });
-}
 
 if (rows.length > 0) applyFilters();

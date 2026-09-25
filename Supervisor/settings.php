@@ -2,8 +2,10 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/supervisor_layout.php';
+require_once __DIR__ . '/../Employer/includes/csrf.php';
 require_login();
 require_role('supervisor');
+require_csrf();
 require_password_reset('settings.php');
 
 $supervisorUid = $_SESSION['uid'];
@@ -85,21 +87,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['changePassword'])) {
                     <?php endif; ?>
 
                     <?php if ($message): ?>
-                        <div class="alert <?php echo $messageIsError ? 'alert-error' : 'alert-info'; ?>" role="status" style="margin-bottom: 20px;">
+                        <div class="alert <?php echo $messageIsError ? 'alert-error' : 'alert-success'; ?>" role="status" style="margin-bottom: 20px;">
                             <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
                         </div>
                     <?php endif; ?>
 
                     <section class="settings-panel" style="padding: 28px;">
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--panel-border, #e2e8f0);">
-                            <div class="avatar-chip" style="width: 52px; height: 52px; font-size: 18px;" aria-hidden="true">
+                            <div class="avatar avatar-local" style="width: 52px; height: 52px; font-size: 18px; flex-basis: 52px;" aria-hidden="true">
                                 <?php echo htmlspecialchars(supervisor_avatar_initials($profile['name'] ?? $supervisorName), ENT_QUOTES); ?>
                             </div>
                             <div>
                                 <div style="font-size: 17px; font-weight: 700; color: var(--ui-text, #0f172a);">
                                     <?php echo htmlspecialchars($profile['name'] ?? $supervisorName, ENT_QUOTES); ?>
                                 </div>
-                                <div class="text-sm text-muted">Shift Supervisor</div>
+                                <div class="text-sm text-muted">Supervisor</div>
                             </div>
                         </div>
 
@@ -122,13 +124,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['changePassword'])) {
                         </div>
 
                         <form method="post" class="form-grid" style="display: flex; flex-direction: column; gap: 16px;">
+                            <?php echo csrf_field(); ?>
                             <div class="form-group">
                                 <label for="newPassword" style="font-size: 13px; font-weight: 600;">New Password</label>
-                                <input id="newPassword" name="newPassword" type="password" minlength="8" required class="perform-input" placeholder="At least 8 characters" autocomplete="new-password" />
+                                <div style="display: flex; gap: 8px; align-items: stretch;">
+                                    <input id="newPassword" name="newPassword" type="password" minlength="8" required class="perform-input" placeholder="At least 8 characters" autocomplete="new-password" style="flex: 1; min-width: 0;" />
+                                    <button class="ghost-button" type="button" data-pw-toggle="newPassword" aria-pressed="false" style="flex: none;">Show</button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="confirmPassword" style="font-size: 13px; font-weight: 600;">Confirm New Password</label>
-                                <input id="confirmPassword" name="confirmPassword" type="password" minlength="8" required class="perform-input" placeholder="Repeat new password" autocomplete="new-password" />
+                                <div style="display: flex; gap: 8px; align-items: stretch;">
+                                    <input id="confirmPassword" name="confirmPassword" type="password" minlength="8" required class="perform-input" placeholder="Repeat new password" autocomplete="new-password" style="flex: 1; min-width: 0;" />
+                                    <button class="ghost-button" type="button" data-pw-toggle="confirmPassword" aria-pressed="false" style="flex: none;">Show</button>
+                                </div>
                             </div>
                             <div style="margin-top: 8px;">
                                 <button class="btn-primary" style="width: 100%; justify-content: center;" type="submit" name="changePassword" value="1">

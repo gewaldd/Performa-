@@ -280,3 +280,13 @@ Stack trace:
 [22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "statusIcon" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
 [22-Sep-2026 13:04:05 UTC] PHP Deprecated:  Using null as an array offset is deprecated, use an empty string instead in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
 [22-Sep-2026 13:04:05 UTC] PHP Warning:  Undefined array key "" in D:\Downloads\odysseus-dev\Performa-\Employer\kpis.php on line 777
+[23-Sep-2026 14:17:10 UTC] Python Execution Warning/Error: [WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+
+[23-Sep-2026 14:17:10 UTC] ML fallback reason: google-genai SDK not installed for this Python interpreter.
+[23-Sep-2026 14:17:25 UTC] Python Execution Warning/Error: [WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+
+[23-Sep-2026 14:17:25 UTC] ML fallback reason: google-genai SDK not installed for this Python interpreter.
+[23-Sep-2026 15:05:42 UTC] Python Execution Warning/Error: [WARNING] Failed to read unmanaged installs: expected str, bytes or os.PathLike object, not NoneType
+
+[23-Sep-2026 15:05:42 UTC] ML fallback reason: google-genai SDK not installed for this Python interpreter.
+[23-Sep-2026 16:48:04 UTC] ML recommendation timed out for employee G1VjQ1iUkgcD4cAyBm1DN5eY4zp2

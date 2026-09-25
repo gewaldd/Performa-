@@ -267,7 +267,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                     <div class="deadline-pill">
                         <?php echo $timeline['daysRemaining']; ?> days remaining
                     </div>
-                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
+
                 </div>
             </header>
 
@@ -359,6 +359,9 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                                         <div style="font-size: 0.9rem; color: #374151; margin-top: 4px;">
                                             <?php echo htmlspecialchars($rec['description'] ?? ''); ?>
                                         </div>
+                                        <?php if (!empty($rec['edited'])): ?>
+                                            <div style="font-size: 0.8rem; color: #6b7280; margin-top: 4px;">Manager-adjusted wording — competency classification unchanged.</div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>

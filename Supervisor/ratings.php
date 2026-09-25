@@ -4,8 +4,10 @@ require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
 require_once __DIR__ . '/../Employer/includes/collection_cache.php';
 require_once __DIR__ . '/supervisor_layout.php';
+require_once __DIR__ . '/../Employer/includes/csrf.php';
 require_login();
 require_role('supervisor');
+require_csrf();
 require_password_reset('settings.php');
 
 $supervisorUid = $_SESSION['uid'];
@@ -14,9 +16,13 @@ $supervisorName = $_SESSION['name'] ?? 'Supervisor';
 $employees = [];
 try {
     $docs = get_cached_collection('Users', 600);
+    $ratingSupervisorUid = (string) ($_SESSION['uid'] ?? '');
     foreach ($docs as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
+            if (!supervisor_is_in_scope($doc, $ratingSupervisorUid)) {
+                continue;
+            }
             $employees[] = [
                 'uid' => $doc['uid'] ?? '',
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
@@ -59,6 +65,15 @@ $message = '';
 $messageIsError = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
+    $postedEmployeeUid = trim((string) ($_POST['employee'] ?? ''));
+    $assignedEmployeeUids = array_column($employees, 'uid');
+    // The write target is the resolved selection: a crafted request with
+    // mismatched GET/POST employees must fail closed, never silently rate
+    // whoever the GET selection resolved to.
+    if ($postedEmployeeUid === '' || $postedEmployeeUid !== $selectedUid || !in_array($postedEmployeeUid, $assignedEmployeeUids, true)) {
+        $message = 'You can only submit ratings for employees assigned to you.';
+        $messageIsError = true;
+    } else {
     $scores = [];
     $allValid = true;
     foreach ($template['kpis'] as $kpi) {
@@ -132,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             $message = 'Failed to save rating: ' . $e->getMessage();
             $messageIsError = true;
         }
+        }
     }
 }
 ?>
@@ -185,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                     <hr class="section-divider" style="margin: 16px 0 20px;" />
 
                     <form method="post" id="rateForm">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
                         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
                             <span class="microcopy">Industry template: <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></span>

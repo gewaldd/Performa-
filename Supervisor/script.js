@@ -64,6 +64,20 @@
     });
   })();
 
+  // Show/hide toggles for password inputs (settings page only).
+  (function initPwToggles() {
+    document.querySelectorAll("[data-pw-toggle]").forEach((btn) => {
+      const input = document.getElementById(btn.getAttribute("data-pw-toggle"));
+      if (!input) return;
+      btn.addEventListener("click", () => {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        btn.textContent = show ? "Hide" : "Show";
+        btn.setAttribute("aria-pressed", String(show));
+      });
+    });
+  })();
+
   // Client-side search for tables
   const searchInput = document.getElementById("dashboardSearch") || document.getElementById("employeeSearch");
   const rows = Array.from(document.querySelectorAll("#evaluationRows .table-row, #directoryRows .table-row, .table-wrap .table-row"));

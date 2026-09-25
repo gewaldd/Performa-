@@ -36,6 +36,30 @@ function supervisor_icon(string $name): string
 }
 
 /**
+ * Assignment scoping — single source of truth for every supervisor list.
+ * A supervisor sees staff explicitly assigned to them (Users.supervisorId);
+ * legacy/unassigned staff (empty supervisorId) stay visible so existing
+ * pilots keep working. Staff assigned to a DIFFERENT supervisor are out of
+ * scope. Pure function: unit-tested in tests/supervisor_scope_test.php.
+ */
+function supervisor_is_in_scope(array $userDoc, string $supervisorUid): bool
+{
+    $assigned = trim((string) ($userDoc['supervisorId'] ?? ''));
+    return $assigned === '' || $assigned === $supervisorUid;
+}
+
+/**
+ * Filter a Users-style document list down to in-scope staff.
+ */
+function supervisor_filter_docs(array $docs, string $supervisorUid): array
+{
+    return array_values(array_filter(
+        $docs,
+        static fn($doc): bool => is_array($doc) && supervisor_is_in_scope($doc, $supervisorUid)
+    ));
+}
+
+/**
  * First letters of the supervisor's name ("John Doe" -> "JD").
  */
 function supervisor_avatar_initials(string $name): string

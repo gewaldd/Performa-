@@ -63,6 +63,14 @@
   margin-left: 8px;
 }
 
+/* Directory tables carry 5 columns (Employee/Timeline/KPI/Status/Action) while the
+   shared default grid is 4 tracks, which wraps the Action cell. Scoped by page
+   id; the mobile card layout below uses !important and is unaffected. */
+#employees .table-head, #employees .table-row,
+#dashboard .table-head, #dashboard .table-row {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, auto);
+}
+
 /* Rating Form Specifics */
 .supervisor-rate-card {
   max-width: 800px;

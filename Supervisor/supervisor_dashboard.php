@@ -9,14 +9,19 @@ require_role('supervisor');
 require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
+$supervisorUid = (string) ($_SESSION['uid'] ?? '');
 
-// Load probationary employees.
+// Load probationary employees assigned to this supervisor. Unassigned
+// (legacy) staff stay visible so existing pilots keep working.
 $employees = [];
 try {
     $docs = get_cached_collection('Users', 600);
     foreach ($docs as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
+            if (!supervisor_is_in_scope($doc, $supervisorUid)) {
+                continue;
+            }
             $employees[] = [
                 'uid' => $doc['uid'] ?? '',
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
@@ -183,7 +188,7 @@ $_SESSION['pf_nav_unrated'] = $unratedCount;
 
                     <?php if (empty($rows)): ?>
                         <div class="empty-state">
-                            <p>No probationary employees found yet.</p>
+                            <p>No probationary employees found yet. Ask your Employer to assign probationers to you.</p>
                         </div>
                     <?php else: ?>
                         <div class="table-wrap" role="table" aria-label="Employees">
@@ -198,7 +203,7 @@ $_SESSION['pf_nav_unrated'] = $unratedCount;
                                 <?php foreach ($rows as $row): ?>
                                     <div class="table-row" role="row" data-search="<?php echo htmlspecialchars(strtolower($row['name'] . ' ' . $row['industry'] . ' ' . $row['status']), ENT_QUOTES); ?>">
                                         <div class="employee-cell" role="cell">
-                                            <div class="avatar-chip" aria-hidden="true">
+                                            <div class="avatar avatar-local" aria-hidden="true">
                                                 <?php echo htmlspecialchars(supervisor_avatar_initials($row['name']), ENT_QUOTES); ?>
                                             </div>
                                             <div>
@@ -241,6 +246,147 @@ $_SESSION['pf_nav_unrated'] = $unratedCount;
                     </div>
                 </div>
             </section>
+
+            <?php
+            /*
+             * Manuscript scope for supervisors: view dashboards, scores,
+             * deadlines, and recommendations — no rating decisions, no
+             * assignment writes, no POST forms here. Latest AI excerpt per
+             * employee comes from already-loaded Ratings (zero new reads).
+             */
+            $supervisorAiByUid = [];
+            foreach ($allRatings as $supRating) {
+                $supUid = (string) ($supRating['employeeUid'] ?? '');
+                $supAi = $supRating['aiRecommendations'] ?? null;
+                if ($supUid === '' || !is_array($supAi)) {
+                    continue;
+                }
+                $supAt = (string) ($supRating['ratedAt'] ?? '');
+                if (
+                    isset($supervisorAiByUid[$supUid]) &&
+                    strcmp((string) $supervisorAiByUid[$supUid]['ratedAt'], $supAt) >= 0
+                ) {
+                    continue;
+                }
+                $supRecs = isset($supAi['training_recommendations']) && is_array($supAi['training_recommendations'])
+                    ? array_values($supAi['training_recommendations'])
+                    : [];
+                $supTop = $supRecs[0] ?? null;
+                $supervisorAiByUid[$supUid] = [
+                    'ratedAt' => $supAt,
+                    'status' => (string) ($supAi['status'] ?? ''),
+                    'top' => is_array($supTop) ? [
+                        'competency_area' => (string) ($supTop['competency_area'] ?? ''),
+                        'training_type' => (string) ($supTop['training_type'] ?? ''),
+                        'timeline' => (string) ($supTop['timeline'] ?? ''),
+                    ] : null,
+                    'hasRecs' => count($supRecs) > 0,
+                ];
+            }
+            $supervisionQueue = [];
+            foreach ($rows as $supRow) {
+                if (!in_array($supRow['statusClass'] ?? '', ['status-warning', 'status-danger'], true)) {
+                    continue;
+                }
+                // Weakest KPI from recorded scores (threshold rule, explicitly
+                // not AI): gives the card something truthful to show when no
+                // AI plan exists. Raw industry key comes from $employees since
+                // $rows carries the display-formatted label.
+                $supRawIndustry = 'retail';
+                foreach ($employees as $supEmp) {
+                    if (($supEmp['uid'] ?? '') === ($supRow['uid'] ?? '')) {
+                        $supRawIndustry = $supEmp['industry'] ?? 'retail';
+                        break;
+                    }
+                }
+                $supMine = ratings_for_employee($allRatings, $supRow['uid'] ?? '');
+                $supScores = (isset($supMine[0]['scores']) && is_array($supMine[0]['scores']))
+                    ? $supMine[0]['scores']
+                    : [];
+                $supTpl = kpi_template_for($supRawIndustry);
+                $supWeakest = null;
+                foreach ($supTpl['kpis'] as $supKpi) {
+                    if (!isset($supScores[$supKpi['key']])) {
+                        continue;
+                    }
+                    $supGap = (float) $supKpi['target'] - (float) $supScores[$supKpi['key']];
+                    if ($supGap > 0 && ($supWeakest === null || $supGap > $supWeakest['gap'])) {
+                        $supWeakest = [
+                            'name' => $supKpi['name'],
+                            'score' => (float) $supScores[$supKpi['key']],
+                            'target' => (float) $supKpi['target'],
+                            'gap' => $supGap,
+                        ];
+                    }
+                }
+                $supervisionQueue[] = [
+                    'row' => $supRow,
+                    'ai' => $supervisorAiByUid[$supRow['uid']] ?? null,
+                    'weakest' => $supWeakest,
+                ];
+                if (count($supervisionQueue) >= 3) {
+                    break;
+                }
+            }
+            ?>
+            <?php if ($supervisionQueue): ?>
+            <section class="panel" aria-label="Interventions to watch" style="margin-top: 24px;">
+                <div class="panel-header">
+                    <div>
+                        <h2>Interventions to Watch</h2>
+                        <p>Read-only. Training decisions stay with the employer.</p>
+                    </div>
+                </div>
+                <ol class="insight-queue">
+                    <?php foreach ($supervisionQueue as $supEntry): ?>
+                        <?php $supRow = $supEntry['row']; $supTop = $supEntry['ai']['top'] ?? null; ?>
+                        <li class="insight-queue-item">
+                            <div class="insight-queue-head">
+                                <strong><?php echo htmlspecialchars($supRow['name'], ENT_QUOTES); ?></strong>
+                                <span class="insight-queue-gap">
+                                    <?php echo number_format((float) $supRow['score'], 1); ?>
+                                    /
+                                    <?php echo number_format((float) $supRow['target'], 1); ?>
+                                    target
+                                </span>
+                            </div>
+                            <div class="recommendation-box">
+                                <div>
+                                    <div class="recommendation-label">Status:</div>
+                                    <span class="status-pill <?php echo htmlspecialchars($supRow['statusClass'], ENT_QUOTES); ?>">
+                                        <?php echo htmlspecialchars($supRow['status'], ENT_QUOTES); ?>
+                                    </span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <?php if ($supTop): ?>
+                                        <div class="recommendation-label">Suggested focus:</div>
+                                        <strong><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $supTop['competency_area'])), ENT_QUOTES); ?></strong>
+                                        <span class="microcopy"> · <?php echo htmlspecialchars($supTop['training_type'], ENT_QUOTES); ?><?php echo $supTop['timeline'] !== '' ? ' · ' . htmlspecialchars($supTop['timeline'], ENT_QUOTES) : ''; ?></span>
+                                    <?php else: ?>
+                                        <?php $supWeak = $supEntry['weakest'] ?? null; ?>
+                                        <?php if ($supWeak): ?>
+                                            <div class="recommendation-label">Needs attention in:</div>
+                                            <strong><?php echo htmlspecialchars($supWeak['name'], ENT_QUOTES); ?></strong>
+                                            <span class="microcopy"> · <?php echo number_format($supWeak['score'], 1); ?> / target <?php echo number_format($supWeak['target'], 1); ?> (from recorded scores, not AI)</span>
+                                        <?php endif; ?>
+                                        <div class="microcopy" style="margin-top: 4px;">
+                                            <?php if (($supEntry['ai']['status'] ?? '') === 'pending_approval'): ?>
+                                                Full AI plan pending employer review.
+                                            <?php else: ?>
+                                                No AI plan yet — the employer generates it from this employee's recorded ratings.
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="insight-actions">
+                                <a class="ghost-button" style="width: 100%; text-align: center;" href="ratings.php?employee=<?php echo urlencode($supRow['uid']); ?>">Rate</a>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            </section>
+            <?php endif; ?>
         </main>
     </div>
 

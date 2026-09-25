@@ -97,8 +97,7 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
                 </label>
 
                 <div class="topbar-actions">
-                    <div class="deadline-pill">Next one-on-one in 10 days</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
+
                 </div>
             </header>
 
@@ -130,10 +129,7 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
                             <h2>Goal Tracker</h2>
                             <p>Follow the progress for each active goal and see what needs attention.</p>
                         </div>
-                        <div class="panel-actions">
-                            <button class="ghost-button" type="button">Filter</button>
-                            <button class="ghost-button" type="button">Export</button>
-                        </div>
+
                     </div>
 
                     <div class="table-toolbar">
@@ -215,10 +211,8 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
                         <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button" data-completed-label="Planned"
-                        data-confirm-text="Meeting added to your schedule for goal alignment.">Plan Next Step</button>
                     <p class="microcopy">This page helps you keep goals visible as you work through the rest of your
-                        tasks.</p>
+                        tasks. Discuss next steps with your supervisor directly — there is no in-app scheduling.</p>
                 </aside>
             </section>
         </main>

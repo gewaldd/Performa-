@@ -9,6 +9,7 @@ require_role('supervisor');
 require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
+$supervisorUid = (string) ($_SESSION['uid'] ?? '');
 
 $employees = [];
 try {
@@ -16,6 +17,9 @@ try {
     foreach ($docs as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
+            if (!supervisor_is_in_scope($doc, $supervisorUid)) {
+                continue;
+            }
             $employees[] = [
                 'uid' => $doc['uid'] ?? '',
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
@@ -56,7 +60,7 @@ try {
             <label class="search-bar">
                 <span class="sr-only">Search employees</span>
                 <span class="search-icon" aria-hidden="true"><?php echo supervisor_layout_icon('search'); ?></span>
-                <input id="employeeSearch" type="search" placeholder="Search employees by name, role..." autocomplete="off" />
+                <input id="employeeSearch" type="search" placeholder="Search your team by name or industry…" autocomplete="off" />
             </label>
             <?php
             $headerActions = ob_get_clean();
@@ -76,13 +80,13 @@ try {
                     <div class="panel-header">
                         <div>
                             <h2>Assigned Employee List</h2>
-                            <p>Live progress from Firestore. Employee profiles and company templates are managed by the Employer.</p>
+                            <p>Updated automatically. Profiles and templates are managed by your Employer.</p>
                         </div>
                     </div>
 
                     <?php if (empty($employees)): ?>
                         <div class="empty-state" style="padding: 40px 20px; text-align: center;">
-                            <p class="text-muted">No probationary employees found yet.</p>
+                            <p class="text-muted">No probationary employees found yet. Ask your Employer to assign probationers to you.</p>
                         </div>
                     <?php else: ?>
                         <div class="table-wrap" role="table" aria-label="Employees Directory">
@@ -126,7 +130,7 @@ try {
                                     ?>
                                     <div class="table-row" role="row" data-search="<?php echo htmlspecialchars($searchBlob, ENT_QUOTES); ?>">
                                         <div class="employee-cell" role="cell">
-                                            <div class="avatar-chip" aria-hidden="true">
+                                            <div class="avatar avatar-local" aria-hidden="true">
                                                 <?php echo htmlspecialchars(supervisor_avatar_initials($emp['name']), ENT_QUOTES); ?>
                                             </div>
                                             <div>

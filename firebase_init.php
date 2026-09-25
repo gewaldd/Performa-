@@ -370,6 +370,49 @@ function firestore_write_document(string $collection, string $documentId, array 
     }
 }
 
+// Partial document update via updateMask: only the given top-level fields
+// are touched, everything else in the document is preserved. Pure builder
+// kept separate (same testability pattern as the batch builder below).
+function firestore_patch_payload(string $collection, string $documentId, array $fields, string $projectId): array
+{
+    $encoded = [];
+    foreach ($fields as $k => $v) {
+        $encoded[$k] = php_to_firestore_fields($v);
+    }
+    $mask = implode(
+        '&',
+        array_map(
+            static fn($k): string => 'updateMask.fieldPaths=' . rawurlencode((string) $k),
+            array_keys($encoded)
+        )
+    );
+    $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/{$collection}/{$documentId}"
+        . ($mask !== '' ? '?' . $mask : '');
+    return ['url' => $url, 'body' => ['fields' => empty($encoded) ? new stdClass() : $encoded]];
+}
+
+function firestore_patch_document(string $collection, string $documentId, array $fields): void
+{
+    $svc = load_service_account();
+    $projectId = getenv('FIREBASE_PROJECT_ID') ?: ($svc['project_id'] ?? null);
+    if (!$projectId)
+        throw new RuntimeException('FIREBASE_PROJECT_ID not set');
+    $payload = firestore_patch_payload($collection, $documentId, $fields, $projectId);
+    $token = get_service_account_access_token();
+    $ch = curl_init($payload['url']);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . '/cacert.pem');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    firebase_curl_timeouts($ch);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $token]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload['body']));
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($code < 200 || $code >= 300) {
+        throw new RuntimeException('Firestore patch failed: ' . $resp);
+    }
+}
+
 // Pure payload builder for firestore_batch_write(), kept separate so the
 // single-round-trip shape (one commit, N writes) is unit-testable without
 // touching the network.

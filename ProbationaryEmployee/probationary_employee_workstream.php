@@ -1,7 +1,40 @@
 <?php
 require_once __DIR__ . '/data.php';
+require_once __DIR__ . '/../Employer/includes/csrf.php';
+require_csrf();
 
 $user = probationary_user();
+
+$workMsg = '';
+$workMsgType = 'info';
+
+// Honest per-item completion: flips one owned workstream/goal document to
+// completed via a partial patch (other fields untouched). Replaces the old
+// client-only label swap that persisted nothing.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['complete_item'] ?? '') === '1') {
+    try {
+        $completeCollection = trim((string) ($_POST['complete_collection'] ?? ''));
+        $completeDoc = trim((string) ($_POST['complete_doc'] ?? ''));
+        if (!in_array($completeCollection, ['workstream', 'goals'], true) || $completeDoc === '') {
+            throw new RuntimeException('Invalid item.');
+        }
+        $completeTarget = firestore_get_document($completeCollection, $completeDoc);
+        if (!is_array($completeTarget) || !probationary_owned($completeTarget, probationary_uid())) {
+            throw new RuntimeException('Item not found.');
+        }
+        firestore_patch_document($completeCollection, $completeDoc, [
+            'status' => 'completed',
+            'completedAt' => date('c'),
+            'completedBy' => probationary_uid(),
+        ]);
+        clear_collection_cache($completeCollection);
+        $workMsg = 'Marked complete.';
+        $workMsgType = 'success';
+    } catch (Throwable $e) {
+        $workMsg = 'Could not update that item. Please try again.';
+        $workMsgType = 'error';
+    }
+}
 $timeline = probationary_timeline($user);
 $workstreamDocuments = probationary_owned_documents('workstream');
 $goalDocuments = probationary_owned_documents('goals');
@@ -25,22 +58,30 @@ $metrics = [
     ['label' => 'Pending Feedback', 'value' => (string) count(array_filter(probationary_owned_documents('Feedback'), static fn(array $item): bool => strtolower((string) ($item['status'] ?? '')) === 'pending')), 'badge' => 'Needs response', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '✎'],
 ];
 
-$items = array_map(static function (array $item): array {
-    $status = ucwords(str_replace('-', ' ', (string) ($item['status'] ?? 'Assigned')));
-    $statusKey = strtolower(str_replace(' ', '-', $status));
-    return [
-        'name' => $item['name'] ?? $item['title'] ?? 'Workstream item',
-        'category' => $item['category'] ?? 'General',
-        'timeline' => $item['timeline'] ?? ($item['dueDate'] ?? 'No due date'),
-        'progress' => (int) ($item['progress'] ?? 0),
-        'score' => (float) ($item['score'] ?? 0),
-        'stars' => max(0, min(5, (int) round((float) ($item['score'] ?? 0)))),
-        'status' => $status,
-        'statusClass' => $statusKey === 'on-track' || $statusKey === 'completed' ? 'status-good' : ($statusKey === 'in-progress' ? 'status-warning' : 'status-ready'),
-        'statusKey' => $statusKey,
-        'progressColor' => $statusKey === 'in-progress' ? '#f0a11b' : '#2f6df6',
-    ];
-}, array_merge($workstreamDocuments, $goalDocuments));
+$items = [];
+foreach (['workstream' => $workstreamDocuments, 'goals' => $goalDocuments] as $itemCollection => $itemDocs) {
+    foreach ($itemDocs as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $status = ucwords(str_replace('-', ' ', (string) ($item['status'] ?? 'Assigned')));
+        $statusKey = strtolower(str_replace(' ', '-', $status));
+        $items[] = [
+            'name' => $item['name'] ?? $item['title'] ?? 'Workstream item',
+            'category' => $item['category'] ?? 'General',
+            'timeline' => $item['timeline'] ?? ($item['dueDate'] ?? 'No due date'),
+            'progress' => (int) ($item['progress'] ?? 0),
+            'score' => (float) ($item['score'] ?? 0),
+            'stars' => max(0, min(5, (int) round((float) ($item['score'] ?? 0)))),
+            'status' => $status,
+            'statusClass' => $statusKey === 'on-track' || $statusKey === 'completed' ? 'status-good' : ($statusKey === 'in-progress' ? 'status-warning' : 'status-ready'),
+            'statusKey' => $statusKey,
+            'progressColor' => $statusKey === 'in-progress' ? '#f0a11b' : '#2f6df6',
+            'collection' => $itemCollection,
+            'docId' => isset($item['uid']) && is_string($item['uid']) && $item['uid'] !== '' ? $item['uid'] : null,
+        ];
+    }
+}
 
 $insightTitle = 'Performance Snapshot';
 $insightText = $latestEvaluation['notes'] ?? ($items ? 'Your current workstream is shown below.' : 'No workstream items have been assigned yet.');
@@ -104,7 +145,7 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                     <div class="deadline-pill">
                         <?php echo $timeline['daysRemaining']; ?> days remaining
                     </div>
-                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
+
                 </div>
             </header>
 
@@ -136,11 +177,13 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                             <h2>My Workstream</h2>
                             <p>Keep up with assigned tasks, review notes, and development items.</p>
                         </div>
-                        <div class="panel-actions">
-                            <button class="ghost-button" type="button">Filter</button>
-                            <button class="ghost-button" type="button">Export</button>
-                        </div>
                     </div>
+                    <?php if ($workMsg !== ''): ?>
+                        <div role="status"
+                            style="margin:0 0 12px;padding:10px 14px;border-radius:8px;font-size:13.5px;<?php echo $workMsgType === 'error' ? 'background:#fdecea;color:#8f1d17;' : 'background:#e6f4ec;color:#0e5c38;'; ?>">
+                            <?php echo htmlspecialchars($workMsg, ENT_QUOTES); ?>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="table-toolbar">
                         <div class="chip-group" role="tablist" aria-label="Workstream filters">
@@ -200,6 +243,20 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                                     <div class="status-cell" role="cell">
                                         <span
                                             class="status-pill <?php echo htmlspecialchars($item['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($item['status'], ENT_QUOTES); ?></span>
+                                        <?php if (($item['statusKey'] ?? '') !== 'completed' && !empty($item['docId']) && !empty($item['collection'])): ?>
+                                            <form method="post" style="margin-top:8px;">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="complete_item" value="1" />
+                                                <input type="hidden" name="complete_collection"
+                                                    value="<?php echo htmlspecialchars($item['collection'], ENT_QUOTES); ?>" />
+                                                <input type="hidden" name="complete_doc"
+                                                    value="<?php echo htmlspecialchars($item['docId'], ENT_QUOTES); ?>" />
+                                                <button class="ghost-button" type="submit"
+                                                    style="padding:4px 10px;font-size:12px;"
+                                                    aria-label="Mark <?php echo htmlspecialchars($item['name'], ENT_QUOTES); ?> complete">Mark
+                                                    done</button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -221,11 +278,8 @@ $recommendation = $user['workstreamRecommendation'] ?? 'Review your next assigne
                             id="recommendationTitle"><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button"
-                        data-completed-label="Completed"
-                        data-confirm-text="The selected employee task has been marked complete.">Mark Complete</button>
                     <p class="microcopy">Your dashboard focuses on work progress, manager feedback, and the next action
-                        to take.
+                        to take. Mark items done directly in the table above.
                     </p>
                 </aside>
             </section>

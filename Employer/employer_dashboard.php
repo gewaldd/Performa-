@@ -7,6 +7,7 @@ require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../audit_log.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -40,71 +41,67 @@ $icons = [
 ];
 
 /*
-|--------------------------------------------------------------------------
-| Handle POST actions before loading dashboard data
-|--------------------------------------------------------------------------
-*/
+ * Manuscript note: the dashboard never writes training assignments directly.
+ * Assignments are authored only by the review approve handler
+ * (review_recommendations.php), which runs the human-in-the-loop step —
+ * employer review before anything reaches the employee (P.121) — and records
+ * the audit trail. Cards below route into that flow instead. The one exception
+ * is reversal: unassigning clears the employer's own assignment record.
+ */
+
+$dashMessage = '';
+$dashMessageType = 'info';
 
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    ($_POST['action'] ?? '') === 'assign_course' &&
+    ($_POST['action'] ?? '') === 'unassign_training' &&
     !empty($_POST['uid'])
 ) {
     try {
-        $uid = trim((string) $_POST['uid']);
+        $unassignUid = trim((string) $_POST['uid']);
 
-        $course = trim(
-            (string) (
-                $_POST['course']
-                ?? 'Performance Improvement Training'
-            )
-        );
-
-        if ($course === '') {
-            $course = 'Performance Improvement Training';
-        }
-
-        $existing =
-            firestore_get_document(
-                'Users',
-                $uid
-            ) ?? [];
+        $unassignTarget =
+            firestore_get_document('Users', $unassignUid) ?? [];
 
         require_employer_owns_user(
-            $existing + ['uid' => $uid],
-            'dashboard:assign_course'
+            $unassignTarget + ['uid' => $unassignUid],
+            'dashboard:unassign_training'
         );
 
-        $existing['assignedTraining'] = $course;
-        $existing['assignedTrainingAt'] = date('c');
-
-        firestore_write_document(
-            'Users',
-            $uid,
-            $existing
-        );
-
-        /*
-         * Invalidate dashboard cache immediately.
-         */
         unset(
-            $_SESSION['dashboard_live_data'],
-            $_SESSION['dashboard_cache_time']
+            $unassignTarget['assignedTraining'],
+            $unassignTarget['assignedTrainingAt']
+        );
+
+        firestore_write_document('Users', $unassignUid, $unassignTarget);
+
+        unset($_SESSION['dashboard_live_data'], $_SESSION['dashboard_cache_time']);
+
+        record_audit_event(
+            'training_unassigned',
+            'Removed training assignment for ' . $unassignUid,
+            ['employee' => $unassignUid]
         );
 
         header(
-            'Location: employer_dashboard.php?assigned=' .
-            urlencode($uid)
+            'Location: employer_dashboard.php?unassigned=' .
+            urlencode($unassignUid)
         );
 
         exit;
     } catch (Throwable $e) {
-        /*
-         * Keep rendering the page if the assignment fails.
-         * The dashboard remains usable.
-         */
+        $dashMessage = 'Could not remove the assignment. Please try again.';
+        $dashMessageType = 'error';
     }
 }
+
+if (isset($_GET['unassigned'])) {
+    $dashMessage = 'Training assignment removed.';
+    $dashMessageType = 'success';
+}
+
+/* assign_course removed: direct assignment bypassed the manuscript's
+ * review-before-send step (P.121). See review_recommendations.php approve. */
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +135,129 @@ if ($cacheValid) {
             firestore_list_documents('Ratings');
     } catch (Throwable $e) {
         $allRatings = [];
+    }
+
+    /*
+     * Latest AI plan per employee (manuscript P.121 pipeline output stored
+     * on Ratings docs by rate_employee.php). Compact excerpt only — the full
+     * plan renders on the review page. Newest ratedAt wins; docs without an
+     * aiRecommendations map never displace one that has it.
+     */
+    $latestAiByUid = [];
+
+    foreach ($allRatings as $ratingDoc) {
+        $ratingUid =
+            (string) (
+                $ratingDoc['employeeUid']
+                ?? ''
+            );
+
+        $storedAi =
+            $ratingDoc['aiRecommendations']
+            ?? null;
+
+        if (
+            $ratingUid === '' ||
+            !is_array($storedAi)
+        ) {
+            continue;
+        }
+
+        $ratedAt =
+            (string) (
+                $ratingDoc['ratedAt']
+                ?? ''
+            );
+
+        $planRecs =
+            isset($storedAi['training_recommendations']) &&
+            is_array($storedAi['training_recommendations'])
+            ? array_values(
+                $storedAi['training_recommendations']
+            )
+            : [];
+
+        /*
+         * Preference rule: a doc WITH recommendations always beats one
+         * without, regardless of recency — otherwise a newer empty fallback
+         * (e.g. recorded during a Gemini outage) clobbers an older good AI
+         * plan in the card. Between two docs with equal standing, newest wins.
+         */
+        $newHasRecs = count($planRecs) > 0;
+        $oldEntry = $latestAiByUid[$ratingUid] ?? null;
+        $oldHasRecs = is_array($oldEntry) && !empty($oldEntry['hasRecs']);
+
+        if (
+            $oldEntry !== null &&
+            (
+                ($oldHasRecs && !$newHasRecs) ||
+                (
+                    $oldHasRecs === $newHasRecs &&
+                    strcmp((string) $oldEntry['ratedAt'], $ratedAt) >= 0
+                )
+            )
+        ) {
+            continue;
+        }
+
+        $topRec =
+            $planRecs[0]
+            ?? null;
+
+        $latestAiByUid[$ratingUid] = [
+            'ratedAt' => $ratedAt,
+            'status' =>
+                (string) (
+                    $storedAi['status']
+                    ?? ''
+                ),
+            'generated_by' =>
+                (string) (
+                    $storedAi['generated_by']
+                    ?? 'fallback'
+                ),
+            'model_version' =>
+                (string) (
+                    $storedAi['model_version']
+                    ?? 'unknown'
+                ),
+            'summary' =>
+                (string) (
+                    $storedAi['summary']
+                    ?? ''
+                ),
+            'error' =>
+                (string) (
+                    $storedAi['error']
+                    ?? ''
+                ),
+            'top' => is_array($topRec)
+                ? [
+                    'competency_area' =>
+                        (string) (
+                            $topRec['competency_area']
+                            ?? ''
+                        ),
+                    'training_type' =>
+                        (string) (
+                            $topRec['training_type']
+                            ?? ''
+                        ),
+                    'timeline' =>
+                        (string) (
+                            $topRec['timeline']
+                            ?? ''
+                        ),
+                    'description' =>
+                        (string) (
+                            $topRec['description']
+                            ?? ''
+                        ),
+                ]
+                : null,
+            'hasRecs' =>
+                count($planRecs) > 0,
+        ];
     }
 
     try {
@@ -372,6 +492,10 @@ if ($cacheValid) {
                 'assignedTrainingAt' =>
                     $doc['assignedTrainingAt']
                     ?? null,
+
+                'aiPlan' =>
+                    $latestAiByUid[$uid]
+                    ?? null,
             ];
         }
     } catch (Throwable $e) {
@@ -565,9 +689,10 @@ $evaluations =
     $liveUsers;
 
 /*
- * Ranked attention queue: every scored employee below target, worst gap
- * first, top 3. Replaces the old single-employee insight so staff beyond
- * the first are no longer invisible.
+ * Ranked attention queue: scored employees classified needs_improvement or
+ * critical_gap (meets_expectations never enters), worst gap first, top 3.
+ * Replaces the old single-employee insight so staff beyond the first are
+ * no longer invisible.
  */
 $insightQueue = [];
 
@@ -585,15 +710,26 @@ foreach ($liveUsers as $user) {
     $score =
         (float) $user['score'];
 
+    /*
+     * Manuscript threshold semantics (same buffer rule as
+     * kpi_status_for_score): meets_expectations never enters the queue.
+     * Only needs_improvement and critical_gap do.
+     */
+    if ($score >= $target) {
+        continue;
+    }
+
     $gap =
         $target - $score;
 
-    if ($gap > 0) {
-        $insightQueue[] = [
-            'user' => $user,
-            'gap' => $gap,
-        ];
-    }
+    $insightQueue[] = [
+        'user' => $user,
+        'gap' => $gap,
+        'tone' =>
+            $score < $target - 0.8
+            ? 'critical'
+            : 'needs',
+    ];
 }
 
 usort(
@@ -609,14 +745,15 @@ $insightQueue =
         3
     );
 
-$justAssigned =
-    isset($_GET['assigned']);
+$anyScored = false;
 
-$justAssignedUid =
-    isset($_GET['assigned'])
-    && $_GET['assigned'] !== '1'
-    ? (string) $_GET['assigned']
-    : null;
+foreach ($liveUsers as $scoredUser) {
+    if (!empty($scoredUser['hasScore'])) {
+        $anyScored = true;
+
+        break;
+    }
+}
 
 /*
  * Shell badges + command palette index. Counts come from the rows already
@@ -766,6 +903,12 @@ $insightTitle =
                 $dashboardActions
             );
             ?>
+
+            <?php if ($dashMessage !== ''): ?>
+                <div class="alert alert-<?php echo $dashMessageType === 'error' ? 'error' : 'success'; ?>" role="status">
+                    <?php echo htmlspecialchars($dashMessage, ENT_QUOTES); ?>
+                </div>
+            <?php endif; ?>
 
             <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
 
@@ -1065,7 +1208,7 @@ $insightTitle =
                         <span class="insight-icon" aria-hidden="true"><?php echo $icons['cap']; ?></span>
 
                         <span class="insight-label">
-                            Supervisor note
+                            Review queue
                         </span>
 
                     </div>
@@ -1085,13 +1228,21 @@ $insightTitle =
                             <?php foreach ($insightQueue as $queuePos => $queueEntry): ?>
                                 <?php
                                 $queueUser = $queueEntry['user'];
-                                $queueRecommendation = 'Performance Improvement Training';
-                                $queueAssigned =
-                                    !empty($queueUser['assignedTraining']) ||
-                                    $justAssignedUid === (string) ($queueUser['uid'] ?? '') ||
-                                    ($justAssigned && $justAssignedUid === null && $queuePos === 0);
+                                $queueTone = $queueEntry['tone'] ?? 'needs';
+                                $queueAi = $queueUser['aiPlan'] ?? null;
+                                $queueTop = is_array($queueAi) && is_array($queueAi['top'] ?? null)
+                                    ? $queueAi['top']
+                                    : null;
+                                $queueAssigned = !empty($queueUser['assignedTraining']);
+                                $queuePending = !$queueAssigned
+                                    && is_array($queueAi)
+                                    && ($queueAi['status'] ?? '') === 'pending_approval'
+                                    && $queueAi['hasRecs'];
+                                $queueApproved = !$queueAssigned
+                                    && is_array($queueAi)
+                                    && ($queueAi['status'] ?? '') === 'approved';
                                 ?>
-                                <li class="insight-queue-item">
+                                <li class="insight-queue-item tone-<?php echo htmlspecialchars($queueTone, ENT_QUOTES); ?>">
                                     <div class="insight-queue-head">
                                         <strong>
                                             <?php
@@ -1127,18 +1278,67 @@ $insightTitle =
 
                                         <div>
 
-                                            <div class="recommendation-label">
-                                                Recommended Action:
-                                            </div>
+                                            <?php if ($queueTop): ?>
+                                                <div class="recommendation-label">
+                                                    Recommended Action:
+                                                </div>
 
-                                            <strong>
+                                                <strong>
+                                                    <?php
+                                                    echo htmlspecialchars(
+                                                        ucwords(
+                                                            str_replace(
+                                                                '_',
+                                                                ' ',
+                                                                (string) ($queueTop['competency_area'] ?? '')
+                                                            )
+                                                        ) . ' — ' . (string) ($queueTop['training_type'] ?? ''),
+                                                        ENT_QUOTES
+                                                    );
+                                                    ?>
+                                                </strong>
+
+                                                <?php if (!empty($queueTop['description'])): ?>
+                                                    <div class="microcopy">
+                                                        <?php
+                                                        echo htmlspecialchars(
+                                                            $queueTop['description'],
+                                                            ENT_QUOTES
+                                                        );
+                                                        ?>
+                                                    </div>
+                                                <?php endif; ?>
+
+                                                <div class="microcopy">
+                                                    <?php if (!empty($queueTop['timeline'])): ?>
+                                                        Timeline: <?php echo htmlspecialchars($queueTop['timeline'], ENT_QUOTES); ?> ·
+                                                    <?php endif; ?>
+                                                    Source: <?php echo htmlspecialchars(($queueAi['generated_by'] ?? '') === 'gemini_api' ? 'RF + Gemini' : 'system', ENT_QUOTES); ?>
+                                                    <?php echo htmlspecialchars($queueAi['model_version'] ?? '', ENT_QUOTES); ?>
+                                                </div>
+                                            <?php else: ?>
                                                 <?php
-                                                echo htmlspecialchars(
-                                                    $queueRecommendation,
-                                                    ENT_QUOTES
-                                                );
+                                                $queueErr = is_array($queueAi)
+                                                    ? (string) ($queueAi['error'] ?? '')
+                                                    : '';
+                                                $queueNoPlanReason = !is_array($queueAi)
+                                                    ? 'No AI plan on file yet — an employer rating generates one.'
+                                                    : (
+                                                        stripos($queueErr, '429') !== false ||
+                                                        stripos($queueErr, 'RESOURCE_EXHAUSTED') !== false ||
+                                                        stripos($queueErr, 'quota') !== false
+                                                        ? 'The AI service hit its usage quota for that cycle — re-submitting a rating regenerates the plan.'
+                                                        : 'The AI service was unavailable for that cycle — re-submitting a rating regenerates the plan.'
+                                                    );
                                                 ?>
-                                            </strong>
+                                                <div class="recommendation-label">
+                                                    No AI plan yet
+                                                </div>
+
+                                                <div class="microcopy">
+                                                    <?php echo htmlspecialchars($queueNoPlanReason, ENT_QUOTES); ?>
+                                                </div>
+                                            <?php endif; ?>
 
                                         </div>
 
@@ -1152,24 +1352,40 @@ $insightTitle =
                                                 Assigned
                                             </button>
 
-                                        <?php else: ?>
-
-                                            <form method="post" style="flex:1;">
+                                            <form method="post" style="margin-top:8px;"
+                                                data-confirm="Remove this training assignment? The employee keeps their ratings and AI plan.">
                                                 <?php echo csrf_field(); ?>
 
-                                                <input type="hidden" name="action" value="assign_course" />
+                                                <input type="hidden" name="action" value="unassign_training" />
 
                                                 <input type="hidden" name="uid"
-                                                    value="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>" />
+                                                    value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
 
-                                                <input type="hidden" name="course"
-                                                    value="<?php echo htmlspecialchars($queueRecommendation, ENT_QUOTES); ?>" />
-
-                                                <button class="btn-primary" type="submit" style="width:100%;">
-                                                    Assign Course
+                                                <button class="ghost-button" type="submit" style="width:100%;">
+                                                    Unassign
                                                 </button>
 
                                             </form>
+
+                                        <?php elseif ($queuePending): ?>
+
+                                            <a class="btn-primary" style="width:100%; text-align:center;"
+                                                href="review_recommendations.php">
+                                                Review plan
+                                            </a>
+
+                                        <?php elseif ($queueApproved): ?>
+
+                                            <button class="btn-primary" type="button" disabled>
+                                                Published
+                                            </button>
+
+                                        <?php else: ?>
+
+                                            <a class="ghost-button" style="width:100%; text-align:center;"
+                                                href="rate_employee.php?employee=<?php echo urlencode((string) ($queueUser['uid'] ?? '')); ?>">
+                                                Rate to refresh
+                                            </a>
 
                                         <?php endif; ?>
 
@@ -1181,7 +1397,11 @@ $insightTitle =
                     <?php else: ?>
 
                         <p id="insightText">
-                            No employee has been rated yet. Insights will appear here once KPI ratings exist.
+                            <?php if ($anyScored): ?>
+                                No interventions needed — every rated employee meets their target.
+                            <?php else: ?>
+                                No employee has been rated yet. Insights will appear here once KPI ratings exist.
+                            <?php endif; ?>
                         </p>
 
                     <?php endif; ?>

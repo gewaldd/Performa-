@@ -83,8 +83,7 @@ $recommendation = 'Review the latest feedback with your supervisor.';
                 </label>
 
                 <div class="topbar-actions">
-                    <div class="deadline-pill">3 new comments this week</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
+
                 </div>
             </header>
 
@@ -100,10 +99,7 @@ $recommendation = 'Review the latest feedback with your supervisor.';
                             <h2>Feedback History</h2>
                             <p>See the latest comments and your current response status.</p>
                         </div>
-                        <div class="panel-actions">
-                            <button class="ghost-button" type="button">Sort</button>
-                            <button class="ghost-button" type="button">Filter</button>
-                        </div>
+
                     </div>
 
                     <div class="table-toolbar">
@@ -178,11 +174,8 @@ $recommendation = 'Review the latest feedback with your supervisor.';
                         <strong><?php echo htmlspecialchars($recommendation, ENT_QUOTES); ?></strong>
                     </div>
 
-                    <button class="primary-button" id="assignCourseButton" type="button"
-                        data-completed-label="Acknowledged"
-                        data-confirm-text="Your feedback review has been noted.">Acknowledge Feedback</button>
-                    <p class="microcopy">Use your feedback page to track what needs a response and where you are already
-                        aligned.</p>
+                    <a class="primary-button" href="probationary_employee_dashboard.php#acknowledgements">Acknowledge on Dashboard</a>
+                    <p class="microcopy">Monthly summaries are acknowledged on your dashboard, where receipt is recorded.</p>
                 </aside>
             </section>
         </main>

@@ -8,6 +8,7 @@ require_role('supervisor');
 require_password_reset('settings.php');
 
 $supervisorName = $_SESSION['name'] ?? 'Supervisor';
+$supervisorUid = (string) ($_SESSION['uid'] ?? '');
 
 $notifications = [];
 $unreadCount = 0;
@@ -17,6 +18,9 @@ try {
     foreach (get_cached_collection('Users', 600) as $doc) {
         $roleKey = strtolower(trim((string) ($doc['role'] ?? '')));
         if (strpos($roleKey, 'probation') !== false) {
+            if (!supervisor_is_in_scope($doc, $supervisorUid)) {
+                continue;
+            }
             $employees[$doc['uid']] = [
                 'name' => $doc['name'] ?? $doc['email'] ?? 'Unknown',
                 'uid' => $doc['uid'],
@@ -30,10 +34,22 @@ try {
     } catch (\Throwable $e) {
     }
 
+    // Rated means scored (same hasData semantics as the dashboard): a Ratings
+    // doc with empty/zero scores does not count, so both pages agree.
     $ratedUids = [];
     foreach ($ratings as $r) {
-        $ratedUids[$r['employeeUid'] ?? ''] = true;
+        $rScores = $r['scores'] ?? [];
+        $rVals = is_array($rScores)
+            ? array_filter(
+                array_map('floatval', $rScores),
+                static fn(float $v): bool => $v > 0
+            )
+            : [];
+        if ($rVals) {
+            $ratedUids[$r['employeeUid'] ?? ''] = true;
+        }
     }
+    $scopeUids = array_fill_keys(array_keys($employees), true);
 
     // Notification 1: employees who have never been rated.
     foreach ($employees as $uid => $emp) {
@@ -45,21 +61,32 @@ try {
                 'targetUrl' => 'ratings.php?employee=' . urlencode($uid),
                 'actionText' => 'Rate now',
                 'time' => 'Action required',
+                'timeMono' => false,
             ];
             $unreadCount++;
         }
     }
 
-    // Notification 2: most recent ratings submitted (last 5).
-    usort($ratings, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
-    $recent = array_slice($ratings, 0, 5);
+    // Notification 2: most recent ratings submitted (last 5), filtered to
+    // in-scope staff BEFORE slicing so out-of-scope activity can't crowd out
+    // the supervisor's own team.
+    $scopedRatings = array_values(array_filter(
+        $ratings,
+        static fn($r): bool => isset($scopeUids[$r['employeeUid'] ?? ''])
+    ));
+    usort($scopedRatings, fn($a, $b) => strcmp($b['ratedAt'] ?? '', $a['ratedAt'] ?? ''));
+    $recent = array_slice($scopedRatings, 0, 5);
     foreach ($recent as $r) {
+        // Only surface activity for in-scope staff (same assignment rule).
+        if (!isset($employees[$r['employeeUid'] ?? ''])) {
+            continue;
+        }
         $notifications[] = [
             'title' => 'Rating submitted for ' . ($r['employeeName'] ?? 'an employee'),
-            'detail' => 'Rated by ' . ($r['ratedBy'] === ($_SESSION['uid'] ?? '') ? 'you' : ($r['ratedByRole'] ?? 'a teammate')) . ' on ' . (!empty($r['ratedAt']) ? date('M j, Y', strtotime($r['ratedAt'])) : '—'),
+                'detail' => 'Rated by ' . ($r['ratedBy'] === ($_SESSION['uid'] ?? '') ? 'you' : ucfirst((string) ($r['ratedByRole'] ?? 'a teammate'))) . ' on ' . (!empty($r['ratedAt']) ? date('M j, Y', strtotime($r['ratedAt'])) : '—'),
             'unread' => false,
             'targetUrl' => 'ratings.php?employee=' . urlencode($r['employeeUid'] ?? ''),
-            'actionText' => 'View rating',
+                'actionText' => 'Open rating form',
             'time' => !empty($r['ratedAt']) ? date('M j', strtotime($r['ratedAt'])) : 'Recent',
         ];
     }
@@ -106,7 +133,7 @@ $_SESSION['pf_nav_unrated'] = $unreadCount;
                     <div class="panel-header">
                         <div>
                             <h2>Recent Alerts & Activity</h2>
-                            <p>Derived live from Firestore ratings and employee records.</p>
+                            <p>Newest first. Staff below still need an initial weekly rating.</p>
                         </div>
                         <?php if ($unreadCount > 0): ?>
                             <span class="status-pill status-warning" style="padding: 4px 10px; font-size: 12px;">
@@ -133,9 +160,9 @@ $_SESSION['pf_nav_unrated'] = $unreadCount;
                                         </div>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span class="notif-meta font-mono"><?php echo htmlspecialchars($notif['time'], ENT_QUOTES); ?></span>
+                                        <span class="notif-meta<?php echo ($notif['timeMono'] ?? true) ? ' font-mono' : ''; ?>"><?php echo htmlspecialchars($notif['time'], ENT_QUOTES); ?></span>
                                         <?php if (!empty($notif['targetUrl'])): ?>
-                                            <a class="ghost-button" style="padding: 5px 12px; font-size: 12px;" href="<?php echo htmlspecialchars($notif['targetUrl'], ENT_QUOTES); ?>">
+                                            <a class="<?php echo !empty($notif['unread']) ? 'btn-primary' : 'ghost-button'; ?>" style="padding: 5px 12px; font-size: 12px;" href="<?php echo htmlspecialchars($notif['targetUrl'], ENT_QUOTES); ?>">
                                                 <?php echo htmlspecialchars($notif['actionText'], ENT_QUOTES); ?>
                                             </a>
                                         <?php endif; ?>

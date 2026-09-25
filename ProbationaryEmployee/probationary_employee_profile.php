@@ -172,7 +172,7 @@ $profileDetails = [
 
                 <div class="topbar-actions">
                     <div class="deadline-pill">Complete your profile update</div>
-                    <button class="icon-button" type="button" aria-label="Notifications">Notifications</button>
+
                 </div>
             </header>
 
