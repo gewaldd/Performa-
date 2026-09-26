@@ -153,7 +153,7 @@ main#settingsPage {
   border-radius: 9px; background: #3474d1 !important;
   overflow: hidden;
 }
-.brand-mark-dot { width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.92); transform: translate(-4px, 4px); }
+/* Purged 2026-09 sweep: .brand-mark-dot */
 .brand-name { color: #fff; font-size: 16px; font-weight: 700; letter-spacing: .01em; }
 
 .nav { display: grid; gap: 3px; width: 100%; padding: 0; }
@@ -301,7 +301,7 @@ button.pf-menu-btn {
 .search-icon { display: grid; place-items: center; width: 16px; height: 16px; flex: 0 0 16px; color: var(--ui-muted); }
 .search-icon svg { width: 16px; height: 16px; }
 
-.deadline-pill, .pending-pill, .reports-period {
+.deadline-pill, .reports-period {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 36px; max-width: min(340px, 42vw); padding: 0 13px;
   border: 1px solid #d9e5f5 !important;
@@ -345,9 +345,9 @@ button.pf-menu-btn {
    BUTTONS — one set, 36-40px
    ============================================================ */
 .primary-button, .ghost-button, .acknowledge-button,
-.btn-primary, .btn-outline, .btn-outline-primary, .btn-cancel,
-.logout-link, .icon-button, .icon-button-square,
-.reset-button, .page-btn, .eval-btn, .edit-button {
+.btn-primary, .logout-link, .icon-button,
+/* Purged 2026-09: .btn-outline/.btn-outline-primary/.btn-cancel/.icon-button-square/.reset-button (zero markup refs) */
+.page-btn, .eval-btn, .edit-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   min-height: 36px; padding: 0 14px;
   border: 1px solid var(--ui-border) !important;
@@ -366,32 +366,31 @@ button.pf-menu-btn {
 }
 .primary-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 .primary-button:active, .btn-primary:active, .ghost-button:active,
-.btn-outline:active, .btn-outline-primary:active, .btn-cancel:active,
-.logout-link:active, .acknowledge-button:active, .reset-button:active,
-.page-btn:active:not(:disabled), .icon-button:active, .icon-button-square:active,
+.logout-link:active, .acknowledge-button:active,
+.page-btn:active:not(:disabled), .icon-button:active,
 .eval-btn:active, .edit-button:active, .btn-danger:active {
   transform: translateY(0) scale(.98);
 }
-.ghost-button, .btn-outline, .btn-outline-primary, .btn-cancel,
-.logout-link, .acknowledge-button, .reset-button, .page-btn {
+.ghost-button,
+.logout-link, .acknowledge-button, .page-btn {
   background: #fff !important; color: var(--ui-text) !important;
 }
-.ghost-button:hover, .btn-outline:hover, .btn-outline-primary:hover,
-.btn-cancel:hover, .logout-link:hover, .acknowledge-button:hover,
-.reset-button:hover, .page-btn:hover:not(:disabled) {
+.ghost-button:hover,
+.logout-link:hover, .acknowledge-button:hover,
+.page-btn:hover:not(:disabled) {
   background: var(--ui-soft) !important; border-color: #d6dee8 !important; color: var(--ui-blue-dark) !important;
 }
 .page-btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn-primary svg, .primary-button svg, .ghost-button svg, .btn-outline svg { width: 15px; height: 15px; flex: 0 0 15px; }
+.btn-primary svg, .primary-button svg, .ghost-button svg { width: 15px; height: 15px; flex: 0 0 15px; }
 
-.icon-button, .icon-button-square, .eval-btn, .edit-button {
+.icon-button, .eval-btn, .edit-button {
   width: 36px; height: 36px; flex: 0 0 36px; padding: 0 !important;
   border-radius: 8px !important;
   background: #fff !important; color: var(--ui-text) !important;
 }
 .icon-button { border-radius: 50% !important; }
-.icon-button svg, .icon-button-square svg, .eval-btn svg, .edit-button svg { width: 16px; height: 16px; }
-.icon-button:hover, .icon-button-square:hover, .eval-btn:hover, .edit-button:hover {
+.icon-button svg, .eval-btn svg, .edit-button svg { width: 16px; height: 16px; }
+.icon-button:hover, .eval-btn:hover, .edit-button:hover {
   background: var(--ui-soft) !important; border-color: #c7d2df !important; color: var(--ui-blue-dark) !important;
 }
 /* Dashboard evaluate action: keep circular affordance, theme color */
@@ -494,8 +493,8 @@ button.pf-menu-btn {
 .insight-card h2 { color: var(--ui-text) !important; margin: 0; font-size: var(--font-panel-title); font-weight: 700; letter-spacing: -0.01em; }
 .insight-card p { margin: 0; color: var(--ui-muted) !important; font-size: 13px; line-height: 1.55; }
 .insight-card p strong { color: var(--ui-text) !important; }
-.insight-score-row { display: flex; align-items: center; gap: 7px; color: var(--ui-muted) !important; font-size: 12.5px; }
-.insight-score-row strong { color: var(--ui-text) !important; font-family: var(--ui-font-mono); }
+/* Purged 2026-09 sweep: .insight-score-row */
+/* Purged 2026-09 sweep: .insight-score-row strong */
 .recommendation-box {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 14px !important;
@@ -528,7 +527,7 @@ button.pf-menu-btn {
 .filter-group { flex: 1 1 auto; min-width: 0; }
 .filter-select { flex: 1 1 160px; max-width: 280px; }
 .filter-actions { flex: 0 0 auto; margin-left: auto; }
-.filter-actions .reset-button, .filter-actions .ghost-button { min-height: 38px; }
+.filter-actions .ghost-button { min-height: 38px; }
 @media (max-width: 900px) {
   .filter-group { flex: 1 1 100%; }
   .filter-select { flex: 1 1 100%; max-width: none; }
@@ -618,6 +617,8 @@ button.pf-menu-btn {
 .kpi-row .edit-button { opacity: 1; }
 
 .employee-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
+/* Unified brand mark: refined ascending bars, inherits tile color. */
+.brand-mark > svg { width: 62%; height: 62%; display: block; color: #fff; }
 .avatar {
   width: 34px; height: 34px; flex: 0 0 34px;
   border-radius: 50%; background-size: cover; background-position: center;
@@ -690,9 +691,8 @@ button.pf-menu-btn {
 .status-warning { color: var(--ui-amber) !important; }
 .status-ready { color: var(--ui-blue-dark) !important; }
 .status-danger { color: var(--ui-red) !important; }
-.status-neutral { color: #4b5b73 !important; } /* token audit: --ui-muted (~4.4:1) fails 12px-bold 4.5:1; #4b5b73 reuses the dept-pill token (~7:1) */
-.dept-blue, .dept-gray, .dept-orange, .dept-green, .dept-purple { color: #4b5b73 !important; }
-.category-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; }
+.status-neutral { color: #4b5b73 !important; } /* token audit: --ui-muted (~4.4:1) fails 12px-bold 4.5:1; #4b5b73 is the accessible fallback (~7:1) */
+/* Purged 2026-09: .dept-blue/-gray/-orange/-green/-purple + .category-status (dept hash cycle removed from employees.php; zero markup refs). */
 
 .pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px 8px; border-top: 1px solid var(--ui-border-soft); font-size: 13px; color: var(--ui-muted); }
 .page-buttons { display: flex; gap: 8px; align-items: center; }
@@ -744,8 +744,8 @@ button.pf-menu-btn {
 .category-target-row strong { color: var(--ui-text); font-family: var(--ui-font-mono); }
 .category-bar { height: 6px; border-radius: 999px; background: #e6ebf1; overflow: hidden; }
 .category-bar span { display: block; height: 100%; }
-.category-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--ui-blue-soft); color: var(--ui-blue-dark); }
-.category-icon svg { width: 16px; height: 16px; }
+/* Purged 2026-09 sweep: .category-icon */
+/* Purged 2026-09 sweep: .category-icon svg */
 .kpi-edit-form { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kpi-edit-form.is-open { display: flex; }
 
@@ -788,13 +788,13 @@ button.pf-menu-btn {
   padding: 12px 0 !important;
 }
 .reports-section-count { color: var(--ui-muted); font-size: 13px; }
-.reports-contributors { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: #fff; box-shadow: var(--ui-shadow); margin-top: 14px; }
-.contributors-content { display: flex; align-items: center; gap: 12px; }
-.contributors-avatars { display: flex; }
-.contributors-avatar { width: 30px; height: 30px; border-radius: 50%; background-size: cover; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--ui-border); margin-left: -8px; }
-.contributors-avatar:first-child { margin-left: 0; }
-.contributors-summary { font-size: 13px; color: var(--ui-muted); }
-.contributors-label { font-size: 13px; color: var(--ui-muted); margin: 0; }
+/* Purged 2026-09 sweep: .reports-contributors */
+/* Purged 2026-09 sweep: .contributors-content */
+/* Purged 2026-09 sweep: .contributors-avatars */
+/* Purged 2026-09 sweep: .contributors-avatar */
+/* Purged 2026-09 sweep: .contributors-avatar:first-child */
+/* Purged 2026-09 sweep: .contributors-summary */
+/* Purged 2026-09 sweep: .contributors-label */
 
 /* ============================================================
    FORMS

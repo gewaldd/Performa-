@@ -49,6 +49,7 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | My Goals</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
     <meta name="description"
         content="Probationary employee goals page for tracking task progress and goal completion." />
     <link rel="stylesheet" href="styles.css" />
@@ -60,7 +61,7 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
         <aside class="sidebar">
             <div>
                 <div class="brand">
-                    <div class="brand-mark">P</div>
+                    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></div>
                     <div>
                         <div class="brand-name">Performa</div>
                         <div class="brand-subtitle">Probationary Employee Goals</div>
@@ -121,6 +122,7 @@ $recommendation = $user['goalRecommendation'] ?? 'Review your assigned goals wit
                     </article>
                 <?php endforeach; ?>
             </section>
+            <p class="microcopy" style="margin: 0 0 4px;">Completion averages all your goals and updates when your supervisor rates you.</p>
 
             <section class="content-grid">
                 <div class="panel evaluations">

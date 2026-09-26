@@ -320,6 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             <input type="hidden" name="employee" value="<?php echo htmlspecialchars($selectedUid, ENT_QUOTES); ?>" />
             <p class="microcopy" style="margin:0 0 12px;">Industry template: <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong></p>
             <div class="pf-rate-preview" id="ratePreview" aria-live="polite"></div>
+            <p class="microcopy" style="margin:0 0 12px;">Scores start at 3.0 — adjust each KPI before saving.</p>
             <div class="pf-rate-grid">
               <?php foreach ($template['kpis'] as $kpi): ?>
                 <?php

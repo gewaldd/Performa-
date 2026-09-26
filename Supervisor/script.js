@@ -99,4 +99,24 @@
       }
     });
   }
+
+  // Rating Entry: the employee picker auto-submits on change, which would
+  // silently discard edited scores. Confirm first when the form is dirty.
+  (function initPickerGuard() {
+    const picker = document.getElementById("employee");
+    const rateForm = document.getElementById("rateForm");
+    if (!picker || !rateForm || !picker.closest("form")) return;
+    const pickerForm = picker.closest("form");
+    let initial = picker.value;
+    let dirty = false;
+    rateForm.addEventListener("input", () => { dirty = true; });
+    picker.removeAttribute("onchange");
+    picker.addEventListener("change", () => {
+      if (dirty && !window.confirm("Switch employee? Unsaved scores on this page will be lost.")) {
+        picker.value = initial;
+        return;
+      }
+      pickerForm.submit();
+    });
+  })();
 })();

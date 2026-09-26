@@ -114,9 +114,11 @@ if ($feedbackBackfillOps) {
     }
 }
 
+$acknowledgedCount = count(array_filter($acknowledgements, static fn(array $ack): bool => ($ack['status'] ?? '') === 'Acknowledged'));
+$pendingAcknowledgementCount = count($acknowledgements) - $acknowledgedCount;
 $summaryMetrics = [
-    ['label' => 'Current KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
-    ['label' => 'Acknowledgements', 'value' => '0/' . count($acknowledgements), 'badge' => 'Pending', 'tone' => 'warning', 'variant' => 'gold', 'icon' => '⌛'],
+    ['label' => 'Current KPI Score', 'value' => $latestScore === null ? '-' : number_format($latestScore, 1), 'suffix' => $latestScore === null ? '' : '/ 5.0', 'badge' => 'Current', 'tone' => 'neutral', 'variant' => 'mint', 'icon' => '▣'],
+    ['label' => 'Acknowledgements', 'value' => $acknowledgedCount . '/' . count($acknowledgements), 'badge' => $pendingAcknowledgementCount > 0 ? 'Pending' : 'Complete', 'tone' => $pendingAcknowledgementCount > 0 ? 'warning' : 'positive', 'variant' => 'gold', 'icon' => '⌛'],
     ['label' => 'Onboarding Progress', 'value' => (string) ($user['onboardingProgress'] ?? 0), 'suffix' => '%', 'badge' => 'Current', 'tone' => 'positive', 'variant' => 'warm', 'icon' => '✓'],
 ];
 
@@ -205,11 +207,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acknowledgeSummary'])
     $_SESSION['probationary_acknowledgements'] = $acknowledgements;
 }
 
-$acknowledgedCount = count(array_filter($acknowledgements, static fn(array $ack): bool => $ack['status'] === 'Acknowledged'));
-$pendingAcknowledgementCount = count($acknowledgements) - $acknowledgedCount;
-$summaryMetrics[1]['value'] = $acknowledgedCount . '/' . count($acknowledgements);
-$summaryMetrics[1]['badge'] = $pendingAcknowledgementCount > 0 ? 'Pending' : 'Complete';
-$summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'positive';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -218,6 +215,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performa | Probationary Employee</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
     <meta name="description" content="Probationary employee page for KPI review and acknowledgement." />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="../ui-refresh.css" />
@@ -228,7 +226,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
         <aside class="sidebar">
             <div>
                 <div class="brand">
-                    <div class="brand-mark">P</div>
+                    <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></div>
                     <div>
                         <div class="brand-name">Performa</div>
                         <div class="brand-subtitle">Probationary Employee</div>
@@ -408,7 +406,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                     <div class="panel-header">
                         <div>
                             <h2>Acknowledgements</h2>
-                            <p>Confirm receipt of each monthly performance summary.</p>
+                            <p>Confirm receipt of each monthly performance summary. Acknowledging means "I have seen this summary."</p>
                         </div>
                     </div>
 
@@ -424,7 +422,7 @@ $summaryMetrics[1]['tone'] = $pendingAcknowledgementCount > 0 ? 'warning' : 'pos
                                 <span><?php echo htmlspecialchars($ack['month'], ENT_QUOTES); ?></span>
                                 <span class="ack-status"><?php echo htmlspecialchars($ack['status'], ENT_QUOTES); ?></span>
                                 <span
-                                    class="ack-timestamp"><?php echo $ack['timestamp'] ? htmlspecialchars($ack['timestamp'], ENT_QUOTES) : 'Not yet'; ?></span>
+                                    class="ack-timestamp"><?php echo htmlspecialchars(probationary_date($ack['timestamp'] ?? null, 'Not yet'), ENT_QUOTES); ?></span>
                                 <?php if ($ack['status'] === 'Pending'): ?>
                                     <form method="post">
                                         <input type="hidden" name="acknowledgementId"

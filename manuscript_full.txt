@@ -69,20 +69,20 @@ Figure 5 Design 3………………………………………………………………………………..45
 Figure 6 KPI’s Page (Employer)……...…………………………………………………………50
 Figure 7 Reports Page (Employer)..............................................………………………………..51
 Figure 8 Settings Page (Employer).............................................…………………..……………52
-Figure 9 Supervisor Login Page…………………………………..……………………………..52
-Figure 10 Supervisor Dashboard…………………………………...……………………..……..53
-Figure 11 KPI’s Page (Supervisor).........................................………………………...…………56
-Figure 12 Probationary Employee Login Page……………..…………………………………...55
-Figure 13 Probationary Employee Dashboard…...……………………………………………...58
-Figure 14 Design 1……………………………………………………………………...……….60
-Figure 15 Design 2……………………………………………………………………………....61
-Figure 16 Design 3……………………………………………………………………………....63
-Figure 17 RAD Model………………………………………………….……………………….78
-Figure 18 ISO 25010…………………………………………………………………………….82
-Figure 19 Work Plan……………………………………………………………..……………...89
-Figure 20  Market Model………………………...………………………...……………………91
-Figure 21 Market Strategy.…………………………...………………………………………….95
-Figure 22 Business Model.………………………………...…………………………………….96
+Figure 10 Supervisor Login Page…………………………………..……………………………..52
+Figure 11 Supervisor Dashboard…………………………………...……………………..……..53
+Figure 13 KPI’s Page (Supervisor).........................................………………………...…………56
+Figure 14 Probationary Employee Login Page……………..…………………………………...55
+Figure 15 Probationary Employee Dashboard…...……………………………………………...58
+Figure 16 Design 1……………………………………………………………………...……….60
+Figure 17 Design 2……………………………………………………………………………....61
+Figure 18 Design 3……………………………………………………………………………....63
+Figure 19 RAD Model………………………………………………….……………………….78
+Figure 20 ISO 25010…………………………………………………………………………….82
+Figure 21 Work Plan……………………………………………………………..……………...89
+Figure 22  Market Model………………………...………………………...……………………91
+Figure 23 Market Strategy.…………………………...………………………………………….95
+Figure 24 Business Model.………………………………...…………………………………….96
 
 
 
@@ -198,6 +198,7 @@ Employee Profile Management. The Employer may create, update, and manage probati
 KPI Configuration. The Employer may define and assign Key Performance Indicators per job role using the KPI Configuration Module, which includes access to pre-built KPI templates organized by industry (retail, BPO, food service, logistics, and construction). KPI weights and scoring thresholds are configurable by the Employer.
 Performance Rating Entry. The Employer may input weekly KPI performance scores for each probationary employee through the Performance Rating Module.
 AI-Generated Training Recommendations. The Employer may view monthly AI-generated summaries that identify each employee's weak performance areas and recommend targeted training interventions, generated via the Google Gemini API.
+Training Recommendation Review. The Employer may review, edit, approve, or reject each pending AI-generated training plan. Approved plans are published to the probationary employee's dashboard as part of the monthly performance summary, while rejected plans are discarded. Recommendations remain in the pending approval state until the Employer acts, ensuring that the employer retains full decision-making authority over training interventions.
 Regularization Recommendation. The Employer receives an AI-assisted regularization recommendation at the middle of the fifth month of each employee's probationary period, providing a data-driven basis for the regularization or termination decision, delivered through the Regularization Recommendation Module.
 Deadline Tracking and Alerts. The Employer receives automated alerts at 150, 165, and 178 days of each employee's probationary period via the Deadline Tracker Module, in compliance with Article 296 of the Philippine Labor Code.
 PDF Report Generation. The Employer may export a PDF performance report per employee containing complete monthly scores, AI-generated training recommendations, and regularization decision records through the PDF Report Export Module.
@@ -390,17 +391,23 @@ Figure 8 shows the Settings screen where the employer can manage their account p
 Figure 8
 Settings Page (Employer)
 
+Review Training Suggestions Page (Employer)
+This shows the Review Training Suggestions screen where the employer reviews AI-generated training plans before they are sent to probationary employees. Each pending plan displays the employee's name, the lowest-rated competency area with its score against the target, the Random Forest classification (Meets Expectations, Needs Improvement, or Critical Gap), the AI-generated summary, and the suggested training interventions with their training type and timeline. The employer may edit a recommendation, approve the plan to publish it to the employee's dashboard, or reject it to discard it. A plan remains in the pending approval state until the employer acts, so no AI-generated recommendation reaches the employee without the employer's approval.
+
+Figure 9
+Review Training Suggestions Page (Employer)
+
 
 
 Supervisor Login Page
-Figure 9 shows the Supervisor Portal login screen which serves as the entry point for supervisors who want to access the Performa system. The supervisor is required to enter their work email and password to sign in. Once the credentials are filled in the supervisor can click the Sign In as Supervisor button to proceed. A Forgot Password option is also available in case the supervisor cannot remember their credentials. A Keep Me Signed In checkbox is provided for session convenience. A Quick Switch link is also visible which allows the user to switch to the Employer Portal if needed. A Supervisor Support Line chat button is available at the bottom right corner of the screen for supervisors who need assistance. 
-Figure 9
+Figure 10 shows the Supervisor Portal login screen which serves as the entry point for supervisors who want to access the Performa system. The supervisor is required to enter their work email and password to sign in. Once the credentials are filled in the supervisor can click the Sign In as Supervisor button to proceed. A Forgot Password option is also available in case the supervisor cannot remember their credentials. A Keep Me Signed In checkbox is provided for session convenience. A Quick Switch link is also visible which allows the user to switch to the Employer Portal if needed. A Supervisor Support Line chat button is available at the bottom right corner of the screen for supervisors who need assistance. 
+Figure 10
 Supervisor Login Page
 
 
 Supervisor Dashboard
 This shows the Supervisor Dashboard which displays the Probationary Overview of all employees under the supervisor's team. It shows a summary of the total number of probationary employees, the number of employees nearing their regularization deadline, and the overall performance score of the team. The Active Evaluations table lists each employee along with their timeline progress, KPI score, and a Grade button for submitting evaluations. An AI Insight panel on the right side displays intervention suggestions and training recommendations for employees who need attention. The supervisor can navigate to other sections of the system such as Employees, KPIs, Reports, Settings, and Notifications through the sidebar on the left. 
-Figure 10
+Figure 11
 Supervisor Dashboard
 
 
@@ -408,7 +415,7 @@ Employees Page (Supervisor)
 This shows the Employees screen where the supervisor can manage and organize the workforce directory. It displays a list of all employees along with their role, department, employment type, and current status. The supervisor can filter the list by department, status, and employment type to quickly find a specific employee. At the bottom of the screen a Team Overview Stats section is shown which displays the average department rating and the number of active tasks for the team. A pending approvals notification is also visible at the top right corner of the screen. 
 
 
-Figure 11
+Figure 12
 Employees Page (Supervisor)
 
 
@@ -417,7 +424,7 @@ Employees Page (Supervisor)
 
 KPI’s Page (Supervisor)
 This shows the Key Performance Indicators screen for the supervisor where they can view and track the performance metrics of each team member. The supervisor can select a specific employee from the dropdown to view their Individual KPI records. The Performance Metrics table displays each KPI name along with the target score, current score, trend, and status showing whether the employee is Exceeding, Warning, or Below Target. Summary cards are shown at the bottom displaying the scores for Attendance Rate, Code Quality, and Team Collaboration with their corresponding statuses. Note that KPI templates are managed by the administrator and the supervisor needs to contact HR for any adjustments.
-Figure 11
+Figure 13
 KPIs Page (Supervisor)
 
 
@@ -425,7 +432,7 @@ KPIs Page (Supervisor)
 Probationary Employee Login Page
 This shows the Employee Portal login screen which serves as the entry point for employees who want to access the Performa system. The employee is required to enter their employee email and password to sign in. A Forgot Password option is also available in case the employee cannot remember their credentials. A Remember This Device checkbox is provided for session convenience. Once the credentials are filled in the employee can click the Sign In as Employee button to proceed. A reminder notification is also visible at the bottom right corner prompting the employee to review their roadmap after login. 
 
-Figure 12
+Figure 14
 Probationary Employee Login Page
 
 Probationary Employee Dashboard
@@ -433,19 +440,19 @@ This shows the Employee Dashboard which is the main screen that the employee see
 
 
 
-Figure 13
+Figure 15
 Probationary Employee Dashboard
 
 
 Design Discussion
 Three candidate dashboard designs for Performa were evaluated during the User Design phase of development. Design 1 is a PHP-based single-page application using CSS utility classes for layout and styling. Design 2 is a PHP-based application using a component library (shadcn/ui) for structured UI components. Design 3 is a PHP-based application using custom CSS modules. Each design was evaluated on three performance criteria: render time, memory usage, and file size. The results of this evaluation are presented in the Design Trade-Offs section below
-Figure 14
+Figure 16
 Design 1
 
 
 
-Figure 14 displays Design 2, uses a dark background dashboard. Dark shades of gray are used for the navigation bar and sidebar light shades of white and cards are used for the content area for easy readability. New additions that are not seen in Design 1 include: Probationary Timeline section which will be used to display each employee’s progression on a bar of 5 months. Each color on the bar represents 'on track', 'caution', and 'critical' states with green, yellow, and red colors respectively. A Urgent Regularization warning bar can be seen at the top of the content area which should alert the user to the people with imminent deadlines. On the right, there is a Performance Summary section to showcase the top employee, most improved and most at-risk employee. There is a "Today's Ratings" section at the bottom where users get live prompts about performance appraisals and there is a "AI Insights" panel at the bottom to give suggestions. Though dark themes reduce the stress on the eyes for continuous use, which is a favored characteristic of all modern productivity tools, dark renders need more complex compositing than light ones which increases memory to 990,904 KB and render time to 372ms.
-Figure 15
+Figure 16 displays Design 2, uses a dark background dashboard. Dark shades of gray are used for the navigation bar and sidebar light shades of white and cards are used for the content area for easy readability. New additions that are not seen in Design 1 include: Probationary Timeline section which will be used to display each employee’s progression on a bar of 5 months. Each color on the bar represents 'on track', 'caution', and 'critical' states with green, yellow, and red colors respectively. A Urgent Regularization warning bar can be seen at the top of the content area which should alert the user to the people with imminent deadlines. On the right, there is a Performance Summary section to showcase the top employee, most improved and most at-risk employee. There is a "Today's Ratings" section at the bottom where users get live prompts about performance appraisals and there is a "AI Insights" panel at the bottom to give suggestions. Though dark themes reduce the stress on the eyes for continuous use, which is a favored characteristic of all modern productivity tools, dark renders need more complex compositing than light ones which increases memory to 990,904 KB and render time to 372ms.
+Figure 17
 Design 2
 
 
@@ -454,9 +461,9 @@ Design 2
 
 
 
-Figure 15 presents the Design 3 which is a white, light themed with purple as its prominent color. White as the main navigation with search bar and user link. Landing page displays a live greeting card which is styled with purple gradient showing the current logged in users name, pending evaluation count and a motivation statement. The 4 cards summarizes on: Count for active probationary employees, Average KPI Score, days left till the deadlines and a progress bar showing training completion percentage. Performa AI recommendation card is on the right and display particular AI recommendations based on each employee with 2 buttons "view details" and "schedule training" for each employee and the other section is ofRecent evaluations where employees are presented in cards, with color coded status and scores of employees are presented vertically. And on the right there is Upcoming Deadlines section which graphically represents employee deadlines like Gantt charts for employees for upcoming regularization. This design feels simple, elegant and professional. Since many components and the dynamic rendering of content made the memory consumption the highest (1,019,964 KB) compared to other two designs (288ms render time).
+Figure 17 presents the Design 3 which is a white, light themed with purple as its prominent color. White as the main navigation with search bar and user link. Landing page displays a live greeting card which is styled with purple gradient showing the current logged in users name, pending evaluation count and a motivation statement. The 4 cards summarizes on: Count for active probationary employees, Average KPI Score, days left till the deadlines and a progress bar showing training completion percentage. Performa AI recommendation card is on the right and display particular AI recommendations based on each employee with 2 buttons "view details" and "schedule training" for each employee and the other section is ofRecent evaluations where employees are presented in cards, with color coded status and scores of employees are presented vertically. And on the right there is Upcoming Deadlines section which graphically represents employee deadlines like Gantt charts for employees for upcoming regularization. This design feels simple, elegant and professional. Since many components and the dynamic rendering of content made the memory consumption the highest (1,019,964 KB) compared to other two designs (288ms render time).
 
-Figure 16
+Figure 18
 Design 3
 
 
@@ -529,8 +536,8 @@ Beyond structural hyperparameter tuning, sensitivity analysis is applied to the 
 This directly satisfies the legal compliance requirements of Article 296 of the Philippine Labor Code. If an employee challenges a Needs Improvement classification or an automated training pathway recommendation, the platform's input sensitivity analysis provides a completely auditable math log. This output confirms that the classification was driven objectively by systemic features (e.g., a 45% drop in "Quality of Work" metrics) rather than supervisor bias or erratic tracking anomalies.
 
 Project Development
-	Performa is developed using the Rapid Application Development (RAD) Model, which uses iterative prototype development, feedback from users and fast delivery. This model is especially attractive for web applications such as Performa, since these users can feed back to the model to make continuous improvements, minimize the chance of diverging requirements, and receive a working prototype earlier in the development cycle. The RAD model has four stages: Requirements Planning, User Design, Construction and Cutover, as shown in Figure 13.
-Figure 17
+	Performa is developed using the Rapid Application Development (RAD) Model, which uses iterative prototype development, feedback from users and fast delivery. This model is especially attractive for web applications such as Performa, since these users can feed back to the model to make continuous improvements, minimize the chance of diverging requirements, and receive a working prototype earlier in the development cycle. The RAD model has four stages: Requirements Planning, User Design, Construction and Cutover, as shown in Figure 15.
+Figure 19
 Rapid Application Development (RAD) Model
 
 
@@ -565,7 +572,7 @@ Selected Evaluation Criteria
 
 
 
-Figure 18
+Figure 20
 ISO 25010
 
 
@@ -603,13 +610,13 @@ Performa has significant commercialization potential within the Philippine SME m
 Work Plan
 The development of Performa follows the four phases of the Rapid Application Development (RAD) model described in the Project Development section. The work plan spans from May 2026 through April 2027, consistent with the Summer 2026 to April 2027 academic timeline. Table 4 presents the complete project timeline with phase names, activities, deliverables, and responsible team members for each activity.
 
-Figure 19
+Figure 21
 Work Plan
 Market Model
 TAM: The total available market for Performa encompasses all registered micro and small business establishments in the Philippines that employ at least one worker. Based on the 2023 Philippine MSME Statistics published by the Philippine Statistics Authority, there are approximately 1.07 million micro businesses and 158,000 small businesses registered in the country, bringing the combined total to over 1.2 million establishments (Philippine Statistics Authority, 2023).
 SAM: The serviceable available market is narrowed to establishments with 5 to 30 employees in sectors with high employee turnover and regular use of probationary employment, specifically retail, food service, BPO, logistics, and tutorial and learning services. This narrows the SAM to approximately 300,000 establishments.
 SOM: The serviceable obtainable market for Year 1 is conservatively estimated at 0.5% of the SAM, or approximately 1,500 establishments, based on projected digital marketing reach and direct partnership outreach. This estimate is subject to revision based on actual deployment and user acquisition data.
-Figure 20
+Figure 22
 Market Model
 
 
@@ -622,7 +629,7 @@ Three-Year Product Roadmap
 
 Go-To-Market Strategy
 The go-to-market strategy for Performa targets three primary channels: direct institutional partnerships with SME associations and business development organizations in the Philippines; digital marketing via LinkedIn and Facebook targeting SME owners and HR practitioners; and referral partnerships with accounting and payroll software providers whose clients represent the SME target market.
-Figure 21
+Figure 23
 Market Strategy
 
 
@@ -634,7 +641,7 @@ Business Model
 Performa will operate on a subscription-based Software-as-a-Service (SaaS) business model with tiered pricing based on the number of active probationary employees tracked. The base tier (up to 5 active probationary employees) is priced at PHP 499 per month. The standard tier (6 to 15 active probationary employees) is priced at PHP 999 per month. The professional tier (16 to 30 active probationary employees) is priced at PHP 1,799 per month. All tiers include full access to all system features including KPI configuration, AI training recommendations, regularization recommendation, and PDF report export.
 
 
-Figure 22
+Figure 24
 Business Model
 
 

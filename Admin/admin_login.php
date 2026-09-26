@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Performa — Admin Login</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="../ui-refresh.css" />
     <script type="module">
@@ -51,7 +52,7 @@
         <main class="main" style="display:flex;align-items:center;justify-content:center;min-height:80vh;padding:40px;">
             <div class="panel" style="max-width:420px;width:100%;padding:28px;border-radius:18px;text-align:left;">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-                    <div class="brand-mark" style="width:48px;height:48px;border-radius:12px;font-size:20px;">P</div>
+                    <div class="brand-mark" style="width:48px;height:48px;border-radius:12px;font-size:20px;"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style="width:62%;height:62%;"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></div>
                     <div>
                         <div style="font-weight:800;font-size:1.1rem;">Performa</div>
                         <div style="font-size:12px;color:var(--muted);">Admin sign in</div>

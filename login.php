@@ -9,28 +9,37 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Performa — Login</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="Admin/styles.css" />
     <style>
         :root {
-            --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "IBM Plex Sans", "Segoe UI", sans-serif;
             --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+            --apple-blue: #0071e3;
+            --apple-blue-dark: #0068d1;
+            --apple-link: #0066cc;
+            --apple-hairline: rgba(0, 0, 0, 0.08);
+            --apple-ring: 0 0 0 4px rgba(0, 113, 227, 0.15);
         }
 
         body {
             margin: 0;
             font-family: var(--font-sans);
-            background: #f8fafc;
+            background: radial-gradient(1200px 620px at 50% -10%, #e2ebff 0%, #f2f6fb 55%, #e4eaf3 100%);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
 
         .top-bar {
             width: 100%;
-            height: 78px;
-            background: var(--sidebar, #0f172a);
+            height: 64px;
+            background: transparent;
             display: flex;
             align-items: center;
+            justify-content: center;
             padding: 0 28px;
             position: relative;
             z-index: 2;
@@ -43,32 +52,45 @@
         }
 
         .top-bar-mark {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 9px;
             display: grid;
             place-items: center;
-            background: linear-gradient(145deg, #3c78ff, #70a2ff);
+            background: linear-gradient(145deg, #0071e3, #42a1ff);
             color: #fff;
+            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.30);
         }
 
         .top-bar-mark svg {
-            width: 18px;
-            height: 18px;
+            width: 19px;
+            height: 19px;
         }
 
         .top-bar-name {
-            color: #fff;
-            font-weight: 700;
-            font-size: 16px;
+            color: var(--text);
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+        }
+
+        .top-bar::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 113, 227, 0.25), transparent);
+            pointer-events: none;
         }
 
         .login-wrap {
-            min-height: calc(100vh - 78px);
+            min-height: calc(100vh - 64px);
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 56px 20px 40px;
+            padding: 32px 20px 48px;
             position: relative;
             z-index: 1;
         }
@@ -78,70 +100,56 @@
             align-items: center;
             gap: 10px;
             justify-content: center;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
-        .login-header .brand-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            font-size: 0;
-            display: grid;
-            place-items: center;
-        }
-
-        .login-header .brand-mark svg {
-            width: 22px;
-            height: 22px;
-        }
-
+        .login-header .brand-mark,
         .login-header .brand-name {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--text);
+            display: none;
         }
 
         .login-subtitle {
             text-align: center;
-            color: var(--muted);
+            color: #42506a;
             font-size: 14px;
-            margin: 0 0 26px;
+            font-weight: 500;
+            margin: 0 0 28px;
         }
 
         .login-card {
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
         }
 
         .login-panel {
             background: #ffffff;
-            border: 1px solid var(--panel-border);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-            padding: 30px;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 20px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.07);
+            padding: 36px 36px 32px;
         }
 
         .field-group {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .field-label-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 7px;
         }
 
         .field-label {
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text);
         }
 
         .field-link {
             font-size: 12px;
             font-weight: 600;
-            color: var(--primary);
+            color: var(--apple-link);
             text-decoration: none;
             background: none;
             border: none;
@@ -153,6 +161,12 @@
             text-decoration: underline;
         }
 
+        .field-link:focus-visible {
+            outline: none;
+            box-shadow: var(--apple-ring);
+            border-radius: 4px;
+        }
+
         .input-shell {
             position: relative;
             display: flex;
@@ -161,23 +175,23 @@
 
         .input-shell svg {
             position: absolute;
-            left: 12px;
-            width: 15px;
-            height: 15px;
+            left: 14px;
+            width: 16px;
+            height: 16px;
             color: var(--muted);
             pointer-events: none;
         }
 
         .input-shell input {
             width: 100%;
-            height: 38px;
-            padding: 0 14px 0 38px;
-            border-radius: 8px;
-            border: 1px solid var(--panel-border);
+            height: 48px;
+            padding: 0 14px 0 42px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
             background: #fff;
             color: var(--text);
             font: inherit;
-            font-size: 14px;
+            font-size: 15px;
             transition: border-color 150ms ease, box-shadow 150ms ease;
         }
 
@@ -187,43 +201,68 @@
 
         .input-shell input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.15);
+            border-color: var(--apple-blue);
+            box-shadow: var(--apple-ring);
+        }
+
+        .input-shell input:focus-visible {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: var(--apple-ring);
         }
 
         .input-shell.has-toggle input {
-            padding-right: 36px;
+            padding-right: 40px;
+        }
+
+        .input-shell input:-webkit-autofill,
+        .input-shell input:-webkit-autofill:hover,
+        .input-shell input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 100px #fff inset;
+            -webkit-text-fill-color: var(--text);
+            caret-color: var(--text);
+            transition: background-color 9999s ease-in-out 0s;
         }
 
         .toggle-visibility {
             position: absolute;
-            right: 10px;
+            right: 12px;
             background: none;
             border: none;
             cursor: pointer;
             color: var(--muted);
             display: grid;
             place-items: center;
-            padding: 2px;
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .toggle-visibility:hover {
+            color: var(--text);
+        }
+
+        .toggle-visibility:focus-visible {
+            outline: none;
+            box-shadow: var(--apple-ring);
         }
 
         .toggle-visibility svg {
             position: static;
-            width: 17px;
-            height: 17px;
+            width: 18px;
+            height: 18px;
         }
 
         .remember-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .remember-row input[type="checkbox"] {
-            width: 15px;
-            height: 15px;
-            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+            accent-color: var(--apple-blue);
         }
 
         .remember-row label {
@@ -233,23 +272,32 @@
 
         .submit-button {
             width: 100%;
-            height: 38px;
-            border-radius: 9px;
+            height: 48px;
+            border-radius: 12px;
             border: 0;
-            background: var(--sidebar, #0f172a);
+            background: var(--apple-blue);
             color: #fff;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
-            transition: background 150ms ease, transform 150ms ease;
+            transition: background 150ms ease, transform 150ms ease, opacity 150ms ease;
         }
 
         .submit-button:hover:not(:disabled) {
-            background: #1a2540;
+            background: var(--apple-blue-dark);
+        }
+
+        .submit-button:active:not(:disabled) {
+            transform: scale(0.99);
+        }
+
+        .submit-button:focus-visible {
+            outline: none;
+            box-shadow: var(--apple-ring);
         }
 
         .submit-button:disabled {
-            opacity: 0.7;
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
@@ -260,10 +308,10 @@
             background: rgba(235, 87, 87, 0.1);
             border: 1px solid rgba(235, 87, 87, 0.28);
             color: #b23b3b;
-            border-radius: 10px;
-            padding: 10px 12px;
+            border-radius: 12px;
+            padding: 11px 13px;
             font-size: 13px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .login-error.visible {
@@ -274,13 +322,13 @@
             text-align: center;
             font-size: 13px;
             color: var(--muted);
-            margin-top: 18px;
-            padding-top: 16px;
-            border-top: 1px solid var(--panel-border);
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--apple-hairline);
         }
 
         .login-footer-link a {
-            color: var(--text);
+            color: var(--apple-link);
             font-weight: 600;
             text-decoration: none;
         }
@@ -289,9 +337,15 @@
             text-decoration: underline;
         }
 
+        .login-footer-link a:focus-visible {
+            outline: none;
+            box-shadow: var(--apple-ring);
+            border-radius: 4px;
+        }
+
         .secure-badge-row {
             text-align: center;
-            margin-top: 22px;
+            margin-top: 26px;
         }
 
         .secure-badge {
@@ -301,10 +355,10 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--muted);
-            background: #fff;
-            border: 1px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--apple-hairline);
             border-radius: 999px;
-            padding: 6px 12px;
+            padding: 6px 13px;
         }
 
         .secure-badge svg {
@@ -314,11 +368,11 @@
 
         .login-blurb {
             text-align: center;
-            font-size: 12px;
+            font-size: 12.5px;
             color: var(--muted);
-            max-width: 320px;
-            margin: 10px auto 0;
-            line-height: 1.5;
+            max-width: 330px;
+            margin: 12px auto 0;
+            line-height: 1.55;
         }
 
         @media (max-width: 480px) {
@@ -327,15 +381,31 @@
             }
 
             .login-panel {
-                padding: 22px;
+                padding: 28px 24px;
             }
 
             .top-bar {
+                height: 56px;
                 padding: 0 16px;
             }
 
             .login-wrap {
-                padding: 32px 16px 30px;
+                min-height: calc(100vh - 56px);
+                padding: 32px 16px 40px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .submit-button,
+            .input-shell input,
+            .field-link,
+            .toggle-visibility,
+            .login-footer-link a {
+                transition: none;
+            }
+
+            .submit-button:active:not(:disabled) {
+                transform: none;
             }
         }
     </style>
@@ -426,7 +496,7 @@
 
         window.showForgotPasswordNote = function (event) {
             event.preventDefault();
-            showError('Self-service reset isn\'t available yet. Contact your administrator to reset your password.');
+            showError('Password resets are handled by your administrator — please ask your supervisor or employer.');
         };
     </script>
 </head>
@@ -435,7 +505,7 @@
     <div class="top-bar">
         <div class="top-bar-brand">
             <div class="top-bar-mark">
-                <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V10M12 19V5M20 19v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
             </div>
             <span class="top-bar-name">Performa</span>
         </div>
@@ -445,11 +515,11 @@
         <div class="login-card">
             <div class="login-header">
                 <div class="brand-mark">
-                    <svg viewBox="0 0 24 24" fill="none" style="color:#fff"><path d="M4 19V10M12 19V5M20 19v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" style="color:#fff"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
                 </div>
                 <div class="brand-name">Performa</div>
             </div>
-            <p class="login-subtitle">Sign in to manage probationary employee performance</p>
+            <p class="login-subtitle">Sign in to see your progress — or to manage your team.</p>
 
             <div class="login-panel">
                 <div class="login-error" id="login-error" role="alert">
@@ -474,7 +544,7 @@
                         </div>
                         <div class="input-shell has-toggle">
                             <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="6" />
+                            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password (8+ characters)" required minlength="8" />
                             <button type="button" class="toggle-visibility" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
                                 <svg id="toggle-icon" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
                             </button>
@@ -490,7 +560,7 @@
                 </form>
 
                 <div class="login-footer-link">
-                    Having trouble signing in? <a href="mailto:support@smallstepslearning.example">Contact IT Support</a>
+                    Having trouble signing in? Ask your supervisor or employer for help.
                 </div>
             </div>
 
@@ -499,7 +569,7 @@
                     <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
                     Secure Portal
                 </span>
-                <p class="login-blurb">Manage probationary employees, KPIs, and regularization decisions securely through the Performa platform.</p>
+                <p class="login-blurb">Check your progress — or manage your team's performance — securely through the Performa platform.</p>
             </div>
         </div>
     </div>

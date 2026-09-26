@@ -30,27 +30,9 @@ $icons = [
   'download' => employer_icon('download'),
 ];
 
-$deptClassCycle = [
-  'dept-blue',
-  'dept-gray',
-  'dept-orange',
-  'dept-green',
-  'dept-purple'
-];
-
-function department_pill_class(
-  string $dept,
-  array $cycle
-): string {
-  $index =
-    abs(
-      crc32(
-        strtolower($dept)
-      )
-    ) % count($cycle);
-
-  return $cycle[$index];
-}
+/* Purged 2026-09: hash-based $deptClassCycle + department_pill_class().
+   Department pills are intentionally neutral (single quiet style); random
+   per-department colors asserted meaning that did not exist. */
 
 /* =========================================================
    FAST SHORT-SESSION CACHING
@@ -257,12 +239,6 @@ if ($cacheAvailable) {
 
         'dept' =>
           $dept,
-
-        'deptClass' =>
-          department_pill_class(
-            $dept,
-            $deptClassCycle
-          ),
 
         'type' =>
           $roleKey === 'probationary'

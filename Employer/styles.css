@@ -48,22 +48,15 @@
 
   --color-info-bg: rgba(47, 109, 246, 0.12);
   --color-info-border: rgba(47, 109, 246, 0.20);
-  --color-info-soft: rgba(47, 109, 246, 0.10);
   --color-info-alert-bg: rgba(47, 109, 246, 0.08);
   --color-info-alert-border: rgba(47, 109, 246, 0.16);
   --color-info-focus-ring: rgba(47, 109, 246, 0.18);
 
   --color-neutral-bg: rgba(100, 116, 139, 0.12);
   --color-neutral-border: rgba(100, 116, 139, 0.20);
-  --color-neutral-soft: rgba(100, 116, 139, 0.10);
 
   /* Existing contextual colors, kept unchanged and reused as-is. */
   --color-warning-surface: #fff4d5;
-  --color-dept-gray-text: #51607c;
-  --color-dept-orange: #e2672c;
-  --color-dept-orange-bg: rgba(230, 126, 51, 0.10);
-  --color-dept-purple: #8b5cf6;
-  --color-dept-purple-bg: rgba(139, 92, 246, 0.10);
 
   /* Preserve existing aliases for rules outside semantic status UI. */
   --sidebar: #10182d;
@@ -103,7 +96,6 @@
 /* =========================================================
    GLOBAL
    ========================================================= */
-
 
 /* Accessible text that remains visually hidden without removing the element
    from the accessibility tree. */
@@ -323,27 +315,7 @@ a:focus-visible {
 
   overflow: hidden;
 }
-
-.brand-mark-dot {
-  width: 16px;
-  height: 16px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.92
-    );
-
-  transform:
-    translate(
-      -4px,
-      4px
-    );
-}
+/* Purged 2026-09 sweep: .brand-mark-dot */
 
 .brand-name {
   color: #fff;
@@ -633,8 +605,7 @@ a:focus-visible {
    DEADLINE / STATUS PILLS
    ========================================================= */
 
-.deadline-pill,
-.pending-pill {
+.deadline-pill {
   display: inline-flex;
 
   align-items: center;
@@ -800,10 +771,7 @@ a:focus-visible {
 }
 
 .ghost-button,
-.btn-outline,
-.reset-button,
-.page-btn,
-.btn-cancel {
+.page-btn {
   display: inline-flex;
 
   align-items: center;
@@ -854,10 +822,7 @@ a:focus-visible {
 }
 
 .ghost-button:hover,
-.btn-outline:hover,
-.reset-button:hover,
-.page-btn:hover:not(:disabled),
-.btn-cancel:hover {
+.page-btn:hover:not(:disabled) {
   border-color:
     rgba(
       47,
@@ -877,28 +842,14 @@ a:focus-visible {
 }
 
 .ghost-button:active,
-.btn-outline:active,
-.reset-button:active,
-.page-btn:active:not(:disabled),
-.btn-cancel:active {
+.page-btn:active:not(:disabled) {
   transform:
     translateY(0);
 }
 
-.ghost-button svg,
-.btn-outline svg {
+.ghost-button svg {
   width: 14px;
   height: 14px;
-}
-
-.btn-outline {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.btn-cancel {
-  background: transparent;
-  border-color: transparent;
 }
 
 .icon-button {
@@ -961,65 +912,7 @@ a:focus-visible {
   height: 17px;
 }
 
-.icon-button-square {
-  display: grid;
-
-  place-items: center;
-
-  width: 40px;
-  height: 40px;
-
-  flex: 0 0 40px;
-
-  padding: 0;
-
-  border:
-    1px solid
-    rgba(
-      27,
-      39,
-      62,
-      0.10
-    );
-
-  border-radius: 10px;
-
-  background: #fff;
-
-  color: #52617c;
-
-  cursor: pointer;
-
-  transition:
-    transform 150ms ease,
-    border-color 150ms ease,
-    background-color 150ms ease,
-    color 150ms ease;
-}
-
-.icon-button-square:hover {
-  border-color:
-    rgba(
-      47,
-      109,
-      246,
-      0.28
-    );
-
-  background:
-    #f8faff;
-
-  color:
-    var(--primary);
-
-  transform:
-    translateY(-1px);
-}
-
-.icon-button-square svg {
-  width: 15px;
-  height: 15px;
-}
+/* Purged 2026-09: .icon-button-square (zero markup refs; .icon-button is canonical). */
 
 /* =========================================================
    GENERIC PANELS / CARDS
@@ -1215,11 +1108,7 @@ a:focus-visible {
 
   gap: 16px;
 }
-
-.content-grid--single {
-  grid-template-columns:
-    minmax(0, 1fr);
-}
+/* Purged 2026-09 sweep: .content-grid--single */
 
 .panel,
 .insight-card {
@@ -1778,39 +1667,7 @@ a:focus-visible {
   flex: 1;
 }
 
-.more-button {
-  display: grid;
-
-  place-items: center;
-
-  width: 40px;
-  height: 40px;
-
-  flex:
-    0 0 40px;
-
-  border: 0;
-
-  border-radius: 14px;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.10
-    );
-
-  color:
-    rgba(
-      255,
-      255,
-      255,
-      0.85
-    );
-
-  cursor: pointer;
-}
+/* Purged 2026-09: .more-button (zero markup refs). */
 
 /* Purged 2026-09: .toolbar system (zero markup refs; only .table-toolbar exists, styled in ui-refresh.css). */
 
@@ -1919,36 +1776,7 @@ a:focus-visible {
   background: #fff;
 }
 
-.employee-select > .perform-select-trigger {
-  width: 100%;
-
-  height: 44px;
-
-  min-height: 44px;
-
-  padding:
-    0
-    40px
-    0
-    42px;
-
-  border: 0;
-
-  border-radius: inherit;
-
-  background: transparent;
-
-  box-shadow: none;
-}
-
-.employee-select > .perform-select-trigger:hover,
-.employee-select.is-open > .perform-select-trigger {
-  border-color: transparent;
-
-  background: transparent;
-
-  box-shadow: none;
-}
+/* Purged 2026-09: .employee-select > .perform-select-trigger rules (zero markup refs). */
 
 .employee-select-icon {
   position: absolute;
@@ -1978,216 +1806,15 @@ a:focus-visible {
   width: 16px;
   height: 16px;
 }
+/* Purged 2026-09 sweep: .employee-select-chevron */
 
-.employee-select-chevron {
-  display: none !important;
-}
+/* Purged 2026-09: SHARED CUSTOM DROPDOWN system (.perform-select-host/-trigger/-value/-chevron/-native
+   + is-open states; zero markup/JS refs — native selects styled via ui-refresh.css remain canonical). */
 
-/* =========================================================
-   SHARED CUSTOM DROPDOWN
-   ========================================================= */
+/* Purged with the dropdown system above: .perform-select-native hiding (zero markup refs). */
 
-.perform-select-host {
-  position: relative;
-
-  width: 100%;
-
-  min-width: 0;
-
-  overflow: visible;
-}
-
-select.perform-select.perform-select-native {
-  position: absolute !important;
-
-  width: 1px !important;
-  height: 1px !important;
-
-  min-width: 1px !important;
-  min-height: 1px !important;
-
-  margin: -1px !important;
-
-  padding: 0 !important;
-
-  border: 0 !important;
-
-  opacity: 0 !important;
-
-  pointer-events: none !important;
-
-  overflow: hidden !important;
-
-  clip:
-    rect(
-      0
-      0
-      0
-      0
-    ) !important;
-
-  clip-path:
-    inset(
-      50%
-    ) !important;
-
-  white-space: nowrap !important;
-
-  appearance: none !important;
-
-  -webkit-appearance: none !important;
-}
-
-.perform-select-trigger {
-  position: relative;
-
-  z-index: 1;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  width: 100%;
-
-  min-width: 0;
-  min-height: 44px;
-
-  padding:
-    0
-    14px;
-
-  border:
-    1px solid
-    rgba(
-      27,
-      39,
-      62,
-      0.12
-    );
-
-  border-radius: 10px;
-
-  background:
-    #f8fafd;
-
-  color:
-    var(--text);
-
-  font: inherit;
-
-  font-size: 14px;
-
-  font-weight: 600;
-
-  line-height: 1.2;
-
-  text-align: left;
-
-  cursor: pointer;
-
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.perform-select-trigger:hover {
-  border-color:
-    rgba(
-      47,
-      109,
-      246,
-      0.34
-    );
-
-  background: #fff;
-}
-
-.perform-select-host.is-open
-  .perform-select-trigger,
-.employee-select.is-open
-  .perform-select-trigger {
-  border-color:
-    var(--primary);
-
-  background: #fff;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(
-      47,
-      109,
-      246,
-      0.08
-    );
-}
-
-.filter-select.is-open
-  .perform-select-trigger {
-  border-color: transparent;
-
-  background: transparent;
-
-  box-shadow: none;
-}
-
-.perform-select-trigger:focus-visible {
-  border-color:
-    var(--color-info);
-
-  outline:
-    2px solid
-    var(--color-info-focus-ring);
-
-  outline-offset: 2px;
-}
-
-.perform-select-value {
-  display: block;
-
-  min-width: 0;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-}
-
-.perform-select-trigger-chevron {
-  width: 16px;
-  height: 16px;
-
-  flex:
-    0 0 16px;
-
-  margin-left: 10px;
-
-  background:
-    url(
-      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"
-    )
-    center
-    / 16px
-    no-repeat;
-
-  transition:
-    transform 150ms ease;
-}
-
-.perform-select-host.is-open
-  .perform-select-trigger-chevron,
-.employee-select.is-open
-  .perform-select-trigger-chevron,
-.filter-select.is-open
-  .perform-select-trigger-chevron {
-  transform:
-    rotate(
-      180deg
-    );
-}
+/* Purged with the dropdown system above: trigger/hover/is-open/focus/value/chevron
+   rules (zero markup/JS refs; native selects styled via ui-refresh.css remain). */
 
 /* =========================================================
    FILTER CONTROLS
@@ -2314,41 +1941,7 @@ select.perform-select.perform-select-native {
   white-space: nowrap;
 }
 
-.filter-select > .perform-select-trigger {
-  flex:
-    1 1 auto;
-
-  width: 100%;
-
-  min-width: 0;
-
-  height: 40px;
-
-  min-height: 40px;
-
-  padding:
-    0
-    22px
-    0
-    0;
-
-  border: 0;
-
-  border-radius: 0;
-
-  background: transparent;
-
-  box-shadow: none;
-}
-
-.filter-select > .perform-select-trigger:hover,
-.filter-select.is-open > .perform-select-trigger {
-  border-color: transparent;
-
-  background: transparent;
-
-  box-shadow: none;
-}
+/* Purged 2026-09: .filter-select > .perform-select-trigger rules (zero markup refs). */
 
 .filter-select:focus-within {
   border-color:
@@ -2382,205 +1975,7 @@ select.perform-select.perform-select-native {
     0 0 auto;
 }
 
-/* =========================================================
-   DROPDOWN MENU
-   ========================================================= */
-
-.perform-select-menu {
-  position: fixed !important;
-
-  z-index: 10000 !important;
-
-  box-sizing: border-box;
-
-  display: grid !important;
-
-  gap: 2px;
-
-  width: auto;
-
-  min-width: 0;
-
-  max-width:
-    calc(
-      100vw - 24px
-    );
-
-  max-height:
-    min(
-      280px,
-      calc(
-        100vh - 24px
-      )
-    );
-
-  margin: 0;
-
-  padding: 6px;
-
-  overflow-x: hidden;
-
-  overflow-y: auto;
-
-  overscroll-behavior:
-    contain;
-
-  -webkit-overflow-scrolling:
-    touch;
-
-  border:
-    1px solid
-    rgba(
-      27,
-      39,
-      62,
-      0.12
-    );
-
-  border-radius: 10px;
-
-  background:
-    #fff !important;
-
-  background-image:
-    none !important;
-
-  box-shadow:
-    0 14px 30px
-    rgba(
-      23,
-      33,
-      58,
-      0.14
-    );
-
-  opacity: 0;
-
-  visibility: hidden;
-
-  pointer-events: none;
-
-  transform:
-    translateY(
-      -3px
-    );
-
-  transform-origin:
-    top center;
-
-  transition:
-    opacity 130ms ease,
-    transform 130ms ease,
-    visibility 0s
-      linear 130ms;
-}
-
-.perform-select-menu[data-placement="above"] {
-  transform:
-    translateY(
-      3px
-    );
-
-  transform-origin:
-    bottom center;
-}
-
-.perform-select-menu.is-visible {
-  opacity: 1;
-
-  visibility: visible;
-
-  pointer-events: auto;
-
-  transform:
-    translateY(0);
-
-  transition:
-    opacity 130ms ease,
-    transform 130ms ease,
-    visibility 0s
-      linear 0s;
-}
-
-.perform-select-option {
-  display: flex !important;
-
-  align-items: center;
-
-  width: 100%;
-
-  min-width: 0;
-
-  min-height: 38px;
-
-  margin: 0;
-
-  padding:
-    8px
-    10px;
-
-  border: 0;
-
-  border-radius: 7px;
-
-  background:
-    #fff !important;
-
-  background-image:
-    none !important;
-
-  color:
-    var(--text);
-
-  font: inherit;
-
-  font-size: 14px;
-
-  font-weight: 500;
-
-  line-height: 1.3;
-
-  text-align: left;
-
-  white-space: nowrap;
-
-  cursor: pointer;
-
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
-}
-
-.perform-select-option:hover,
-.perform-select-option:focus-visible {
-  background:
-    #f1f5ff !important;
-
-  color:
-    var(--primary-dark);
-
-  outline: none;
-}
-
-.perform-select-option.is-selected {
-  background:
-    #edf3ff !important;
-
-  color:
-    var(--primary-dark);
-
-  font-weight: 700;
-}
-
-.perform-select-option.is-disabled,
-.perform-select-option:disabled {
-  color:
-    var(--color-neutral);
-
-  cursor: not-allowed;
-
-  opacity: 1;
-}
+/* Purged 2026-09: DROPDOWN MENU system (.perform-select-menu/-option + data-placement/is-visible/is-selected states; zero markup/JS refs  -  popup half of the custom dropdown purged above). */
 
 /* =========================================================
    DIRECTORY
@@ -2685,45 +2080,8 @@ select.perform-select.perform-select-native {
   font-weight: 700;
 }
 
-.dept-blue {
-  background:
-    var(--color-info-soft);
-
-  color:
-    var(--color-info-text);
-}
-
-.dept-gray {
-  background:
-    var(--color-neutral-soft);
-
-  color:
-    var(--color-dept-gray-text);
-}
-
-.dept-orange {
-  background:
-    var(--color-dept-orange-bg);
-
-  color:
-    var(--color-dept-orange);
-}
-
-.dept-green {
-  background:
-    var(--color-success-soft);
-
-  color:
-    var(--color-success-text);
-}
-
-.dept-purple {
-  background:
-    var(--color-dept-purple-bg);
-
-  color:
-    var(--color-dept-purple);
-}
+/* Purged 2026-09: .dept-blue/.dept-gray/.dept-orange/.dept-green/.dept-purple modifiers
+   (hash cycle removed from employees.php — dept pills are intentionally neutral). */
 
 .directory-row
   [data-label="Actions"]
@@ -3105,57 +2463,8 @@ select.perform-select.perform-select-native {
 
   gap: 12px;
 }
-
-.category-badge {
-  font-size: 11px;
-
-  font-weight: 800;
-
-  letter-spacing:
-    0.05em;
-
-  text-transform:
-    uppercase;
-}
-
-.category-badge.blue {
-  color: #2f6df6;
-}
-
-.category-badge.purple {
-  color: #8b5cf6;
-}
-
-.category-badge.orange {
-  color: #e2672c;
-}
-
-.category-icon {
-  display: grid;
-
-  place-items: center;
-
-  width: 30px;
-  height: 30px;
-
-  border-radius: 9px;
-
-  background:
-    rgba(
-      100,
-      116,
-      139,
-      0.10
-    );
-
-  color:
-    #51607c;
-}
-
-.category-icon svg {
-  width: 15px;
-  height: 15px;
-}
+/* Purged 2026-09 sweep: .category-icon */
+/* Purged 2026-09 sweep: .category-icon svg */
 
 .category-title {
   margin: 0;
@@ -3209,31 +2518,8 @@ select.perform-select.perform-select-native {
 
   border-radius: inherit;
 }
-
-.category-status {
-  display: inline-flex;
-
-  align-items: center;
-
-  gap: 6px;
-
-  width: fit-content;
-
-  padding:
-    5px
-    10px;
-
-  border-radius: 999px;
-
-  font-size: 11px;
-
-  font-weight: 800;
-}
-
-.category-status svg {
-  width: 11px;
-  height: 11px;
-}
+/* Purged 2026-09 sweep: .category-status */
+/* Purged 2026-09 sweep: .category-status svg */
 
 /* =========================================================
    REPORTS
@@ -3456,54 +2742,9 @@ select.perform-select.perform-select-native {
 
   flex-shrink: 0;
 }
+/* Purged 2026-09 sweep: .tabs-bar */
 
-/* =========================================================
-   SETTINGS
-   ========================================================= */
-
-.tabs-bar {
-  display: flex;
-
-  gap: 24px;
-
-  padding:
-    0
-    4px;
-
-  margin-bottom: 20px;
-
-  border-bottom:
-    1px solid
-    var(--panel-border);
-}
-
-.tab-item {
-  padding:
-    0
-    0
-    12px;
-
-  border-bottom:
-    2px solid
-    transparent;
-
-  color:
-    var(--muted);
-
-  font-size: 14px;
-
-  font-weight: 600;
-
-  text-decoration: none;
-}
-
-.tab-item.active {
-  color:
-    var(--primary);
-
-  border-color:
-    var(--primary);
-}
+/* Purged 2026-09: .tab-item (+ .active variant; zero markup refs). */
 
 .settings-panel {
   width: 100%;
@@ -3559,37 +2800,7 @@ select.perform-select.perform-select-native {
   object-fit: cover;
 }
 
-.photo-upload-btn {
-  position: absolute;
-
-  right: -6px;
-  bottom: -6px;
-
-  display: grid;
-
-  place-items: center;
-
-  width: 28px;
-  height: 28px;
-
-  border:
-    2px solid
-    #fff;
-
-  border-radius: 50%;
-
-  background:
-    var(--primary);
-
-  color: #fff;
-
-  cursor: pointer;
-}
-
-.photo-upload-btn svg {
-  width: 13px;
-  height: 13px;
-}
+/* Purged 2026-09: .photo-upload-btn (+ svg; zero markup refs). */
 
 .profile-photo-info h3 {
   margin:
@@ -3611,32 +2822,10 @@ select.perform-select.perform-select-native {
 
   font-size: 13px;
 }
+/* Purged 2026-09 sweep: .photo-links */
+/* Purged 2026-09 sweep: .photo-links a */
 
-.photo-links {
-  display: flex;
-
-  gap: 14px;
-
-  font-size: 13px;
-
-  font-weight: 700;
-}
-
-.photo-links a {
-  text-decoration: none;
-
-  cursor: pointer;
-}
-
-.link-blue {
-  color:
-    var(--primary);
-}
-
-.link-red {
-  color:
-    var(--danger);
-}
+/* Purged 2026-09: .link-blue/.link-red (zero markup refs). */
 
 .form-grid {
   display: grid;
@@ -4097,14 +3286,8 @@ select:disabled {
 .content-narrow {
   max-width: 640px;
 }
-
-.content-medium {
-  max-width: 760px;
-}
-
-.content-wide {
-  max-width: 1120px;
-}
+/* Purged 2026-09 sweep: .content-medium */
+/* Purged 2026-09 sweep: .content-wide */
 
 .site-footer {
   position: relative;
@@ -4221,10 +3404,7 @@ select:disabled {
   margin-top:
     var(--space-5);
 }
-
-.is-disabled {
-  opacity: 0.62;
-}
+/* Purged 2026-09 sweep: .is-disabled */
 
 @keyframes fade-in {
   from {
@@ -4325,19 +3505,7 @@ select:disabled {
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
-  .topbar {
-    gap: 16px;
-  }
-
-  .topbar .search-bar {
-    width:
-      min(
-        300px,
-        40vw
-      );
-
-    max-width: 300px;
-  }
+  /* Purged 2026-09: .topbar / .topbar .search-bar (zero .topbar markup in Employer/Supervisor; Admin/Probationary don't load this sheet). */
 
   .report-form-row {
     grid-template-columns:
@@ -4509,69 +3677,9 @@ select:disabled {
       28px;
   }
 
-  .topbar {
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 10px;
-
-    min-height: 0;
-
-    margin:
-      0
-      0
-      18px;
-
-    padding:
-      0
-      0
-      4px;
-  }
-
-  .topbar > :first-child:empty {
-    display: none;
-  }
-
-  .topbar .search-bar {
-    order: 2;
-
-    width: 100%;
-
-    max-width: none;
-  }
-
-  .topbar-actions {
-    order: 1;
-
-    width: 100%;
-
-    margin-left: 0;
-
-    gap: 8px;
-
-    justify-content:
-      flex-end;
-  }
-
-  .topbar-actions
-    .deadline-pill,
-  .topbar-actions
-    .pending-pill {
-    flex:
-      1 1 auto;
-
-    min-width: 0;
-
-    overflow: hidden;
-
-    text-overflow:
-      ellipsis;
-
-    white-space: nowrap;
-  }
+  /* Purged 2026-09: mobile .topbar, .topbar > :first-child:empty, .topbar .search-bar,
+     .topbar-actions, .topbar-actions .deadline-pill (zero .topbar/topbar-actions markup in
+     Employer/Supervisor; Admin/Probationary don't load this sheet). */
 
   .page-header {
     display: grid;
@@ -4624,10 +3732,7 @@ select:disabled {
     max-width: none;
   }
 
-  .filter-select
-    > .perform-select-trigger {
-    width: 100%;
-  }
+  /* Purged 2026-09: .filter-select > .perform-select-trigger (zero markup refs). */
 
   .filter-actions {
     width: 100%;
@@ -4671,13 +3776,7 @@ select:disabled {
     width: 100%;
   }
 
-  .btn-outline {
-    flex:
-      1 1 0;
-
-    justify-content:
-      center;
-  }
+  /* Purged 2026-09: .btn-outline (zero markup refs). */
 
   .metrics,
   .category-cards,
@@ -4875,28 +3974,7 @@ select:disabled {
       16px;
   }
 
-  .perform-select-menu {
-    max-width:
-      calc(
-        100vw - 20px
-      );
-
-    max-height:
-      min(
-        280px,
-        calc(
-          100vh - 20px
-        )
-      );
-  }
-
-  .perform-select-option {
-    min-height: 42px;
-
-    padding:
-      9px
-      11px;
-  }
+  /* Purged 2026-09: mobile .perform-select-menu / .perform-select-option (zero markup refs). */
 }
 
 /* =========================================================
@@ -4923,30 +4001,11 @@ select:disabled {
     font-size: 11px;
   }
 
-  .topbar-actions
-    .deadline-pill,
-  .topbar-actions
-    .pending-pill {
-    font-size: 12px;
-
-    padding-inline:
-      11px;
-  }
-
-  .topbar-actions
-    .ghost-button {
-    padding-inline:
-      12px;
-  }
+  /* Purged 2026-09: .topbar-actions .deadline-pill / .ghost-button at 420px (zero topbar-actions markup here). */
 
   .page-header h1 {
     font-size:
       1.35rem;
-  }
-
-  .hero h1 {
-    font-size:
-      1.4rem;
   }
 
   .metric-meta strong {
@@ -4991,8 +4050,6 @@ select:disabled {
   overflow-wrap: anywhere;
 }
 
-#dashboard .topbar,
-#dashboard .hero,
 #dashboard .content-grid,
 #dashboard .panel,
 #dashboard .insight-card,
@@ -5065,10 +4122,7 @@ select:disabled {
 #dashboard .filter-chip:hover {
   transform: none;
 }
-
-#dashboard .insight-score-row {
-  line-height: 1.4;
-}
+/* Purged 2026-09 sweep: #dashboard .insight-score-row */
 
 #dashboard .insight-actions form {
   min-width: 0;
@@ -5082,15 +4136,6 @@ select:disabled {
       minmax(0, 1.35fr)
       minmax(320px, 0.9fr);
   }
-
-  #dashboard .topbar {
-    gap: 24px;
-  }
-
-  #dashboard .topbar .search-bar {
-    width: min(340px, 34vw);
-    max-width: 340px;
-  }
 }
 
 /* Smaller desktop / large tablet: collapse the side card before the
@@ -5102,15 +4147,6 @@ select:disabled {
 
   #dashboard .insight-card {
     width: 100%;
-  }
-
-  #dashboard .topbar {
-    gap: 16px;
-  }
-
-  #dashboard .topbar .search-bar {
-    width: min(300px, 34vw);
-    max-width: 300px;
   }
 }
 
@@ -5146,45 +4182,8 @@ select:disabled {
     padding-inline: 14px;
   }
 
-  #dashboard .topbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    min-height: 0;
-    margin-bottom: 16px;
-  }
-
-  #dashboard .topbar > .search-bar {
-    order: 2;
-    flex: 0 0 40px;
-    width: 100%;
-    max-width: none;
-    height: 40px;
-  }
-
-  #dashboard .topbar-actions {
-    order: 1;
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-
-  #dashboard .topbar-actions .deadline-pill,
-  #dashboard .topbar-actions .pending-pill {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  #dashboard .hero-top {
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  #dashboard .hero-top > div {
-    min-width: 0;
-  }
+  /* Purged 2026-09: #dashboard .topbar/.topbar>search/.topbar-actions/.hero-top rules
+     (no topbar/hero markup inside #dashboard). */
 
   #dashboard .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5261,94 +4260,9 @@ select:disabled {
     padding-inline: 12px;
   }
 
-  #dashboard .topbar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    min-height: 0;
-    margin-bottom: 16px;
-    padding-bottom: 2px;
-  }
-
-  /* Explicitly override the global first-child flex rule so the
-     search control can never stretch into a large empty panel. */
-  #dashboard .topbar > .search-bar {
-    order: 2;
-    flex: 0 0 40px;
-    width: 100%;
-    max-width: none;
-    height: 40px;
-    min-height: 40px;
-  }
-
-  #dashboard .topbar > .search-bar input,
-  #dashboard .topbar > .search-bar input[type="search"] {
-    width: 100%;
-    height: 100%;
-  }
-
-  #dashboard .topbar-actions {
-    order: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-    margin-left: 0;
-  }
-
-  #dashboard .topbar-actions .deadline-pill,
-  #dashboard .topbar-actions .pending-pill {
-    flex: 1 1 100%;
-    width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    justify-content: flex-start;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  #dashboard .topbar-actions .icon-button,
-  #dashboard .topbar-actions .ghost-button {
-    flex: 0 0 auto;
-    min-height: 40px;
-  }
-
-  #dashboard .hero {
-    padding: 0 0 20px;
-  }
-
-  #dashboard .hero-top {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  #dashboard .hero-top > div {
-    width: 100%;
-    min-width: 0;
-  }
-
-  #dashboard .hero-top h1 {
-    max-width: none;
-    margin-bottom: 7px;
-    font-size: clamp(1.45rem, 7vw, 1.7rem);
-    line-height: 1.16;
-  }
-
-  #dashboard .hero-top p {
-    max-width: none;
-  }
-
-  #dashboard .hero-top .btn-primary {
-    width: 100%;
-    min-height: 44px;
-    justify-content: center;
-  }
+  /* Purged 2026-09: #dashboard .topbar (incl. > .search-bar + inputs), .topbar-actions
+     (+ deadline-pill/icon-button/ghost-button), .hero, .hero-top (+ > div/h1/p/.btn-primary)
+      -  no topbar/hero markup inside #dashboard. */
 
   #dashboard .metrics {
     grid-template-columns: 1fr;
@@ -5500,8 +4414,7 @@ select:disabled {
     justify-content: space-between;
   }
 
-  #dashboard .topbar-actions .deadline-pill,
-  #dashboard .topbar-actions .pending-pill {
+  #dashboard .topbar-actions .deadline-pill {
     padding-inline: 10px;
     font-size: 12px;
   }
@@ -5510,10 +4423,7 @@ select:disabled {
     min-width: 88px;
     justify-content: center;
   }
-
-  #dashboard .hero-top h1 {
-    font-size: 1.45rem;
-  }
+/* Purged 2026-09 sweep: #dashboard .hero-top h1 */
 
   #dashboard .table-row {
     padding-inline: 13px;
@@ -5578,7 +4488,6 @@ select:disabled {
   }
 }
 
-
 /* =========================================================
    KPI PAGE — DENSITY + RESPONSIVE REFINEMENT
    ========================================================= */
@@ -5638,17 +4547,7 @@ select:disabled {
   flex: 0 0 auto;
 }
 
-/* Search is a utility, not a large section. */
-.kpi-page .kpi-search-wrap {
-  width: 100%;
-  margin: 0 0 12px;
-}
-
-.kpi-page .kpi-search-wrap .search-bar {
-  width: 100%;
-  max-width: none;
-  min-height: 40px;
-}
+/* Purged 2026-09: .kpi-page .kpi-search-wrap rules (zero markup refs). */
 
 /* Individual employee workspace: compact and purposeful. */
 .kpi-page .kpi-employee-panel {
@@ -5704,7 +4603,6 @@ select:disabled {
   min-width: 0;
 }
 
-.kpi-page .kpi-employee-select-row .perform-select-trigger,
 .kpi-page .kpi-employee-select-row .employee-select-control {
   min-height: 42px;
 }
@@ -5995,9 +4893,7 @@ select:disabled {
     width: 100%;
   }
 
-  .kpi-page .kpi-search-wrap {
-    margin-bottom: 11px;
-  }
+  /* Purged 2026-09: .kpi-page .kpi-search-wrap (zero markup refs). */
 
   .kpi-page .kpi-employee-panel,
   .kpi-page .kpi-add-panel {
@@ -6116,7 +5012,6 @@ select:disabled {
   }
 }
 
-
 /* =========================================================
    REPORTS PAGE — COMPACT, HUMAN-CENTRIC REFINEMENT
    Scoped to .reports-page so shared Employer components keep
@@ -6232,7 +5127,6 @@ select:disabled {
   margin: 0;
 }
 
-.reports-page .reports-generation-form .perform-select-trigger,
 .reports-page .reports-generation-form select.perform-select {
   min-height: 40px;
 }
@@ -6309,10 +5203,7 @@ select:disabled {
   flex-wrap: wrap;
 }
 
-.reports-page .report-actions .btn-outline {
-  min-height: 38px;
-  padding-inline: 11px;
-}
+/* Purged 2026-09: .reports-page .report-actions .btn-outline (zero markup refs). */
 
 .reports-page .reports-contributors {
   display: flex;
@@ -6440,9 +5331,7 @@ select:disabled {
     gap: 7px;
   }
 
-  .reports-page .report-actions .btn-outline {
-    width: 100%;
-  }
+  /* Purged 2026-09: .reports-page .report-actions .btn-outline (zero markup refs). */
 
   .reports-page .reports-contributors {
     align-items: flex-start;
@@ -6486,21 +5375,9 @@ select:disabled {
 #settingsPage .settings-account-actions {
   min-width: 0;
 }
-
-#settingsPage .settings-topbar {
-  min-height: 42px;
-  margin-bottom: 12px;
-  padding: 0;
-}
-
-#settingsPage .settings-topbar > .topbar-spacer {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#settingsPage .settings-topbar > .topbar-spacer::before {
-  content: none !important;
-}
+/* Purged 2026-09 sweep: #settingsPage .settings-topbar */
+/* Purged 2026-09 sweep: #settingsPage .settings-topbar > .topbar-spacer */
+/* Purged 2026-09 sweep: #settingsPage .settings-topbar > .topbar-spacer::before */
 
 #settingsPage .settings-topbar .topbar-actions {
   margin-left: auto;
@@ -6650,10 +5527,7 @@ select:disabled {
 
 /* Mobile: one clear vertical flow with no large empty card areas. */
 @media (max-width: 760px) {
-  #settingsPage .settings-topbar {
-    min-height: 40px;
-    margin-bottom: 12px;
-  }
+/* Purged 2026-09 sweep: #settingsPage .settings-topbar */
 
   #settingsPage .settings-topbar .topbar-actions {
     width: auto;
@@ -6750,3 +5624,364 @@ select:disabled {
     font-size: 11px;
   }
 }
+
+/* Mobile sign-out must stay reachable: keep avatar + icon link, drop names. */
+@media (max-width: 760px) {
+  .sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-footer .profile-meta {
+    display: none;
+  }
+}
+
+/* =========================================================
+   REVIEW RECOMMENDATIONS PAGE (Employer/review_recommendations.php only)
+   Pending AI training plans as spaced cards: head + severity trigger,
+   suggestion items, edit disclosure, approve/reject actions.
+   Presentation only - markup, POST names, and JS hooks untouched.
+   ========================================================= */
+
+/* Panel insets the card list (same recipe as the directory panel, and it
+   overrides ui-refresh's .settings-panel { padding: 0 } by specificity). */
+.review-page .settings-panel {
+  padding: 16px !important;
+}
+
+.review-card {
+  margin: 0 0 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: var(--ui-radius, 10px);
+  background: #fff;
+  box-shadow: var(--ui-shadow, 0 4px 16px rgba(20, 34, 54, .05));
+}
+
+.review-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.review-card-head h2 {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ui-text, #18263a);
+}
+
+/* Quiet pill, same recipe as .status-pill; amber marks "awaiting review". */
+.review-badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-amber, #8a5a00);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-badge-pending::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Severity strip: neutral chrome, tone rides the left edge + the glyph
+   (the !, ., and check marks keep the cue readable without color). */
+.review-trigger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-radius: var(--ui-radius-sm, 7px);
+  background: var(--ui-soft, #f8fafc);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ui-muted, #66758a);
+}
+
+.review-trigger[data-sev="crit"] {
+  border-left-color: var(--ui-red, #b3261e);
+}
+
+.review-trigger[data-sev="warn"] {
+  border-left-color: var(--ui-amber, #8a5a00);
+}
+
+.review-trigger[data-sev="ok"] {
+  border-left-color: var(--ui-green, #18794e);
+}
+
+.review-trigger .rt-item {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.review-trigger .rt-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ui-muted, #66758a);
+}
+
+.review-trigger .rt-item > strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ui-text, #18263a);
+}
+
+.review-trigger .rt-score {
+  font-family: var(--ui-font-mono, monospace);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text, #18263a);
+}
+
+.review-trigger .rt-target {
+  font-size: 11.5px;
+  color: var(--ui-muted, #66758a);
+}
+
+.review-trigger .rt-sev {
+  gap: 6px;
+}
+
+.review-trigger .rt-glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.review-trigger[data-sev="crit"] .rt-glyph {
+  background: var(--ui-red-bg, #fdecea);
+  color: var(--ui-red, #b3261e);
+}
+
+.review-trigger[data-sev="warn"] .rt-glyph {
+  background: var(--ui-amber-bg, #fdf3d7);
+  color: var(--ui-amber, #8a5a00);
+}
+
+.review-trigger[data-sev="ok"] .rt-glyph {
+  background: var(--ui-green-bg, #e6f4ec);
+  color: var(--ui-green, #18794e);
+}
+
+.review-trigger .rt-offline {
+  padding: 3px 10px;
+  border: 1px solid #d9e5f5;
+  border-radius: 6px;
+  background: var(--ui-blue-soft, #edf4fd);
+  color: var(--ui-blue-dark, #184a96);
+  font-weight: 600;
+}
+
+
+.review-summary {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ui-text, #18263a);
+}
+
+.review-subhead {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ui-text, #18263a);
+}
+
+.review-note {
+  margin: 0 0 10px;
+}
+
+.review-recs {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.review-rec {
+  padding: 12px 14px;
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: var(--ui-radius-sm, 7px);
+  background: var(--ui-soft, #f8fafc);
+}
+
+/* PHP prints the skill keys lowercase ("task completion"); capitalize for
+   display only - the markup and POST values are unchanged. */
+.review-rec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ui-text, #18263a);
+  text-transform: capitalize;
+}
+
+.review-rec-meta {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-muted, #66758a);
+  text-transform: none;
+}
+
+.review-rec-desc {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ui-text, #18263a);
+}
+
+.review-rec-why {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ui-muted, #66758a);
+}
+
+.review-edit {
+  margin: 0 0 16px;
+}
+
+.review-edit > summary {
+  padding: 4px 0;
+  cursor: pointer;
+  color: var(--ui-blue, #245fba);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.review-edit > summary:hover {
+  color: var(--ui-blue-dark, #184a96);
+}
+
+.review-edit-form {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 14px;
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: var(--ui-radius-sm, 7px);
+  background: var(--ui-soft, #f8fafc);
+}
+
+.review-edit-hint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ui-muted, #66758a);
+}
+
+.review-edit-hint strong {
+  color: var(--ui-text, #18263a);
+  text-transform: capitalize;
+}
+
+.review-edit-label {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ui-text, #18263a);
+}
+
+.review-edit-select,
+.review-edit-input,
+.review-edit-textarea {
+  width: 100%;
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ui-border-soft, #edf0f4);
+}
+
+.review-actions > form {
+  margin: 0;
+}
+
+/* ui-refresh paints every .ghost-button neutral with !important, so the
+   reject intent needs both higher specificity and !important to come back. */
+.review-actions .review-reject {
+  color: var(--ui-red, #b3261e) !important;
+}
+
+.review-actions .review-reject:hover {
+  background: var(--ui-red-bg, #fdecea) !important;
+  border-color: #f3c1bd !important;
+  color: #8f1d17 !important;
+}
+
+.review-page .empty-state p {
+  margin: 0 0 4px;
+}
+
+/* Mobile: tighter card padding and full-width stacked actions. */
+@media (max-width: 560px) {
+  .review-page .settings-panel {
+    padding: 10px !important;
+  }
+
+  .review-card {
+    padding: 15px 14px;
+  }
+
+  .review-trigger {
+    gap: 6px 12px;
+  }
+
+  .review-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .review-actions > form,
+  .review-actions > form button {
+    width: 100%;
+  }
+}
+

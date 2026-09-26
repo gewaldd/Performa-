@@ -209,6 +209,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
                         <div class="pf-rate-preview" id="ratePreview" aria-live="polite"></div>
 
+                        <p class="microcopy" style="margin:0 0 12px;">Scores start at 3.0 — adjust each KPI before saving.</p>
+
                         <div class="pf-rate-grid">
                             <?php foreach ($template['kpis'] as $kpi): ?>
                                 <?php

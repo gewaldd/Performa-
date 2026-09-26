@@ -56,7 +56,7 @@ function employer_avatar_initials(string $name): string
  */
 function employer_brand_head(): void
 {
-  echo '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Crect width=\'64\' height=\'64\' rx=\'14\' fill=\'%23245fba\'/%3E%3Ctext x=\'32\' y=\'44\' font-family=\'Arial,sans-serif\' font-size=\'36\' font-weight=\'bold\' text-anchor=\'middle\' fill=\'white\'%3EP%3C/text%3E%3C/svg%3E" />' . "\n";
+  echo '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Crect width=\'64\' height=\'64\' rx=\'14\' fill=\'%23245fba\'/%3E%3Cpath d=\'M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3\' stroke=\'white\' stroke-width=\'7\' stroke-linecap=\'round\' fill=\'none\'/%3E%3C/svg%3E" />' . "\n";
   echo '<meta name="theme-color" content="#142236" />';
 }
 
@@ -186,6 +186,7 @@ function employer_nav_groups(): array
         ['label' => 'Dashboard', 'href' => 'employer_dashboard.php', 'key' => 'Dashboard', 'icon' => 'home'],
         ['label' => 'Employees', 'href' => 'employees.php', 'key' => 'Employees', 'icon' => 'users'],
         ['label' => 'KPIs', 'href' => 'kpis.php', 'key' => 'KPIs', 'icon' => 'target'],
+        ['label' => 'Review Plans', 'href' => 'review_recommendations.php', 'key' => 'Review', 'icon' => 'cap'],
         ['label' => 'Reports', 'href' => 'reports.php', 'key' => 'Reports', 'icon' => 'bar-chart'],
       ],
     ],
@@ -208,6 +209,10 @@ function employer_nav_badge(string $key): ?string
   }
   if ($key === 'Dashboard') {
     $n = isset($_SESSION['pf_nav_deadline']) ? (int) $_SESSION['pf_nav_deadline'] : null;
+    return ($n !== null && $n > 0) ? (string) $n : null;
+  }
+  if ($key === 'Review') {
+    $n = isset($_SESSION['pf_nav_reviews']) ? (int) $_SESSION['pf_nav_reviews'] : null;
     return ($n !== null && $n > 0) ? (string) $n : null;
   }
   return null;
@@ -273,7 +278,7 @@ function employer_render_shell(string $active): void
   <aside class="sidebar" id="pfSidebar" aria-label="Employer navigation">
     <div class="sidebar-top">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"><span class="brand-mark-dot"></span></span>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
         <span class="brand-name">Performa</span>
         <?php employer_render_collapse_button(); ?>
         <button class="pf-sidebar-close" type="button" data-sidebar-close aria-label="Close navigation">

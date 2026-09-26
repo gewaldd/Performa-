@@ -432,7 +432,7 @@ if ($cacheValid) {
                 $hasScore &&
                 $score >= $targetAvg
             ) {
-                $status = 'Ready for Reg.';
+                $status = 'Ready for regularization';
                 $statusClass = 'status-ready';
                 $statusKey = 'ready-for-reg';
                 $accentColor = '#1f2940';
@@ -867,7 +867,7 @@ $insightTitle =
                             <?php echo $icons['search']; ?>
                         </span>
 
-                        <input id="dashboardSearch" type="search" placeholder="Search employees, reports..."
+                        <input id="dashboardSearch" type="search" placeholder="Search employees by name, role, or status..."
                             autocomplete="off" />
                     </label>
 

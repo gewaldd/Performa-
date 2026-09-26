@@ -82,7 +82,7 @@ function supervisor_brand_head(string $pageTitle = 'Performa | Supervisor'): voi
   ?>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='36' font-weight='bold' text-anchor='middle' fill='white'%3EP%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#142236" />
   <title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES); ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -254,7 +254,7 @@ function supervisor_render_shell(string $active): void
   <aside class="sidebar" id="pfSidebar" aria-label="Supervisor navigation">
     <div class="sidebar-top">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"><span class="brand-mark-dot"></span></span>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 20v-7M12 20V9M18 20V5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
         <span class="brand-name">Performa</span>
         <?php supervisor_render_collapse_button(); ?>
         <button class="pf-sidebar-close" type="button" data-sidebar-close aria-label="Close navigation">

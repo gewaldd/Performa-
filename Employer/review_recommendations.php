@@ -175,8 +175,91 @@ try {
     }
   }
 } catch (\Throwable $e) {
-  $pendingReviews = [];
+    $pendingReviews = [];
 }
+
+// Review-card trigger context (read-only, display only): the lowest-rated
+// KPI vs its industry target plus the RF classification that produced the
+// plan — so a manager can triage severity before reading the AI summary.
+require_once $rootDir . '/kpi_templates.php';
+
+foreach ($pendingReviews as $ri => $review) {
+  $trigger = [
+    'area' => '',
+    'score' => null,
+    'target' => null,
+    'class' => '',
+    'sev' => '',
+    'offline' => false,
+  ];
+
+  $scores = $review['scores'] ?? null;
+  if (is_array($scores)) {
+    foreach ($scores as $scoreKey => $scoreVal) {
+      if (!is_numeric($scoreVal)) {
+        continue;
+      }
+      if ($trigger['score'] === null || (float) $scoreVal < $trigger['score']) {
+        $trigger['score'] = (float) $scoreVal;
+        $trigger['areaKey'] = (string) $scoreKey;
+      }
+    }
+  }
+
+  if (isset($trigger['areaKey'])) {
+    try {
+      $reviewTemplate = kpi_template_for($review['industry'] ?? null);
+      foreach ($reviewTemplate['kpis'] as $templateKpi) {
+        if (($templateKpi['key'] ?? '') === $trigger['areaKey']) {
+          $trigger['area'] = (string) ($templateKpi['name'] ?? '');
+          $trigger['target'] = isset($templateKpi['target']) ? (float) $templateKpi['target'] : null;
+          break;
+        }
+      }
+    } catch (\Throwable $e) {
+      // Template lookup is optional context; the card still renders without it.
+    }
+    if ($trigger['area'] === '') {
+      $trigger['area'] = ucwords(str_replace('_', ' ', $trigger['areaKey']));
+    }
+  }
+
+  $prediction = $review['aiRecommendations']['overall_prediction'] ?? '';
+  if (is_array($prediction)) {
+    $prediction = (string) ($prediction['classification'] ?? '');
+  }
+  $prediction = strtolower(trim((string) $prediction));
+
+  if (!in_array($prediction, ['meets_expectations', 'needs_improvement', 'critical_gap'], true)) {
+    // Legacy/fallback docs may lack the RF class — derive the same
+    // thresholds kpi_status_for_score() uses (target, target - 0.8).
+    if ($trigger['score'] !== null && $trigger['target'] !== null) {
+      if ($trigger['score'] >= $trigger['target']) {
+        $prediction = 'meets_expectations';
+      } elseif ($trigger['score'] >= $trigger['target'] - 0.8) {
+        $prediction = 'needs_improvement';
+      } else {
+        $prediction = 'critical_gap';
+      }
+    } else {
+      $prediction = '';
+    }
+  }
+
+  $trigger['class'] = $prediction;
+  $trigger['sev'] = [
+    'critical_gap' => 'crit',
+    'needs_improvement' => 'warn',
+    'meets_expectations' => 'ok',
+  ][$prediction] ?? '';
+  $trigger['offline'] = (($review['aiRecommendations']['generated_by'] ?? '') === 'fallback');
+
+  $pendingReviews[$ri]['_trigger'] = $trigger;
+}
+
+// Session badge for the sidebar Review entry (same pattern as the
+// employee/deadline badges: pages that load the data stash the count).
+$_SESSION['pf_nav_reviews'] = count($pendingReviews);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -195,8 +278,8 @@ try {
 
 <body>
   <div class="app-shell">
-    <?php employer_render_shell('KPIs'); ?>
-    <main class="main content-narrow">
+    <?php employer_render_shell('Review'); ?>
+    <main class="main content-narrow review-page">
       <div class="page-header">
         <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
           <?php echo employer_icon('menu'); ?>
@@ -208,8 +291,8 @@ try {
             <span aria-hidden="true">/</span>
             <span>Review AI Plans</span>
           </nav>
-          <h1>Human-in-the-Loop Review</h1>
-          <p>Review and approve AI-generated training recommendations before they are published to employees.</p>
+          <h1>Review Training Suggestions</h1>
+          <p>Approve a plan to send it to the employee's dashboard, or reject it to discard it. Nothing is sent until you approve.</p>
         </div>
       </div>
 
@@ -230,51 +313,73 @@ try {
               $employeeName = $review['employeeName'] ?? 'Employee';
               $recsList = $aiRecs['training_recommendations'] ?? [];
             ?>
-            <div class="card" style="margin-bottom: 24px; padding: 20px; border: 1px solid var(--border-color, #e0e0e0); border-radius: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h2 style="margin: 0; font-size: 1.2rem;"><?php echo htmlspecialchars($employeeName); ?></h2>
-                <span class="badge badge-warning" style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
-                  Pending Approval
-                </span>
+            <?php $trigger = $review['_trigger'] ?? null; ?>
+            <div class="review-card">
+              <div class="review-card-head">
+                <h2><?php echo htmlspecialchars($employeeName); ?></h2>
+                <span class="review-badge-pending">Pending Approval</span>
               </div>
 
-              <p style="font-size: 0.95rem; color: #4b5563; margin-bottom: 16px;">
+              <?php if (is_array($trigger) && ($trigger['area'] !== '' || $trigger['class'] !== '' || $trigger['offline'])): ?>
+                <div class="review-trigger" data-sev="<?php echo htmlspecialchars($trigger['sev']); ?>">
+                  <?php if ($trigger['area'] !== ''): ?>
+                    <span class="rt-item">
+                      <span class="rt-label">Lowest-rated area</span>
+                      <strong><?php echo htmlspecialchars($trigger['area']); ?></strong>
+                      <span class="rt-score"><?php echo number_format((float) $trigger['score'], 1); ?> / 5.0</span>
+                      <?php if ($trigger['target'] !== null): ?>
+                        <span class="rt-target">target <?php echo number_format((float) $trigger['target'], 1); ?></span>
+                      <?php endif; ?>
+                    </span>
+                  <?php endif; ?>
+                  <?php if ($trigger['class'] !== ''): ?>
+                    <span class="rt-item rt-sev">
+                      <span class="rt-glyph" aria-hidden="true"><?php echo $trigger['sev'] === 'crit' ? '!' : ($trigger['sev'] === 'warn' ? '•' : '✓'); ?></span>
+                      RF class: <strong><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $trigger['class']))); ?></strong>
+                    </span>
+                  <?php endif; ?>
+                  <?php if ($trigger['offline']): ?>
+                    <span class="rt-item rt-offline">AI service offline — fallback summary, no training suggestions</span>
+                  <?php endif; ?>
+                </div>
+              <?php endif; ?>
+
+              <p class="review-summary">
                 <strong>AI Summary:</strong> <?php echo htmlspecialchars($aiRecs['summary'] ?? 'N/A'); ?>
               </p>
 
-              <h3 style="font-size: 1rem; margin-bottom: 8px;">Targeted Training Interventions:</h3>
-              <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+              <h3 class="review-subhead">Suggested training:</h3>
+              <p class="microcopy review-note">The employee will see the summary and suggestions below, marked “Manager Approved,” after you approve.</p>
+              <div class="review-recs">
                 <?php foreach ($recsList as $item): ?>
-                  <div style="background: #f9fafb; padding: 12px; border-radius: 6px; border-left: 4px solid #3b82f6;">
-                    <div style="font-weight: 600; text-transform: capitalize;">
+                  <div class="review-rec">
+                    <div class="review-rec-head">
                       <?php echo htmlspecialchars(str_replace('_', ' ', $item['competency_area'] ?? '')); ?>
-                      <span style="font-weight: normal; color: #6b7280;">(<?php echo htmlspecialchars($item['training_type'] ?? 'training'); ?> · <?php echo htmlspecialchars($item['timeline'] ?? '2-4 weeks'); ?>)</span>
+                      <span class="review-rec-meta">(<?php echo htmlspecialchars($item['training_type'] ?? 'training'); ?> · <?php echo htmlspecialchars($item['timeline'] ?? '2-4 weeks'); ?>)</span>
                     </div>
-                    <div style="font-size: 0.9rem; margin-top: 4px;"><?php echo htmlspecialchars($item['description'] ?? ''); ?></div>
-                    <div style="font-size: 0.825rem; color: #6b7280; margin-top: 4px;"><em>Rationale: <?php echo htmlspecialchars($item['rationale'] ?? ''); ?></em></div>
+                    <div class="review-rec-desc"><?php echo htmlspecialchars($item['description'] ?? ''); ?></div>
+                    <div class="review-rec-why"><em>Rationale: <?php echo htmlspecialchars($item['rationale'] ?? ''); ?></em></div>
                   </div>
                 <?php endforeach; ?>
               </div>
 
-              <details style="margin-bottom: 20px;">
-                <summary style="cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-                  Edit a recommendation (stays pending approval)
-                </summary>
+              <details class="review-edit">
+                <summary>Edit a recommendation (stays pending approval)</summary>
                 <?php foreach ($recsList as $recIdx => $item): ?>
-                  <form method="post" style="display: grid; gap: 8px; margin-top: 12px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+                  <form method="post" class="review-edit-form">
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="edit_rec" />
                     <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
                     <input type="hidden" name="rec_index" value="<?php echo (int) $recIdx; ?>" />
-                    <div style="font-size: 0.85rem; color: #6b7280;">
-                      Competency (locked to RF classification):
+                    <div class="review-edit-hint">
+                      Skill area (set by the system — you can edit type and timeline below):
                       <strong><?php echo htmlspecialchars(str_replace('_', ' ', $item['competency_area'] ?? '')); ?></strong>
                       <?php if (!empty($item['edited'])): ?>
                         <span> · previously edited</span>
                       <?php endif; ?>
                     </div>
-                    <label style="font-size: 0.85rem;">Training type
-                      <select name="training_type" required style="display: block; width: 100%; margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;">
+                    <label class="review-edit-label">Training type
+                      <select name="training_type" required class="review-edit-select">
                         <?php foreach (['on-the-job coaching', 'workshop', 'self-directed learning', 'mentoring'] as $allowedType): ?>
                           <option value="<?php echo htmlspecialchars($allowedType); ?>" <?php echo ($item['training_type'] ?? '') === $allowedType ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars(ucwords($allowedType)); ?>
@@ -282,11 +387,11 @@ try {
                         <?php endforeach; ?>
                       </select>
                     </label>
-                    <label style="font-size: 0.85rem;">Timeline
-                      <input type="text" name="timeline" required value="<?php echo htmlspecialchars($item['timeline'] ?? ''); ?>" style="display: block; width: 100%; margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;" />
+                    <label class="review-edit-label">Timeline
+                      <input type="text" name="timeline" required value="<?php echo htmlspecialchars($item['timeline'] ?? ''); ?>" class="review-edit-input" />
                     </label>
-                    <label style="font-size: 0.85rem;">Description
-                      <textarea name="description" required rows="3" style="display: block; width: 100%; margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
+                    <label class="review-edit-label">Description
+                      <textarea name="description" required rows="3" class="review-edit-textarea"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
                     </label>
                     <div>
                       <button type="submit" class="ghost-button">Save changes</button>
@@ -295,12 +400,20 @@ try {
                 <?php endforeach; ?>
               </details>
 
-              <form method="post" style="display: flex; gap: 12px; justify-content: flex-end;">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                <button type="submit" name="action" value="reject" class="ghost-button" style="color: #dc2626;">Reject Plan</button>
-                <button type="submit" name="action" value="approve" class="btn-primary">Approve & Publish</button>
-              </form>
+              <div class="review-actions">
+                <form method="post" data-confirm="Approve this plan? The employee will see it on their dashboard.">
+                  <?php echo csrf_field(); ?>
+                  <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                  <input type="hidden" name="action" value="approve" />
+                  <button type="submit" class="btn-primary">Approve & Publish</button>
+                </form>
+                <form method="post" data-confirm="Reject this plan? It will be discarded." data-confirm-danger>
+                  <?php echo csrf_field(); ?>
+                  <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                  <input type="hidden" name="action" value="reject" />
+                  <button type="submit" class="ghost-button review-reject">Reject Plan</button>
+                </form>
+              </div>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>

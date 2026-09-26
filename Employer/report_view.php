@@ -57,7 +57,7 @@ $autoPrint = $report && !empty($_GET['autoprint']);
             <span>View</span>
           </nav>
           <h1>Report</h1>
-          <p>Review scores, targets, and documentation details before printing.</p>
+          <p>Review scores, targets, and documentation details before printing. Use Save as PDF in the print dialog.</p>
         </div>
         <div class="ph-actions">
           <button class="btn-primary" type="button" data-print>Print / Save as PDF</button>
@@ -71,14 +71,14 @@ $autoPrint = $report && !empty($_GET['autoprint']);
       <?php else: ?>
         <div class="settings-panel">
           <h1 style="padding:16px 18px 0;"><?php echo htmlspecialchars($report['employeeName'] ?? 'Unknown', ENT_QUOTES); ?></h1>
-          <p class="microcopy" style="padding:0 18px;">
-            <?php echo htmlspecialchars($report['reportTypeLabel'] ?? '', ENT_QUOTES); ?>
-            &middot; Generated
+            <p class="microcopy" style="padding:0 18px;">
+              <?php echo htmlspecialchars($report['reportTypeLabel'] ?? '', ENT_QUOTES); ?>
+              &middot; Generated
             <?php echo !empty($report['generatedAt']) ? date('M j, Y g:ia', strtotime($report['generatedAt'])) : ''; ?>
             <?php if (!empty($report['generatedBy'])): ?> by
               <?php echo htmlspecialchars($report['generatedBy'], ENT_QUOTES); ?>  <?php endif; ?>
           </p>
-          <p class="microcopy" style="padding:0 18px;">Industry template:
+          <p class="microcopy" style="padding:0 18px;">Job type:
             <?php echo htmlspecialchars($report['templateLabel'] ?? '', ENT_QUOTES); ?></p>
 
           <hr class="section-divider" />

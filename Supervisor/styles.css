@@ -76,9 +76,4 @@
   max-width: 800px;
   margin: 0 auto;
 }
-
-.rate-header-note {
-  font-size: 13px;
-  color: var(--ui-muted, #64748b);
-  margin-bottom: 16px;
-}
+/* Purged 2026-09 sweep: .rate-header-note */

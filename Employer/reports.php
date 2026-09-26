@@ -694,13 +694,13 @@ $pfPaletteJson =
 
                 <div class="report-actions">
 
-                  <a class="ghost-button" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1">
+                  <a class="ghost-button" href="report_view.php?id=<?php echo urlencode($report['id']); ?>&autoprint=1" title="Opens the print dialog — choose Save as PDF">
                     <span aria-hidden="true">
                       <?php
                       echo $icons['download'];
                       ?>
                     </span>
-                    Download PDF
+                    Print / Save as PDF
                   </a>
 
                   <a class="ghost-button" href="report_view.php?id=<?php echo urlencode($report['id']); ?>">
