@@ -3,6 +3,50 @@
 Self-contained resume point for the next session.
 Branch `main` @ `1cdfa3e` | 27 modified files | **0 commits** | `php tests/run.php` = **282/282 PASS**.
 
+## 0. Update log — later session, 2026-09-27 (quick-wins #3/#4/#5 executed)
+
+The header block above describes the previous session. Current state: HEAD `39b6efc` ("upddae"),
+working tree = **4 modified files** (uncommitted), `php tests/run.php` = **282/282 PASS**.
+
+**Completed (previous resume-plan items 2-4):**
+- **Quick-win #3 — `Employer/rate_employee.php` (+ `ui-refresh.css`):** rating progress counter now
+  rides the existing `#ratePreview` live strip ("N of M adjusted", neutral `--ui-muted`, deliberately
+  NOT a second live region); dirty-guard added — native `beforeunload` for unmanaged exits plus an
+  in-app discard dialog (`.confirm-dialog confirm-danger` + `.btn-danger`, safe "Keep editing" focused)
+  for the Cancel link and the employee picker (`window.pfRatePickEmployee`; inline onchange keeps its
+  old `this.form.submit()` fallback). Load-time baseline per input + `window.__pfRateSummarize` hook;
+  genuine saves bypass both guards (defaultPrevented inspection + existing ratedConfirmed flag).
+- **Bug fixed while in there:** the Wave-3 tone dot never rendered — `refresh()` registered before
+  `paint()`, and `paint()` wipes the strip with `innerHTML = ''`. The chrome pass (slider fill / pill /
+  tone dot) now runs AFTER the painter; blocks were reordered inside the page's `<script>` — do not
+  "restore" the old order.
+- **Quick-win #4 — `.empty-state` dedupe:** removed the fully-dead base rule in `Employer/styles.css`
+  (all 4 declarations were overridden by the `ui-refresh.css:1206` combined rule; every page loading
+  that sheet also loads ui-refresh); merged `.empty-state .btn-primary` margin into the
+  `.reports-empty-note` rule. Exactly one definition + one action-margin rule remain.
+- **Quick-win #5 — non-color cues:** countdown banner (`employee_view.php`) now renders a state word
+  chip (`$countdownState` → "On track" / "Approaching deadline" / "Deadline reached"; absolute
+  top-right >=560px, in-flow on small screens, `.pf-countdown.pf-banner` gained `position: relative`);
+  directory triage (`employees.php` via `ui-refresh.css`) gained `::before` glyphs
+  (`"\2022"` = due soon, `"!"` = final days — the review page's non-color glyph vocabulary).
+
+**Verification evidence:** `php -l` on both PHP files; `php tests/run.php` 282/282; `node --check` on
+both extracted inline JS blocks; whole-file CSS brace balance (ui-refresh 601/601, styles.css 669/669);
+no BOM; `rate_employee.php` fully CRLF / CSS LF (unchanged conventions); hook greps 1:1
+(`pf-rate-progress`, `pf-countdown-state`, `rateCancel`, triage `::before`); `git diff --stat` = 4
+files, +220/-77, nothing else touched.
+
+**New reusable artifact:** `%TEMP%\rate_sim.js` — headless DOM-stub simulation of the rate_employee
+inline JS (plus `%TEMP%\rate_block_1.js`, extracted via
+`re.findall(r'<script>([\s\S]*?)</script>', src)` with `<?php ... ?>` → `null`): **59/59 assertions**
+covering counter math, dot-survives-repaint, beforeunload paths, below-target dialog, discard dialogs,
+picker hook. Run: `node %TEMP%\rate_sim.js` (re-extract block 1 first after any page edit).
+
+**Still open:** review-page screenshots (user acceptance); optional manuscript List-of-Figures / design
+off-by-one pass (previous session marked those parts "do in Word").
+
+
+
 ## 1. What this session did
 
 | # | Workstream | Status |

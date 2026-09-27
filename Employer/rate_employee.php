@@ -303,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           <form method="get" class="form-grid single-field-grid" style="margin-bottom:8px;">
             <div class="form-group">
               <label for="employee">Employee</label>
-              <select id="employee" class="perform-select" name="employee" onchange="this.form.submit()">
+              <select id="employee" class="perform-select" name="employee" onchange="window.pfRatePickEmployee ? pfRatePickEmployee(this) : this.form.submit()">
                 <?php foreach ($employees as $emp): ?>
                   <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>" <?php echo $emp['uid'] === $selectedUid ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
@@ -348,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
               <?php endforeach; ?>
             </div>
             <div class="form-actions">
-              <a class="ghost-button" href="kpis.php">Cancel</a>
+              <a class="ghost-button" id="rateCancel" href="kpis.php">Cancel</a>
               <button class="btn-primary" type="submit">Save Rating & Generate AI Plan</button>
             </div>
           </form>
@@ -380,68 +380,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       });
     });
 
-    // Live card chrome: slider fill, per-card status pill, preview tone.
-    // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
-    // Existing sync/paint/submit logic above is untouched.
-    (function () {
-      var form = document.getElementById('rateForm');
-      var preview = document.getElementById('ratePreview');
-      if (!form) return;
-      var targets = window.__pfRateTargets || {};
-      function statusFor(v, t) {
-        if (isNaN(t)) return { text: '', cls: '' };
-        if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
-        if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
-        return { text: 'Below Target', cls: 'status-danger' };
-      }
-      function refresh() {
-        var below = 0, total = 0;
-        form.querySelectorAll('[data-rate-row]').forEach(function (row) {
-          var num = row.querySelector('input[name^="score_"]');
-          var slider = row.querySelector('[data-rate-slider]');
-          var pill = row.querySelector('[data-rate-pill]');
-          if (!num) return;
-          var v = parseFloat(num.value);
-          if (isNaN(v)) return;
-          v = Math.max(1, Math.min(5, v));
-          var key = num.name.replace(/^score_/, '');
-          var t = parseFloat(targets[key]);
-          total++;
-          if (!isNaN(t) && v < t) below++;
-          if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
-          if (pill && !isNaN(t)) {
-            var st = statusFor(v, t);
-            pill.textContent = st.text;
-            pill.classList.remove('status-good', 'status-warning', 'status-danger');
-            if (st.cls) pill.classList.add(st.cls);
-            row.setAttribute('data-status', st.cls || 'none');
-          }
-        });
-        if (preview) {
-          preview.removeAttribute('data-tone');
-          var dot = preview.querySelector(':scope > .pf-rate-dot');
-          if (total > 0) {
-            preview.setAttribute('data-tone', below <= 0 ? 'ok' : (below < total ? 'warn' : 'bad'));
-            if (!dot) {
-              dot = document.createElement('span');
-              dot.className = 'pf-rate-dot';
-              dot.setAttribute('aria-hidden', 'true');
-            }
-            preview.insertBefore(dot, preview.firstChild);
-          } else if (dot) {
-            dot.remove();
-          }
-        }
-      }
-      form.addEventListener('input', refresh);
-      refresh();
-    })();
-
+    // Preview strip painter: average / below-target / adjusted counts, plus the
+    // below-target confirm dialog on submit. Declared before the chrome pass
+    // further down: paint() resets the strip with innerHTML = '', so the tone
+    // dot has to be inserted by that later pass or a repaint would wipe it.
     (function () {
       var form = document.getElementById('rateForm');
       var preview = document.getElementById('ratePreview');
       if (!form || !preview) return;
       var targets = window.__pfRateTargets || {};
+
+      // Unsaved-changes baseline: each KPI's score as rendered on load. The
+      // progress counter and the dirty guard both compare against these.
+      var baseline = {};
+      form.querySelectorAll('input[name^="score_"]').forEach(function (input) {
+        var v = parseFloat(input.value);
+        baseline[input.name.replace(/^score_/, '')] = isNaN(v) ? 3.0 : v;
+      });
 
       function readScores() {
         var vals = [];
@@ -456,15 +411,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 
       function summarize() {
         var vals = readScores();
-        if (!vals.length) return { avg: null, below: 0, total: 0 };
-        var sum = 0, below = 0;
+        if (!vals.length) return { avg: null, below: 0, total: 0, adjusted: 0 };
+        var sum = 0, below = 0, adjusted = 0;
         vals.forEach(function (s) {
           sum += s.value;
           var t = parseFloat(targets[s.key]);
           if (!isNaN(t) && s.value < t) below++;
+          var b = baseline[s.key];
+          if (typeof b === 'number' && Math.abs(s.value - b) > 1e-9) adjusted++;
         });
-        return { avg: sum / vals.length, below: below, total: vals.length };
+        return { avg: sum / vals.length, below: below, total: vals.length, adjusted: adjusted };
       }
+
+      // The unsaved-changes guard below reads its counts through this hook.
+      window.__pfRateSummarize = summarize;
 
       function paint() {
         var s = summarize();
@@ -484,6 +444,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         } else {
           preview.append(' · all at or above target');
         }
+        preview.append(' · ');
+        var progressSpan = document.createElement('span');
+        progressSpan.className = 'pf-rate-progress';
+        progressSpan.textContent = s.adjusted + ' of ' + s.total + ' adjusted';
+        preview.append(progressSpan);
       }
 
       form.addEventListener('input', paint);
@@ -540,6 +505,175 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         saveButton.focus();
       });
     })();
+    // Live card chrome: slider fill, per-card status pill, preview tone.
+    // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
+    // Runs after the preview painter above: paint() resets the strip with
+    // innerHTML = '', so the tone dot is (re)inserted here, never before.
+    (function () {
+      var form = document.getElementById('rateForm');
+      var preview = document.getElementById('ratePreview');
+      if (!form) return;
+      var targets = window.__pfRateTargets || {};
+      function statusFor(v, t) {
+        if (isNaN(t)) return { text: '', cls: '' };
+        if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
+        if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
+        return { text: 'Below Target', cls: 'status-danger' };
+      }
+      function refresh() {
+        var below = 0, total = 0;
+        form.querySelectorAll('[data-rate-row]').forEach(function (row) {
+          var num = row.querySelector('input[name^="score_"]');
+          var slider = row.querySelector('[data-rate-slider]');
+          var pill = row.querySelector('[data-rate-pill]');
+          if (!num) return;
+          var v = parseFloat(num.value);
+          if (isNaN(v)) return;
+          v = Math.max(1, Math.min(5, v));
+          var key = num.name.replace(/^score_/, '');
+          var t = parseFloat(targets[key]);
+          total++;
+          if (!isNaN(t) && v < t) below++;
+          if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
+          if (pill && !isNaN(t)) {
+            var st = statusFor(v, t);
+            pill.textContent = st.text;
+            pill.classList.remove('status-good', 'status-warning', 'status-danger');
+            if (st.cls) pill.classList.add(st.cls);
+            row.setAttribute('data-status', st.cls || 'none');
+          }
+        });
+        if (preview) {
+          preview.removeAttribute('data-tone');
+          var dot = preview.querySelector(':scope > .pf-rate-dot');
+          if (total > 0) {
+            preview.setAttribute('data-tone', below <= 0 ? 'ok' : (below < total ? 'warn' : 'bad'));
+            if (!dot) {
+              dot = document.createElement('span');
+              dot.className = 'pf-rate-dot';
+              dot.setAttribute('aria-hidden', 'true');
+            }
+            preview.insertBefore(dot, preview.firstChild);
+          } else if (dot) {
+            dot.remove();
+          }
+        }
+      }
+      form.addEventListener('input', refresh);
+      refresh();
+    })();
+
+    // Unsaved-changes guard. Exits we own (Cancel link, employee picker) get
+    // the in-app discard dialog; every other exit (sidebar, browser back or
+    // refresh) gets the native beforeunload prompt. A genuine save bypasses
+    // both, so a successful submit never nags.
+    (function () {
+      var form = document.getElementById('rateForm');
+      if (!form || typeof window.__pfRateSummarize !== 'function') return;
+      var summarize = window.__pfRateSummarize;
+
+      function isDirty() {
+        return (summarize().adjusted || 0) > 0;
+      }
+
+      var leaving = false;
+      form.addEventListener('submit', function (event) {
+        // Runs after the below-target dialog listener (source order): when it
+        // cancels the submit, defaultPrevented is already true here.
+        if (!event.defaultPrevented) leaving = true;
+      });
+      window.addEventListener('beforeunload', function (event) {
+        if (leaving || form.dataset.ratedConfirmed === 'true') return;
+        if (!isDirty()) return;
+        event.preventDefault();
+        event.returnValue = '';
+      });
+
+      var activeDialog = null;
+      function openDiscardDialog(confirmLabel, onDiscard, onKeep) {
+        if (activeDialog) return;
+        var s = summarize();
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        var dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog confirm-danger';
+        dialog.setAttribute('role', 'alertdialog');
+        dialog.setAttribute('aria-label', 'Discard unsaved score adjustments');
+        var heading = document.createElement('h2');
+        heading.textContent = 'Discard unsaved scores?';
+        var message = document.createElement('p');
+        message.textContent = 'You adjusted ' + s.adjusted + ' of ' + s.total
+          + ' KPIs but have not saved this rating yet. Leaving now discards those adjustments.';
+        var actions = document.createElement('div');
+        actions.className = 'confirm-dialog-actions';
+        var keepButton = document.createElement('button');
+        keepButton.type = 'button';
+        keepButton.className = 'ghost-button';
+        keepButton.textContent = 'Keep editing';
+        var discardButton = document.createElement('button');
+        discardButton.type = 'button';
+        discardButton.className = 'btn-danger';
+        discardButton.textContent = confirmLabel;
+        actions.append(keepButton, discardButton);
+        dialog.append(heading, message, actions);
+        backdrop.append(dialog);
+        document.body.append(backdrop);
+        activeDialog = backdrop;
+
+        var close = function () {
+          backdrop.remove();
+          document.removeEventListener('keydown', handleKeydown);
+          activeDialog = null;
+        };
+        var keep = function () {
+          close();
+          if (onKeep) onKeep();
+        };
+        var handleKeydown = function (keyEvent) {
+          if (keyEvent.key === 'Escape') keep();
+        };
+        keepButton.addEventListener('click', keep);
+        discardButton.addEventListener('click', function () {
+          close();
+          onDiscard();
+        });
+        document.addEventListener('keydown', handleKeydown);
+        // Focus the safe option, unlike the save-anyway dialog above.
+        keepButton.focus();
+      }
+
+      var cancelLink = document.getElementById('rateCancel');
+      if (cancelLink) {
+        cancelLink.addEventListener('click', function (event) {
+          if (!isDirty()) return;
+          event.preventDefault();
+          openDiscardDialog('Discard & leave', function () {
+            leaving = true;
+            window.location.href = cancelLink.href;
+          });
+        });
+      }
+
+      // Employee picker: the inline onchange calls this before the GET form
+      // submits, so a dirty rating prompts instead of vanishing silently.
+      // "Keep editing" restores the previously selected employee.
+      var picker = document.getElementById('employee');
+      if (picker) picker.setAttribute('data-pf-prev', picker.value);
+      window.pfRatePickEmployee = function (select) {
+        var go = function () {
+          leaving = true;
+          select.form.submit();
+        };
+        if (!isDirty()) {
+          go();
+          return;
+        }
+        openDiscardDialog('Discard & switch', go, function () {
+          select.value = select.getAttribute('data-pf-prev') || select.value;
+        });
+      };
+    })();
+
   </script>
 </body>
 

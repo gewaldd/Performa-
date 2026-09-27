@@ -699,7 +699,6 @@ button.pf-menu-btn {
 .page-indicator { align-self: center; font-size: 13px; color: var(--ui-muted); }
 /* Secondary directory columns sit back so names carry the row */
 .muted-cell { color: var(--ui-muted); font-size: 12.5px; }
-.empty-state .btn-primary { margin-top: 12px; }
 
 /* KPI specifics */
 .kpi-search-wrap, .kpi-employee-panel, .kpi-metrics-panel, .kpi-add-panel, .kpi-category-cards { margin-bottom: 20px; }
@@ -1055,6 +1054,7 @@ select.perform-select.perform-select-native {
 /* Probation countdown hero banner. Gradient nod to the Design 3 greeting card;
    tone follows the 150/165/178-day bands. Text semantics unchanged. */
 .pf-countdown.pf-banner {
+  position: relative;
   border-radius: var(--ui-radius); padding: 20px 22px; color: #fff;
   background: linear-gradient(135deg, #3b2d8f 0%, #245fba 60%, #184a96 100%);
   border: 1px solid rgba(255, 255, 255, .14);
@@ -1074,6 +1074,14 @@ select.perform-select.perform-select-native {
   background: rgba(255, 255, 255, .65); border-radius: 1px;
 }
 .pf-countdown-meta { margin: 0; color: rgba(255, 255, 255, .82); font-size: 13px; }
+/* Tone word chip: greyscale-safe state cue (neutral chrome; the word carries
+   the tone). Top-right on wide screens, in-flow above the number on small. */
+.pf-countdown-state {
+  position: absolute; top: 14px; right: 16px;
+  display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .38); color: #fff;
+}
 /* Collapsible profile editor: facts read clean, editing one click away. */
 .pf-edit-details { margin-top: 4px; border: 1px solid var(--ui-border-soft); border-radius: var(--ui-radius-sm); background: var(--ui-soft); }
 .pf-edit-details > summary {
@@ -1185,6 +1193,7 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
   .pf-employee-view .pf-view-panel { padding: 16px 14px 18px !important; }
   .pf-identity-facts { grid-template-columns: 1fr; }
   .pf-countdown-number { font-size: 28px; }
+  .pf-countdown-state { position: static; margin: 0 0 10px; }
   .pf-avatar { width: 48px; height: 48px; font-size: 17px; }
   .pf-countdown.pf-banner { padding: 16px; }
   .pf-chart-bar { height: 72px; }
@@ -1204,7 +1213,7 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 .alert-error, .alert-danger { border-color: #f3c1bd !important; background: var(--ui-red-bg) !important; color: #8f1d17 !important; }
 .alert-info { border-color: #d9e5f5 !important; background: var(--ui-blue-soft) !important; color: var(--ui-blue-dark) !important; }
 .dashboard-empty, .empty-state, .reports-empty-note { padding: 36px 20px !important; text-align: center; color: var(--ui-muted) !important; font-size: 13.5px; }
-.reports-empty-note .btn-primary { margin-top: 12px; }
+.empty-state .btn-primary, .reports-empty-note .btn-primary { margin-top: 12px; }
 #noFilterResults .ghost-button { margin-top: 12px; }
 .empty-search-row { color: var(--ui-muted); }
 
@@ -1487,6 +1496,9 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 .pf-rate-preview[data-tone="ok"] { color: #0e5c38; }
 .pf-rate-preview[data-tone="warn"] { color: var(--ui-amber); }
 .pf-rate-preview[data-tone="bad"] { color: #8f1d17; }
+/* Adjusted-KPI counter: stays neutral when the strip tone changes -- severity
+   color never implies the progress figure (the count text is the cue). */
+.pf-rate-preview .pf-rate-progress { color: var(--ui-muted); white-space: nowrap; font-weight: 600; }
 .pf-rate-preview:empty { display: none; }
 
 /* ============================================================
@@ -1496,6 +1508,11 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
    ============================================================ */
 .directory-panel .employee-triage.triage-warn { color: var(--ui-amber); font-weight: 600; }
 .directory-panel .employee-triage.triage-bad { color: var(--ui-red); font-weight: 700; }
+/* Non-color cues for the two alert tones (review-page vocabulary:
+   bullet = due soon, bang = final days); the numeric days-left text stays the
+   primary carrier, the glyph keeps greyscale rows distinguishable. */
+.directory-panel .employee-triage.triage-warn::before { content: "\2022"; margin-right: 4px; }
+.directory-panel .employee-triage.triage-bad::before { content: "!"; margin-right: 4px; }
 .directory-panel .triage-score { margin-left: 6px; font-size: 11px; min-height: 22px; padding: 0 8px; }
 .directory-panel .dept-pill { background: var(--ui-soft); border: 1px solid var(--ui-border-soft); color: var(--ui-muted); }
 /* Active-filter highlight, CSS-only progressive enhancement (no JS change). */

@@ -259,6 +259,10 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       <?php if ($isProbationary): ?>
         <?php
         $countdownTone = $daysLeft <= 0 ? 'bad' : ($daysLeft <= 15 ? 'warn' : 'ok');
+        // Non-color cue: the state word says what the fill tone implies, so the
+        // banner still reads when color is unavailable (greyscale, color-blind).
+        $countdownState = $countdownTone === 'bad' ? 'Deadline reached'
+          : ($countdownTone === 'warn' ? 'Approaching deadline' : 'On track');
         $countdownPct = max(0, min(100, ($daysSince / $probationPeriodDays) * 100));
         $latestScores = $ratingHistory[0]['scores'] ?? [];
         $recentHistory = array_slice($ratingHistory, 0, 5);
@@ -272,6 +276,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
         <div class="settings-panel pf-view-panel">
           <h4 class="settings-subhead">Probation Countdown</h4>
           <div class="pf-countdown pf-banner" data-tone="<?php echo $countdownTone; ?>">
+            <span class="pf-countdown-state"><?php echo $countdownState; ?></span>
             <div class="pf-countdown-number"><?php echo $daysLeft; ?><span>days left</span></div>
             <div class="pf-countdown-bar" role="progressbar" aria-valuemin="0" aria-valuemax="<?php echo $probationPeriodDays; ?>" aria-valuenow="<?php echo $daysSince; ?>" aria-label="Probation progress">
               <span class="pf-countdown-fill" style="width: <?php echo number_format($countdownPct, 1); ?>%;"></span>

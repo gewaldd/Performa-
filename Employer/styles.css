@@ -3196,19 +3196,6 @@ select:disabled {
   font-size: 12px;
 }
 
-.empty-state {
-  padding:
-    48px
-    20px;
-
-  text-align: center;
-
-  color:
-    var(--muted);
-
-  font-size: 14px;
-}
-
 .alert-banner {
   margin-bottom: 16px;
 
