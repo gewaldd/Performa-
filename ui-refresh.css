@@ -1541,6 +1541,108 @@ ul.pf-chart li { flex: 1; min-width: 0; display: flex; flex-direction: column; a
 @media (prefers-reduced-motion: reduce) {
   .directory-panel .directory-row { transition: none; }
 }
+/* ============================================================
+   EMPLOYEES PAGE REFRESH (Employer/employees.php only).
+   Everything here is scoped by the .employees-page main hook, so the
+   Supervisor directory keeps its own 6-column layout untouched.
+   ============================================================ */
+
+/* ---- Metric mini strip: four cohort cards, 4-up on desktop. ---- */
+.employees-page .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.employees-page .metric-card-top { justify-content: flex-end; }
+/* The refresh layer hides dashboard metric icons; the strip wants them back
+   as small tone chips (the mockup's leading glyph). */
+.employees-page .metric-icon {
+  display: grid !important;
+  place-items: center;
+  width: 40px; height: 40px; flex: 0 0 40px;
+  border-radius: 10px;
+  background: var(--ui-blue-soft); color: var(--ui-blue-dark);
+}
+.employees-page .metric-icon svg { width: 20px; height: 20px; }
+.employees-page .metric-note { font-size: 12px; line-height: 1.35; }
+.employees-page .metric-card--risk .metric-icon { background: var(--ui-red-bg); color: var(--ui-red); }
+.employees-page .metric-card--risk .metric-value { color: var(--ui-red); }
+.employees-page .metric-card--good .metric-icon { background: var(--ui-green-bg); color: var(--ui-green); }
+.employees-page .metric-card--good .metric-value { color: var(--ui-green); }
+.employees-page .metric-card--muted .metric-icon { background: var(--ui-soft); color: var(--ui-muted); }
+
+@media (max-width: 1100px) {
+  .employees-page .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .employees-page .metrics { grid-template-columns: 1fr; }
+}
+
+/* ---- Toolbar: search moved down from the page header, plus the live count. ---- */
+.employees-page .filter-bar { flex-wrap: wrap; align-items: center; }
+.employees-page .filter-group { flex-wrap: wrap; }
+.employees-page .filter-bar .search-bar {
+  flex: 1 1 240px; min-width: 200px; max-width: 420px;
+  min-height: var(--control-h);
+  background: var(--ui-surface);
+}
+.employees-page .filter-select { flex: 0 1 auto; }
+.employees-page .filter-actions { flex-wrap: wrap; }
+.employees-page .directory-count {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--ui-muted); font-size: 12.5px; font-weight: 600;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.employees-page .directory-count::before {
+  content: ""; width: 8px; height: 8px; flex: 0 0 8px;
+  border-radius: 50%; background: var(--ui-blue);
+}
+
+/* ---- Directory: five columns (employee / department / timeline / status / action). ---- */
+@media (min-width: 761px) {
+  .employees-page .directory-head,
+  .employees-page .directory-row {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, .9fr) minmax(0, 1.3fr) minmax(0, .9fr) minmax(0, .5fr);
+  }
+}
+/* The refresh layer's <=1100px "drop columns 4 and 6" rule targets the old
+   six-column layout; the performance column must survive here. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .employees-page .directory-head > :nth-child(4),
+  .employees-page .directory-row > :nth-child(4) { display: block; }
+}
+.employees-page .employee-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.employees-page .employee-flag {
+  display: inline-flex; align-items: center;
+  padding: 1px 7px; border: 1px solid var(--ui-border-soft); border-radius: 6px;
+  background: var(--ui-soft); color: var(--ui-muted);
+  font-size: 11px; font-weight: 600;
+}
+.employees-page .employee-flag-probation { border-color: #cfe0f7; background: var(--ui-blue-soft); color: var(--ui-blue-dark); }
+.employees-page .employee-flag-disabled { border-color: #f3c1bd; background: var(--ui-red-bg); color: #8f1d17; }
+.employees-page .timeline-cell { gap: 6px; }
+.employees-page .timeline-period { color: var(--ui-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+/* The medallion check marks "on track" (review-page vocabulary: bullet = due
+   soon, bang = final days); amber/red rows keep their existing glyphs. */
+.employees-page .directory-panel .employee-triage.triage-ok { color: var(--ui-green); font-weight: 600; }
+.employees-page .directory-panel .employee-triage.triage-ok::before { content: "\2713"; margin-right: 4px; }
+.employees-page .timeline-cell[data-tone="bad"] .pf-meter-fill { background: var(--ui-red); }
+.employees-page .timeline-cell[data-tone="warn"] .pf-meter-fill { background: var(--ui-amber); }
+.employees-page .timeline-cell[data-tone="ok"] .pf-meter-fill { background: var(--ui-green); }
+.employees-page .timeline-cell .pf-meter { max-width: 200px; }
+
+/* ---- Numbered pagination (built by employees.js). ---- */
+.employees-page .pagination-bar { flex-wrap: wrap; }
+.employees-page .page-numbers { display: flex; align-items: center; gap: 6px; }
+.employees-page .page-numbers:empty { display: none; }
+.employees-page .page-num {
+  min-width: 32px; height: 32px; padding: 0 8px;
+  border: 1px solid var(--ui-border); border-radius: 7px;
+  background: var(--ui-surface); color: var(--ui-text);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--ui-ease), border-color var(--ui-ease);
+}
+.employees-page .page-num:hover { background: var(--ui-soft); border-color: #c7d2df; }
+.employees-page .page-num.active { background: var(--ui-blue); border-color: var(--ui-blue); color: #fff; }
+.employees-page .page-gap { color: var(--ui-muted); padding: 0 2px; }
 .dashboard-empty .ghost-button { margin-top: 10px; }
 .pf-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);

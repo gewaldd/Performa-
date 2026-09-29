@@ -290,3 +290,7 @@ Stack trace:
 
 [23-Sep-2026 15:05:42 UTC] ML fallback reason: google-genai SDK not installed for this Python interpreter.
 [23-Sep-2026 16:48:04 UTC] ML recommendation timed out for employee G1VjQ1iUkgcD4cAyBm1DN5eY4zp2
+[29-Sep-2026 12:51:04 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=Bk07tesFaFWaECDWc42B8fbQZf13 ctx=employee_view:read
+[29-Sep-2026 12:51:07 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=2ikiLw2QF5N3To0M4j0tgGfft7x1 ctx=employee_view:read
+[29-Sep-2026 12:51:08 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=2orGM9l9CcPObIehNnXFNYbc4Mk2 ctx=employee_view:read
+[29-Sep-2026 12:51:11 UTC] Employer ownership deny: employer=yI3CYDNksaVIQsGv6lDMktxhKoV2 target=B1rpx0etBteQIl1C8nm6IuKF9OE2 ctx=employee_view:read

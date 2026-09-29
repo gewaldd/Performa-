@@ -24,11 +24,26 @@ $profileRoleDisplay = ucwords(
 );
 
 // Shared icon library (Style A cleanup) — single source in includes/icons.php.
+// Strip glyphs (users / hourglass / trend / cap) are the dashboard's own
+// vocabulary for cohort, nearing-deadline, performance and training plans.
 $icons = [
   'search' => employer_icon('search'),
   'plus' => employer_icon('plus'),
   'download' => employer_icon('download'),
+  'users' => employer_icon('users'),
+  'hourglass' => employer_icon('hourglass'),
+  'trend' => employer_icon('trend'),
+  'cap' => employer_icon('cap'),
 ];
+
+/*
+ * Probation-window thresholds, defined once. The metric strip, the row
+ * triage tones and the dashboard's "Nearing Deadline" card all read these
+ * numbers, so a row can never be amber while the strip says it is safe.
+ * The dashboard predicate is daysLeft <= 30 && > 0 (employer_dashboard.php).
+ */
+$atRiskDays = 30;
+$finalDays = 7;
 
 /* Purged 2026-09: hash-based $deptClassCycle + department_pill_class().
    Department pills are intentionally neutral (single quiet style); random
@@ -48,6 +63,16 @@ $cacheTimeKey =
 
 $cacheTTL = 20;
 
+/*
+ * Pending training-plan count rides the same snapshot as the rows (written
+ * in the cache-miss branch below), so an in-TTL cached render shows the
+ * exact same strip numbers.
+ */
+$pendingKey =
+  'performa_employee_pending';
+
+$directoryPending = 0;
+
 $cacheAvailable =
   isset(
   $_SESSION[$cacheKey],
@@ -64,6 +89,12 @@ if ($cacheAvailable) {
     )
     ? $_SESSION[$cacheKey]
     : [];
+
+  $directoryPending =
+    (int) (
+    $_SESSION[$pendingKey]
+    ?? 0
+  );
 
 } else {
 
@@ -195,6 +226,32 @@ if ($cacheAvailable) {
         }
       }
 
+      /*
+       * Performance status for the dedicated column + the status filter.
+       * One helper call per row; unrated rows get a neutral class and a
+       * "not-rated" slug so they stay filterable without inventing a
+       * fourth performance class.
+       */
+      $perfStatus = null;
+
+      if (isset($scoreValue, $targetAvgValue)) {
+        $perfStatus = kpi_status_for_score(
+          (float) $scoreValue,
+          (float) $targetAvgValue
+        );
+      }
+
+      $perfLabel = $perfStatus !== null
+        ? $perfStatus['status'] . ' (' . number_format((float) $scoreValue, 1) . ')'
+        : 'Not yet rated';
+
+      $perfClass = $perfStatus['statusClass']
+        ?? 'status-neutral';
+
+      $perfSlug = $perfStatus !== null
+        ? strtolower(str_replace(' ', '-', $perfStatus['status']))
+        : 'not-rated';
+
       $roleLabel =
         display_role_label(
           $doc['role']
@@ -260,24 +317,92 @@ if ($cacheAvailable) {
         'targetAvgValue' =>
           $targetAvgValue,
 
+        /*
+         * Tone thresholds come from the shared probation-window constants
+         * above: final week = red, inside the 30-day review window = amber,
+         * otherwise on track. (Was 2 / 15, which disagreed with both the
+         * dashboard's 30-day deadline metric and the strip card.)
+         */
         'triageTone' =>
           $daysLeftValue === null
           ? ''
           : (
-            $daysLeftValue <= 2
+            $daysLeftValue <= $finalDays
             ? 'bad'
             : (
-              $daysLeftValue <= 15
+              $daysLeftValue <= $atRiskDays
               ? 'warn'
               : 'ok'
             )
           ),
 
+        /*
+         * Probation clock, pre-formatted for the timeline cell: elapsed
+         * percentage drives the meter, day/period drives the caption.
+         * Null for rows without a clock (supervisors, missing hire date).
+         */
+        'probationPercent' =>
+          $daySinceValue !== null
+          ? (int) min(
+            100,
+            round(
+              $daySinceValue /
+              max(
+                1,
+                (int) (
+                  $doc['probationPeriodDays']
+                  ?? 180
+                )
+              ) *
+              100
+            )
+          )
+          : null,
+
+        'probationPeriod' =>
+          $daySinceValue !== null
+          ? max(
+            1,
+            (int) (
+              $doc['probationPeriodDays']
+              ?? 180
+            )
+          )
+          : null,
+
         'statusClass' =>
           $status === 'Disabled'
           ? 'status-danger'
           : 'status-good',
+
+        'perfLabel' =>
+          $perfLabel,
+
+        'perfClass' =>
+          $perfClass,
+
+        'perfSlug' =>
+          $perfSlug,
       ];
+    }
+
+    /*
+     * Pending training-plan sign-offs (the Review Plans queue). Same source
+     * and same predicate review_recommendations.php uses, so the strip card
+     * and the sidebar badge cannot disagree. Counted here because this is
+     * the only branch that reads Ratings.
+     */
+    foreach ($ratingsForScores as $pendingRating) {
+      $pendingPlan =
+        $pendingRating['aiRecommendations']
+        ?? null;
+
+      if (
+        is_array($pendingPlan) &&
+        ($pendingPlan['status'] ?? '') === 'pending_approval'
+      ) {
+        $directoryPending++;
+      }
     }
 
     $_SESSION[$cacheKey] =
@@ -285,6 +410,9 @@ if ($cacheAvailable) {
 
     $_SESSION[$cacheTimeKey] =
       time();
+
+    $_SESSION[$pendingKey] =
+      $directoryPending;
 
   } catch (Throwable $e) {
 
@@ -300,6 +428,87 @@ if ($cacheAvailable) {
     $directory = [];
   }
 }
+
+/* =========================================================
+   METRIC MINI STRIP
+   =========================================================
+   Four cohort signals derived from rows already in memory (zero new reads):
+   headcount, the shared 30-day review window, the manuscript "Exceeding"
+   threshold, and the Review Plans queue stashed by the cache-miss branch.
+   ========================================================= */
+
+$stripCohort = 0;
+$stripTracked = 0;
+$stripAtRisk = 0;
+$stripExceeding = 0;
+
+foreach ($directory as $stripRow) {
+  if (($stripRow['type'] ?? '') !== 'Probationary') {
+    continue;
+  }
+
+  $stripCohort++;
+
+  if (isset($stripRow['daysLeftValue'])) {
+    $stripTracked++;
+
+    if (
+      $stripRow['daysLeftValue'] <= $atRiskDays &&
+      $stripRow['daysLeftValue'] > 0
+    ) {
+      $stripAtRisk++;
+    }
+  }
+
+  if (
+    isset($stripRow['scoreValue'], $stripRow['targetAvgValue']) &&
+    kpi_status_for_score(
+      (float) $stripRow['scoreValue'],
+      (float) $stripRow['targetAvgValue']
+    )['status'] === 'Exceeding'
+  ) {
+    $stripExceeding++;
+  }
+}
+
+$stripTrackedPercent = $stripCohort > 0
+  ? (int) round($stripTracked / $stripCohort * 100)
+  : 0;
+
+$employeeMetrics = [
+  [
+    'label' => 'Active Cohort',
+    'value' => (string) $stripCohort,
+    'suffix' => $stripCohort === 1 ? 'Member' : 'Members',
+    'note' => $stripTrackedPercent . '% tracked in 180-day window',
+    'icon' => 'users',
+    'modifier' => 'metric-card--info',
+  ],
+  [
+    'label' => 'At Risk / Review',
+    'value' => (string) $stripAtRisk,
+    'suffix' => 'Approaching',
+    'note' => 'Within ' . $atRiskDays . ' days of the deadline',
+    'icon' => 'hourglass',
+    'modifier' => 'metric-card--risk',
+  ],
+  [
+    'label' => 'Exceeding KPI',
+    'value' => (string) $stripExceeding,
+    'suffix' => $stripExceeding === 1 ? 'Profile' : 'Profiles',
+    'note' => 'Score at or above KPI target',
+    'icon' => 'trend',
+    'modifier' => 'metric-card--good',
+  ],
+  [
+    'label' => 'Pending Sign-off',
+    'value' => (string) $directoryPending,
+    'suffix' => 'Pending',
+    'note' => 'Final review stage',
+    'icon' => 'cap',
+    'modifier' => 'metric-card--muted',
+  ],
+];
 
 $departments =
   array_values(
@@ -407,25 +616,18 @@ $pfPaletteJson =
     );
     ?>
 
-    <main class="main">
+    <main class="main employees-page">
 
       <?php ob_start(); ?>
 
-          <label class="search-bar" for="employeeSearch">
-
-            <span class="sr-only">
-              Search employees and departments
-            </span>
-
-            <span class="search-icon" aria-hidden="true">
+          <button class="ghost-button" type="button" id="exportDirectoryBtn">
+            <span aria-hidden="true">
               <?php
-              echo $icons['search'];
+              echo $icons['download'];
               ?>
             </span>
-
-            <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
-
-          </label>
+            Export List
+          </button>
 
           <a class="btn-primary" href="add_employee.php">
             <span aria-hidden="true">
@@ -494,20 +696,74 @@ $pfPaletteJson =
 
       <?php endif; ?>
 
-      <div class="filter-bar">
+      <!-- Metric mini strip: probationary cohort signals for the 180-day window. -->
+      <section class="metrics" aria-label="Probationary cohort metrics">
+
+        <?php foreach ($employeeMetrics as $employeeMetric): ?>
+
+          <article class="metric-card <?php echo htmlspecialchars($employeeMetric['modifier'], ENT_QUOTES); ?>">
+
+            <div class="metric-card-top">
+
+              <span class="metric-icon" aria-hidden="true">
+                <?php echo $icons[$employeeMetric['icon']]; ?>
+              </span>
+
+            </div>
+
+            <div class="metric-meta">
+
+              <span>
+                <?php echo htmlspecialchars($employeeMetric['label'], ENT_QUOTES); ?>
+              </span>
+
+              <strong class="metric-value">
+                <?php echo htmlspecialchars($employeeMetric['value'], ENT_QUOTES); ?>
+                <small><?php echo htmlspecialchars($employeeMetric['suffix'], ENT_QUOTES); ?></small>
+              </strong>
+
+              <small class="metric-note">
+                <?php echo htmlspecialchars($employeeMetric['note'], ENT_QUOTES); ?>
+              </small>
+
+            </div>
+
+          </article>
+
+        <?php endforeach; ?>
+
+      </section>
+
+      <section class="filter-bar" aria-label="Directory filters">
 
         <div class="filter-group">
 
+          <label class="search-bar" for="employeeSearch">
+
+            <span class="sr-only">
+              Search employees and departments
+            </span>
+
+            <span class="search-icon" aria-hidden="true">
+              <?php
+              echo $icons['search'];
+              ?>
+            </span>
+
+            <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
+
+          </label>
+
           <label class="filter-select">
 
-            <span>
-              Department:
+            <span class="sr-only">
+              Department
             </span>
 
             <select id="deptFilter" class="perform-select perform-select--filter">
 
               <option value="">
-                All Departments
+                All departments
               </option>
 
               <?php foreach ($departments as $deptLower): ?>
@@ -550,14 +806,46 @@ $pfPaletteJson =
 
           <label class="filter-select">
 
-            <span>
-              Status:
+            <span class="sr-only">
+              Performance status
+            </span>
+
+            <select id="perfFilter" class="perform-select perform-select--filter">
+
+              <option value="">
+                All statuses
+              </option>
+
+              <option value="exceeding">
+                Exceeding
+              </option>
+
+              <option value="warning">
+                Warning
+              </option>
+
+              <option value="below-target">
+                Below Target
+              </option>
+
+              <option value="not-rated">
+                Not yet rated
+              </option>
+
+            </select>
+
+          </label>
+
+          <label class="filter-select">
+
+            <span class="sr-only">
+              Account status
             </span>
 
             <select id="statusFilter" class="perform-select perform-select--filter">
 
               <option value="">
-                All Statuses
+                All account statuses
               </option>
 
               <option value="Active">
@@ -574,14 +862,14 @@ $pfPaletteJson =
 
           <label class="filter-select">
 
-            <span>
-              Type:
+            <span class="sr-only">
+              Employment type
             </span>
 
             <select id="typeFilter" class="perform-select perform-select--filter">
 
               <option value="">
-                All Types
+                All types
               </option>
 
               <option value="Probationary">
@@ -600,14 +888,14 @@ $pfPaletteJson =
 
         <div class="filter-actions">
 
-          <button class="ghost-button" type="button" id="resetFiltersBtn">
-            Reset
-          </button>
+          <span class="directory-count" id="directoryCount" aria-live="polite">
+            <?php echo count($directory); ?> employees
+          </span>
 
           <label class="filter-select">
 
-            <span>
-              Sort by:
+            <span class="sr-only">
+              Sort by
             </span>
 
             <select id="sortDirectory" class="perform-select perform-select--filter">
@@ -628,18 +916,13 @@ $pfPaletteJson =
 
           </label>
 
-          <button class="ghost-button" type="button" id="exportDirectoryBtn">
-            <span aria-hidden="true">
-              <?php
-              echo $icons['download'];
-              ?>
-            </span>
-            Export
+          <button class="ghost-button" type="button" id="resetFiltersBtn">
+            Reset
           </button>
 
         </div>
 
-      </div>
+      </section>
 
       <section class="directory-panel" role="table" aria-label="Employee directory">
 
@@ -650,23 +933,19 @@ $pfPaletteJson =
           </span>
 
           <span role="columnheader">
-            Role
-          </span>
-
-          <span role="columnheader">
             Department
           </span>
 
           <span role="columnheader">
-            Employment Type
+            Probation Timeline / Triage
           </span>
 
           <span role="columnheader">
-            Status
+            Current Performance Status
           </span>
 
           <span role="columnheader">
-            Actions
+            Action
           </span>
 
         </div>
@@ -722,6 +1001,16 @@ $pfPaletteJson =
                 $person['type'],
                 ENT_QUOTES
               );
+              ?>" data-perf="<?php
+              echo htmlspecialchars(
+                $person['perfSlug'],
+                ENT_QUOTES
+              );
+              ?>" data-role="<?php
+              echo htmlspecialchars(
+                $person['role'],
+                ENT_QUOTES
+              );
               ?>" data-days-left="<?php
               echo htmlspecialchars(
                 isset($person['daysLeftValue'])
@@ -773,44 +1062,23 @@ $pfPaletteJson =
 
                     </div>
 
-                    <?php if (($person['type'] ?? '') === 'Probationary'): ?>
+                    <div class="employee-flags">
 
-                      <div class="employee-triage<?php echo !empty($person['triageTone']) ? ' triage-' . htmlspecialchars($person['triageTone'], ENT_QUOTES) : ''; ?>">
+                      <span class="employee-flag<?php echo ($person['type'] ?? '') === 'Probationary' ? ' employee-flag-probation' : ''; ?>">
+                        <?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?>
+                      </span>
 
-                        <?php if (isset($person['daySinceValue']) && isset($person['daysLeftValue'])): ?>
-                          <?php echo htmlspecialchars(pf_day((int) $person['daySinceValue']), ENT_QUOTES); ?>
-                          ·
-                          <?php echo (int) $person['daysLeftValue']; ?> days left
-                        <?php endif; ?>
+                      <?php if (($person['status'] ?? '') === 'Disabled'): ?>
 
-                        <?php if (isset($person['scoreValue'])): ?>
-                          ·
-                          <?php echo htmlspecialchars(pf_score_pair($person['scoreValue']), ENT_QUOTES); ?>
-                        <?php else: ?>
-                          ·
-                          Not yet rated
-                        <?php endif; ?>
-                        <?php if (isset($person['scoreValue'], $person['targetAvgValue'])): ?>
-                          <?php $triageScoreStatus = kpi_status_for_score((float) $person['scoreValue'], (float) $person['targetAvgValue']); ?>
-                          <span class="status-pill triage-score <?php echo htmlspecialchars($triageScoreStatus['statusClass'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($triageScoreStatus['status'], ENT_QUOTES); ?></span>
-                        <?php endif; ?>
+                        <span class="employee-flag employee-flag-disabled">
+                          Disabled
+                        </span>
 
-                      </div>
+                      <?php endif; ?>
 
-                    <?php endif; ?>
+                    </div>
 
                   </div>
-
-                </div>
-
-                <div class="muted-cell" role="cell" data-label="Role">
-
-                  <?php
-                  echo htmlspecialchars(
-                    $person['role'],
-                    ENT_QUOTES
-                  );
-                  ?>
 
                 </div>
 
@@ -843,29 +1111,45 @@ $pfPaletteJson =
 
                 </div>
 
-                <div class="muted-cell" role="cell" data-label="Employment Type">
+                <div role="cell" data-label="Probation Timeline">
 
-                  <?php
-                  echo htmlspecialchars(
-                    $person['type'],
-                    ENT_QUOTES
-                  );
-                  ?>
+                  <?php if (($person['type'] ?? '') === 'Probationary' && isset($person['daysLeftValue'], $person['daySinceValue'], $person['probationPercent'])): ?>
+
+                    <div class="timeline-cell" data-tone="<?php echo htmlspecialchars($person['triageTone'] !== '' ? $person['triageTone'] : 'ok', ENT_QUOTES); ?>">
+
+                      <span class="employee-triage<?php echo $person['triageTone'] !== '' ? ' triage-' . htmlspecialchars($person['triageTone'], ENT_QUOTES) : ''; ?>">
+                        <?php echo (int) $person['daysLeftValue']; ?> days left
+                        <span class="timeline-period">(Day <?php echo (int) $person['daySinceValue']; ?>/<?php echo (int) $person['probationPeriod']; ?>)</span>
+                      </span>
+
+                      <span class="pf-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                        aria-valuenow="<?php echo (int) $person['probationPercent']; ?>"
+                        aria-label="Probation progress: day <?php echo (int) $person['daySinceValue']; ?> of <?php echo (int) $person['probationPeriod']; ?>">
+                        <span class="pf-meter-fill" style="width: <?php echo (int) $person['probationPercent']; ?>%"></span>
+                      </span>
+
+                    </div>
+
+                  <?php else: ?>
+
+                    <span class="muted-cell">—</span>
+
+                  <?php endif; ?>
 
                 </div>
 
-                <div role="cell" data-label="Status">
+                <div role="cell" data-label="Performance">
 
                   <span class="status-pill <?php
                   echo htmlspecialchars(
-                    $person['statusClass'],
+                    $person['perfClass'],
                     ENT_QUOTES
                   );
                   ?>">
 
                     <?php
                     echo htmlspecialchars(
-                      $person['status'],
+                      $person['perfLabel'],
                       ENT_QUOTES
                     );
                     ?>
@@ -928,8 +1212,9 @@ $pfPaletteJson =
               Previous
             </button>
 
-            <span id="pageIndicator" class="page-indicator"
-              aria-live="polite"></span>
+            <nav class="page-numbers" id="pageNumbers" aria-label="Directory pages"></nav>
+
+            <span id="pageIndicator" class="sr-only" aria-live="polite"></span>
 
             <button class="page-btn" type="button" id="nextPageBtn">
               Next

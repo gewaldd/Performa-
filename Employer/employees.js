@@ -4,6 +4,7 @@
 const searchInput = document.getElementById("employeeSearch");
 const deptFilter = document.getElementById("deptFilter");
 const statusFilter = document.getElementById("statusFilter");
+const perfFilter = document.getElementById("perfFilter");
 const typeFilter = document.getElementById("typeFilter");
 const resetBtn = document.getElementById("resetFiltersBtn");
 const sortSelect = document.getElementById("sortDirectory");
@@ -13,6 +14,8 @@ const prevBtn = document.getElementById("prevPageBtn");
 const nextBtn = document.getElementById("nextPageBtn");
 const pageIndicator = document.getElementById("pageIndicator");
 const paginationSummary = document.getElementById("paginationSummary");
+const pageNumbers = document.getElementById("pageNumbers");
+const directoryCount = document.getElementById("directoryCount");
 const allRows = Array.from(document.querySelectorAll(".directory-row"));
 // Home order survives re-appends: default sort restores it via index map.
 const homeOrder = new Map(allRows.map((row, i) => [row, i]));
@@ -29,17 +32,66 @@ function matchesFilters(row) {
   const query = normFilterValue(searchInput?.value);
   const dept = normFilterValue(deptFilter?.value);
   const status = normFilterValue(statusFilter?.value);
+  const perf = normFilterValue(perfFilter?.value);
   const type = normFilterValue(typeFilter?.value);
 
   const matchesSearch = !query || normFilterValue(row.dataset.search).includes(query);
   const matchesDept = !dept || normFilterValue(row.dataset.dept) === dept;
   const matchesStatus = !status || normFilterValue(row.dataset.status) === status;
+  const matchesPerf = !perf || normFilterValue(row.dataset.perf) === perf;
   const matchesType = !type || normFilterValue(row.dataset.type) === type;
-  return matchesSearch && matchesDept && matchesStatus && matchesType;
+  return matchesSearch && matchesDept && matchesStatus && matchesPerf && matchesType;
 }
 
 const noResultsBox = document.getElementById("noFilterResults");
 const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
+// Numbered page buttons: a window of up to 5 pages around the current one,
+// first/last always reachable, with text ellipses where pages are skipped.
+// Rebuilt on every render so the active state can never go stale.
+function renderPageNumbers(totalPages) {
+  if (!pageNumbers) return;
+  pageNumbers.innerHTML = "";
+
+  // A single page needs no number chrome; the :empty guard hides the row.
+  if (totalPages < 2) return;
+
+  const addButton = (page) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "page-num";
+    button.textContent = String(page);
+    if (page === currentPage) {
+      button.classList.add("active");
+      button.setAttribute("aria-current", "page");
+    }
+    button.addEventListener("click", () => { currentPage = page; render(); });
+    pageNumbers.append(button);
+  };
+
+  const addGap = () => {
+    const gap = document.createElement("span");
+    gap.className = "page-gap";
+    gap.textContent = "...";
+    gap.setAttribute("aria-hidden", "true");
+    pageNumbers.append(gap);
+  };
+
+  const windowSize = 5;
+  let start = Math.max(1, currentPage - Math.floor(windowSize / 2));
+  let end = Math.min(totalPages, start + windowSize - 1);
+  start = Math.max(1, end - windowSize + 1);
+
+  if (start > 1) {
+    addButton(1);
+    if (start > 2) addGap();
+  }
+  for (let page = start; page <= end; page += 1) addButton(page);
+  if (end < totalPages) {
+    if (end < totalPages - 1) addGap();
+    addButton(totalPages);
+  }
+}
 
 function render() {
   visibleRows = allRows.filter(matchesFilters);
@@ -71,9 +123,15 @@ function render() {
   }
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+  renderPageNumbers(totalPages);
+
+  if (directoryCount) {
+    directoryCount.textContent = `${visibleRows.length} employee${visibleRows.length === 1 ? "" : "s"}`;
+  }
 }
 
-[searchInput, deptFilter, statusFilter, typeFilter].forEach((el) => {
+[searchInput, deptFilter, statusFilter, perfFilter, typeFilter].forEach((el) => {
   if (!el) return;
   el.addEventListener("input", () => { currentPage = 1; render(); });
   el.addEventListener("change", () => { currentPage = 1; render(); });
@@ -116,7 +174,7 @@ if (clearFiltersBtn) {
 
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
-    [searchInput, deptFilter, statusFilter, typeFilter].forEach((el) => {
+    [searchInput, deptFilter, statusFilter, perfFilter, typeFilter].forEach((el) => {
       if (!el) return;
       el.value = "";
       // Native selects: setting .value never fires change, so dispatch it
@@ -142,20 +200,27 @@ if (nextBtn) {
 }
 
 if (exportBtn) {
+  // Columns come from the row data attributes (plus the performance pill
+  // text), never from cell positions: the directory has been re-columned
+  // before, and positional reads silently shift every exported value.
   exportBtn.addEventListener("click", () => {
-    const lines = [["Name", "Email", "Role", "Department", "Type", "Status", "Days Left", "Score"].join(",")];
+    const lines = [["Name", "Email", "Role", "Department", "Type", "Account Status", "Performance Status", "Days Left", "Score"].join(",")];
     visibleRows.forEach((row) => {
       const name = row.querySelector(".employee-name")?.textContent.trim() || "";
       const email = row.querySelector(".employee-email")?.textContent.trim() || "";
-      const cells = row.children;
-      const role = cells[1]?.textContent.trim() || "";
-      const dept = cells[2]?.textContent.trim() || "";
-      const type = cells[3]?.textContent.trim() || "";
-      const status = cells[4]?.textContent.trim() || "";
-      const daysLeft = row.dataset.daysLeft ?? "";
-      const score = row.dataset.score ?? "";
-      const row_ = [name, email, role, dept, type, status, daysLeft, score].map((v) => `"${v.replace(/"/g, '""')}"`);
-      lines.push(row_.join(","));
+      const perfStatus = row.querySelector('[data-label="Performance"]')?.textContent.trim() || "";
+      const csvCells = [
+        name,
+        email,
+        row.dataset.role ?? "",
+        row.dataset.dept ?? "",
+        row.dataset.type ?? "",
+        row.dataset.status ?? "",
+        perfStatus,
+        row.dataset.daysLeft ?? "",
+        row.dataset.score ?? "",
+      ].map((v) => `"${v.replace(/"/g, '""')}"`);
+      lines.push(csvCells.join(","));
     });
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

@@ -35,6 +35,9 @@ foreach ($templates as $key => $template) {
 
   $shapeOk = true;
   $targetRangeOk = true;
+  $weightSum = 0.0;
+  $categoryOk = true;
+  $descriptionOk = true;
   foreach ($template['kpis'] as $kpi) {
     if (!isset($kpi['key'], $kpi['name'], $kpi['target'])) {
       $shapeOk = false;
@@ -46,10 +49,26 @@ foreach ($templates as $key => $template) {
     if (!is_numeric($kpi['target']) || $kpi['target'] < 1.0 || $kpi['target'] > 5.0) {
       $targetRangeOk = false;
     }
+    // Display-only calibration fields: every base KPI carries them, and the
+    // four fixed weights always sum to 100 on the first pass (AD-2).
+    if (!isset($kpi['category']) || !is_string($kpi['category']) || $kpi['category'] === '') {
+      $categoryOk = false;
+    }
+    if (!is_numeric($kpi['weight'] ?? null) || (float) $kpi['weight'] <= 0) {
+      $shapeOk = false;
+    } else {
+      $weightSum += (float) $kpi['weight'];
+    }
+    if (!isset($kpi['description']) || !is_string($kpi['description']) || $kpi['description'] === '') {
+      $descriptionOk = false;
+    }
   }
 
   assert_true($shapeOk, "{$key} KPIs each carry a non-empty key and name");
   assert_true($targetRangeOk, "{$key} targets sit inside the 1.0-5.0 scale");
+  assert_true($categoryOk, "{$key} KPIs each carry a non-empty category slug");
+  assert_true($descriptionOk, "{$key} KPIs each carry a non-empty description");
+  assert_same(100.0, round($weightSum, 2), "{$key} base weights sum to 100 (first pass)");
 
   $keys = array_column($template['kpis'], 'key');
   assert_same(count($keys), count(array_unique($keys)), "{$key} KPI keys are unique");
@@ -202,6 +221,78 @@ assert_same(
   4.175,
   round(employee_kpi_summary([], 'u1', 'not_an_industry')['targetAvg'], 3),
   'an unknown industry falls back to the retail target average'
+);
+
+/* =========================================================
+   Display-only calibration fields (AD-2): the templates may gain
+   category/weight/description keys, and equal-split covers legacy docs
+   ========================================================= */
+
+pf_case('kpi_display_weights');
+$retailTemplate = kpi_template_for('retail');
+$noOverrideWeights = kpi_display_weights($retailTemplate['kpis'], []);
+assert_same(
+  ['sales_target', 'customer_service', 'inventory_accuracy', 'attendance'],
+  array_keys($noOverrideWeights),
+  'display weights keep template order'
+);
+assert_same(25.0, $noOverrideWeights['sales_target'], 'no overrides -> base weight first');
+assert_same(100.0, round(array_sum($noOverrideWeights), 2), 'no overrides -> first pass sums to 100');
+assert_same(
+  100.0,
+  round(array_sum(kpi_display_weights($retailTemplate['kpis'], ['sales_target' => 25, 'attendance' => 30, 'new_metric' => 10])), 2),
+  'overrides plus unknown keys still renormalize to 100'
+);
+
+$legacyKpis = [
+  ['key' => 'legacy_a', 'name' => 'Legacy A', 'target' => 4.0],
+  ['key' => 'legacy_b', 'name' => 'Legacy B', 'target' => 4.0],
+];
+assert_same(
+  ['legacy_a' => 50.0, 'legacy_b' => 50.0],
+  kpi_display_weights($legacyKpis, []),
+  'entries without weights get the equal-split fallback'
+);
+assert_same(
+  [],
+  kpi_display_weights([['name' => 'Keyless']], []),
+  'entries without keys are excluded'
+);
+assert_same(
+  [],
+  kpi_display_weights([], []),
+  'empty input renders nothing'
+);
+
+pf_case('kpi_category_label');
+assert_same('Quality', kpi_category_label('quality'), 'quality maps');
+assert_same('Customer Focus', kpi_category_label('customer_focus'), 'customer_focus maps');
+assert_same('Operational Precision', kpi_category_label('operational_precision'), 'operational_precision maps');
+assert_same('My Custom Group', kpi_category_label('my-custom_group'), 'unknown slugs are title-cased');
+assert_same('', kpi_category_label(''), 'empty category stays empty');
+
+pf_case('kpi_category_groups');
+$grouped = kpi_category_groups($retailTemplate['kpis'], [
+  'sales_target' => 4.6,
+  'customer_service' => 3.0,
+  'inventory_accuracy' => null,
+]);
+$groupLabels = array_column($grouped, 'label');
+assert_true(in_array('Productivity', $groupLabels, true), 'groups carry display labels');
+assert_true(in_array('Operational Precision', $groupLabels, true), 'operational_precision groups appear');
+foreach ($grouped as $group) {
+  assert_true($group['count'] >= 1, $group['label'] . ' counts its KPIs');
+  assert_true(in_array($group['status'], ['Exceeding', 'Warning', 'Below Target', 'No Data'], true), $group['label'] . ' carries a helper status');
+}
+
+pf_case('employee_kpi_weighted_score');
+$weighted = employee_kpi_weighted_score(['sales_target' => 4.0, 'attendance' => 5.0], ['sales_target' => 75, 'attendance' => 25]);
+assert_same(4.25, round($weighted['score'], 2), 'rated subset renormalizes before averaging');
+assert_same(4.5, $weighted['unweightedAvg'], 'unweighted average is still reported');
+assert_same(
+  ['score' => null, 'unweightedAvg' => null],
+  employee_kpi_weighted_score(['sales_target' => 0], ['sales_target' => 100]),
+  'all-zero scores yield nulls'
 );
 
 assert_no_php_warnings();
