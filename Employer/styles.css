@@ -5972,3 +5972,683 @@ select:disabled {
   }
 }
 
+/* =========================================================
+   KPI WORKSPACE (Employer/kpis.php)
+   Single full-width column: the employee calibration card owns the
+   page; cohort averages fold into each row as a sub-line; Add KPI
+   lives in a modal dialog. Everything is scoped under .kpi-page so
+   these rules beat the older single-class ui-refresh row rules
+   without !important, except where ui-refresh itself uses
+   !important. Status pills, score meters and picker meta reuse the
+   shared ui-refresh recipes (no local copies).
+   ========================================================= */
+.kpi-page .kpi-panel {
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: var(--ui-radius, 10px);
+  box-shadow: var(--ui-shadow);
+  padding: 16px;
+  min-width: 0;
+}
+
+.kpi-page .kpi-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.kpi-page .kpi-panel-head h2 {
+  margin: 0 0 4px;
+  font-size: var(--font-panel-title, 1.02rem);
+}
+
+.kpi-page .kpi-panel-head p {
+  margin: 0;
+  color: var(--ui-muted, #66758a);
+  font-size: 13px;
+}
+
+.kpi-page .kpi-panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kpi-page .kpi-search {
+  width: 200px;
+}
+
+.kpi-page .weight-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-blue-dark, #184a96);
+  background: var(--ui-blue-soft, #edf4fd);
+  border: 1px solid #d9e5f5;
+  border-radius: 999px;
+  padding: 5px 11px;
+}
+
+.kpi-page .weight-total strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-page .framework-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-border, #dfe5ed);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-text, #18263a);
+  white-space: nowrap;
+}
+
+.kpi-page .framework-chip svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  color: var(--ui-blue, #245fba);
+}
+
+/* Employee calibration card */
+.kpi-page .kpi-employee-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+  background: var(--ui-soft, #f8fafc);
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: var(--ui-radius-sm, 7px);
+  padding: 10px 12px;
+}
+
+.kpi-page .kpi-employee-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kpi-page .kpi-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: var(--ui-blue, #245fba);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kpi-page .kpi-employee-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kpi-page .kpi-employee-meta strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kpi-page .kpi-employee-meta span {
+  font-size: 12px;
+  color: var(--ui-muted, #66758a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kpi-page .kpi-employee-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 280px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.kpi-page .kpi-employee-pick .employee-select {
+  flex: 1 1 auto;
+  min-width: 160px;
+}
+
+.kpi-page .kpi-rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+
+/* Calibration rows reuse the shared .kpi-row list recipe; only the
+   column template and cell internals are redefined here. Full page
+   width lets all four cells breathe. */
+.kpi-page .kpi-row {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr) auto auto;
+  gap: 8px 22px;
+}
+
+.kpi-page .kpi-row > * {
+  overflow: visible;
+}
+
+.kpi-page .kpi-row-main {
+  min-width: 0;
+}
+
+.kpi-page .kpi-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kpi-page .kpi-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ui-muted, #66758a);
+  background: var(--ui-soft, #f8fafc);
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.kpi-page .kpi-desc {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ui-muted, #66758a);
+}
+
+/* Cohort sub-line: the deleted table's averages survive here, beside
+   the score they compare against. Tone rides the global status-*
+   colors; the label text is the non-color cue. */
+.kpi-page .kpi-cohort-line {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ui-muted, #66758a);
+  /* The legacy single-class .status-* rules paint backgrounds/borders on
+     any carrier; cohort lines carry tone as text color only. */
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.kpi-page .kpi-cohort-line strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-page .kpi-cal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kpi-page .kpi-target-text {
+  font-size: 12.5px;
+  color: var(--ui-muted, #66758a);
+  white-space: nowrap;
+}
+
+.kpi-page .kpi-target-text strong {
+  color: var(--ui-text, #18263a);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-page .kpi-weight {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-muted, #66758a);
+  background: var(--ui-soft, #f8fafc);
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* The open editor swaps in where the pencil was (kpis.js hides the
+   button), so the row keeps its height: compact input + save ride the
+   same calibration line instead of dropping to a full-width row. */
+.kpi-page .kpi-cal .kpi-edit-form.is-open {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.kpi-page .kpi-edit-form input[type="number"] {
+  width: 76px;
+  min-height: 34px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text, #18263a);
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-border, #dfe5ed);
+  border-radius: 8px;
+}
+
+.kpi-page .kpi-edit-form input[type="number"]:focus {
+  outline: none;
+  border-color: var(--ui-blue, #245fba);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.kpi-page .kpi-cal .kpi-edit-form .btn-primary {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.kpi-page .kpi-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.kpi-page .kpi-foot .kpi-add-link {
+  margin: 0;
+}
+
+/* The footer opener is a real button styled as the old link. */
+.kpi-page button.kpi-add-link {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ui-blue, #245fba);
+}
+
+.kpi-page .kpi-footnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ui-muted, #66758a);
+}
+
+.kpi-page .empty-state {
+  padding: 18px 12px;
+  text-align: center;
+  color: var(--ui-muted, #66758a);
+  font-size: 13px;
+}
+
+/* Add KPI modal (native dialog; rare task, owns no page space) */
+.kpi-page dialog.kpi-add {
+  width: min(560px, calc(100vw - 32px));
+  margin: auto;
+  border: 1px solid var(--ui-border-soft, #edf0f4);
+  border-radius: 12px;
+  box-shadow: var(--ui-shadow-lg);
+  padding: 20px;
+  color: var(--ui-text, #18263a);
+}
+
+.kpi-page dialog.kpi-add::backdrop {
+  background: rgba(20, 34, 54, 0.45);
+}
+
+.kpi-page .kpi-add-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.kpi-page .kpi-add-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 10px;
+  background: var(--ui-blue, #245fba);
+  color: #fff;
+}
+
+.kpi-page .kpi-add-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.kpi-page .kpi-add-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kpi-page .kpi-add-title {
+  font-size: var(--font-panel-title, 1.02rem);
+  font-weight: 600;
+}
+
+.kpi-page .kpi-add-sub {
+  font-size: 12.5px;
+  color: var(--ui-muted, #66758a);
+}
+
+.kpi-page .kpi-dialog-close {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.kpi-page .kpi-add-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ui-muted, #66758a);
+}
+
+.kpi-page .kpi-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.kpi-page .kpi-add-form label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kpi-page .kpi-add-form .req {
+  color: var(--ui-red, #b3261e);
+}
+
+.kpi-page .kpi-add-form input[type="text"],
+.kpi-page .kpi-add-form input[type="number"],
+.kpi-page .kpi-add-form select,
+.kpi-page .kpi-add-form textarea {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ui-text, #18263a);
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-border, #dfe5ed);
+  border-radius: 8px;
+}
+
+.kpi-page .kpi-add-form textarea {
+  min-height: 0;
+  resize: vertical;
+}
+
+.kpi-page .kpi-add-form input:focus,
+.kpi-page .kpi-add-form select:focus,
+.kpi-page .kpi-add-form textarea:focus {
+  outline: none;
+  border-color: var(--ui-blue, #245fba);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.kpi-page .kpi-add-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.kpi-page .kpi-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kpi-page .kpi-optional {
+  font-size: 12px;
+  color: var(--ui-muted, #66758a);
+}
+
+.kpi-page .kpi-add-submit {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Responsive: rows stack under 760px (the ui-refresh row breakpoint),
+   tightest pack at 560px. No columns exist to rebalance. */
+@media (max-width: 760px) {
+  .kpi-page .kpi-row > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ui-muted, #66758a);
+    margin-bottom: 4px;
+  }
+
+  .kpi-page .kpi-employee-pick {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .kpi-page .kpi-panel {
+    padding: 14px 12px;
+  }
+
+  .kpi-page dialog.kpi-add {
+    padding: 16px 14px;
+  }
+
+  .kpi-page .kpi-employee-pick {
+    flex-wrap: wrap;
+  }
+
+  .kpi-page .kpi-employee-pick .employee-select {
+    flex: 1 1 100%;
+  }
+
+  .kpi-page .kpi-employee-pick .kpi-rate-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .kpi-page .kpi-add-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kpi-page .kpi-search {
+    width: 100%;
+  }
+
+  .kpi-page .kpi-panel-tools {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   DASHBOARD REVIEW QUEUE (employer_dashboard.php) — actions-first
+   ordering: the decision control leads each queue item, the AI
+   recommendation sits in a disclosure below it. Dark-card aware.
+   ========================================================= */
+#dashboard .insight-queue-item .insight-actions {
+  margin: 10px 0 0;
+}
+
+#dashboard .insight-rec {
+  margin: 10px 0 0;
+}
+
+#dashboard .insight-rec > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  /* Light-card aware: ui-refresh forces .insight-card to white, so the
+     toggle must be dark. (A previous revision used white and was
+     invisible — do not regress.) */
+  color: var(--ui-muted, #66758a);
+}
+
+#dashboard .insight-rec > summary::-webkit-details-marker {
+  display: none;
+}
+
+#dashboard .insight-rec > summary::marker {
+  content: "";
+}
+
+#dashboard .insight-rec > summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--ui-muted, #66758a);
+}
+
+#dashboard .insight-rec[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+#dashboard .insight-rec .recommendation-box {
+  margin-top: 8px;
+}
+
+/* Queue section: full-width below the evaluations panel. No side
+   column exists on this page anymore, so a first-paint void is
+   impossible by construction (this replaces the earlier sticky-aside
+   attempt, which only helped mid-scroll). */
+#dashboard .content-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#dashboard .queue-section {
+  margin-top: 20px;
+}
+
+#dashboard .queue-head {
+  margin: 0 0 12px;
+}
+
+#dashboard .queue-head h2 {
+  margin: 4px 0 0;
+  font-size: var(--font-panel-title, 1.02rem);
+}
+
+#dashboard .queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#dashboard .queue-grid .insight-queue-item {
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-hairline, rgba(20, 34, 54, 0.08));
+  border-left: 3px solid transparent;
+  border-radius: 14px;
+  box-shadow: var(--ui-shadow-lg);
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+/* Dismiss control: subtle text button in the item head, uniform across
+   all four queue states. Hiding is triage, never deletion. */
+#dashboard .queue-dismiss-form {
+  margin: 0;
+}
+
+#dashboard .queue-dismiss-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-muted, #66758a);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+#dashboard .queue-dismiss-btn:hover {
+  color: var(--ui-text, #18263a);
+}
+
+#dashboard .queue-dismissed {
+  margin-top: 14px;
+}
+
+#dashboard .queue-dismissed > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-muted, #66758a);
+}
+
+#dashboard .queue-dismissed > summary::-webkit-details-marker {
+  display: none;
+}
+
+#dashboard .queue-dismissed > summary::marker {
+  content: "";
+}
+
+#dashboard .queue-dismissed > summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--ui-muted, #66758a);
+}
+
+#dashboard .queue-dismissed[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+#dashboard .queue-dismissed-list {
+  margin-top: 12px;
+}
+
+#dashboard .insight-queue-item .insight-actions .btn-primary,
+#dashboard .insight-queue-item .insight-actions form {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#dashboard .insight-queue-item .insight-actions .btn-primary {
+  text-align: center;
+  justify-content: center;
+  white-space: nowrap;
+}

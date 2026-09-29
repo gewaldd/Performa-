@@ -278,7 +278,7 @@ function kpi_template_invalidate(?string $industry = null): void
     unset($GLOBALS['__kpi_template_memo'][strtolower(trim((string) $industry))]);
 }
 
-function add_custom_kpi(string $industry, string $name, float $target): void
+function add_custom_kpi(string $industry, string $name, float $target): string
 {
     $key = strtolower(trim($industry));
     $slug = 'custom_' . preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($name)));
@@ -287,6 +287,10 @@ function add_custom_kpi(string $industry, string $name, float $target): void
     $doc['kpis'][] = ['key' => $slug, 'name' => $name, 'target' => $target];
     firestore_write_document('CustomKpis', $key, $doc);
     kpi_template_invalidate($key);
+    // Returned so the Add KPI form can attach display-only calibration
+    // metadata (category / weight / rubric) to the same entry via
+    // add_custom_kpi_meta(). Callers that ignore the return are unaffected.
+    return $slug;
 }
 
 // Display-only calibration metadata for one CustomKpis entry: category,
@@ -605,6 +609,45 @@ function kpi_status_for_score(float $current, float $target): array
         return ['status' => 'Warning', 'statusClass' => 'status-warning'];
     }
     return ['status' => 'Below Target', 'statusClass' => 'status-danger'];
+}
+
+// Dashboard review-queue dismissal (employer triage, NOT review).
+// Dismissing hides one card; it never alters the AI plan status,
+// assignedTraining, scores or Ratings docs, so the manuscript
+// human-in-the-loop gate (review page approve/reject) is untouched.
+// A newer rating resurfaces the employee automatically: dismissal loses
+// to any latestRatedAt strictly after queueDismissedAt. Pure
+// (offline-testable); timestamps compared numerically so Firestore
+// Timestamp objects, ISO strings and unix ints all work.
+function queue_is_dismissed(array $doc, $latestRatedAt = null): bool
+{
+    $at = trim((string) ($doc['queueDismissedAt'] ?? ''));
+
+    if ($at === '') {
+        return false;
+    }
+
+    $dismissedTs = is_numeric($at) ? (int) $at : strtotime($at);
+
+    // Unparseable flag: the employer hid this card deliberately and no
+    // trustworthy recency check exists, so the hide wins.
+    if ($dismissedTs === false) {
+        return true;
+    }
+
+    if ($latestRatedAt === null || $latestRatedAt === '') {
+        return true;
+    }
+
+    $ratedTs = is_numeric($latestRatedAt)
+        ? (int) $latestRatedAt
+        : strtotime((string) $latestRatedAt);
+
+    if ($ratedTs === false) {
+        return true;
+    }
+
+    return $ratedTs <= $dismissedTs;
 }
 
 // Fetch every Ratings doc for one employee, newest first.

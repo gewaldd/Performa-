@@ -95,8 +95,105 @@ if (
     }
 }
 
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['action'] ?? '') === 'queue_dismiss' &&
+    !empty($_POST['uid'])
+) {
+    try {
+        $dismissUid = trim((string) $_POST['uid']);
+
+        $dismissTarget =
+            firestore_get_document('Users', $dismissUid) ?? [];
+
+        require_employer_owns_user(
+            $dismissTarget + ['uid' => $dismissUid],
+            'dashboard:queue_dismiss'
+        );
+
+        // Triage only: hides one queue card. Plan status, training and
+        // scores are untouched, so the review-page gate is unaffected.
+        // No data-confirm: dismissal is one click to undo via Restore.
+        $dismissTarget['queueDismissedAt'] = gmdate('Y-m-d\TH:i:s\Z');
+        $dismissTarget['queueDismissedBy'] = (string) ($_SESSION['uid'] ?? '');
+
+        firestore_write_document('Users', $dismissUid, $dismissTarget);
+
+        unset($_SESSION['dashboard_live_data'], $_SESSION['dashboard_cache_time']);
+
+        record_audit_event(
+            'queue_dismissed',
+            'Hid review queue card for ' . $dismissUid,
+            ['employee' => $dismissUid]
+        );
+
+        header(
+            'Location: employer_dashboard.php?dismissed=' .
+            urlencode($dismissUid)
+        );
+
+        exit;
+    } catch (Throwable $e) {
+        $dashMessage = 'Could not update the review queue. Please try again.';
+        $dashMessageType = 'error';
+    }
+}
+
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['action'] ?? '') === 'queue_restore' &&
+    !empty($_POST['uid'])
+) {
+    try {
+        $restoreUid = trim((string) $_POST['uid']);
+
+        $restoreTarget =
+            firestore_get_document('Users', $restoreUid) ?? [];
+
+        require_employer_owns_user(
+            $restoreTarget + ['uid' => $restoreUid],
+            'dashboard:queue_restore'
+        );
+
+        unset(
+            $restoreTarget['queueDismissedAt'],
+            $restoreTarget['queueDismissedBy']
+        );
+
+        firestore_write_document('Users', $restoreUid, $restoreTarget);
+
+        unset($_SESSION['dashboard_live_data'], $_SESSION['dashboard_cache_time']);
+
+        record_audit_event(
+            'queue_restored',
+            'Restored review queue card for ' . $restoreUid,
+            ['employee' => $restoreUid]
+        );
+
+        header(
+            'Location: employer_dashboard.php?restored=' .
+            urlencode($restoreUid)
+        );
+
+        exit;
+    } catch (Throwable $e) {
+        $dashMessage = 'Could not update the review queue. Please try again.';
+        $dashMessageType = 'error';
+    }
+}
+
 if (isset($_GET['unassigned'])) {
     $dashMessage = 'Training assignment removed.';
+    $dashMessageType = 'success';
+}
+
+if (isset($_GET['dismissed'])) {
+    $dashMessage = 'Removed from review queue.';
+    $dashMessageType = 'success';
+}
+
+if (isset($_GET['restored'])) {
+    $dashMessage = 'Review queue item restored.';
     $dashMessageType = 'success';
 }
 
@@ -493,6 +590,14 @@ if ($cacheValid) {
                     $doc['assignedTrainingAt']
                     ?? null,
 
+                'queueDismissedAt' =>
+                    $doc['queueDismissedAt']
+                    ?? null,
+
+                'lastRatedAt' =>
+                    $summary['lastRatedAt']
+                    ?? null,
+
                 'aiPlan' =>
                     $latestAiByUid[$uid]
                     ?? null,
@@ -701,6 +806,17 @@ foreach ($liveUsers as $user) {
         continue;
     }
 
+    // Employer triage: dismissed cards stay out until a newer rating
+    // resurfaces them (queue_is_dismissed). Plan status untouched.
+    if (
+        queue_is_dismissed(
+            ['queueDismissedAt' => $user['queueDismissedAt'] ?? null],
+            $user['lastRatedAt'] ?? null
+        )
+    ) {
+        continue;
+    }
+
     $target =
         (float) (
             $user['targetAvg']
@@ -744,6 +860,25 @@ $insightQueue =
         0,
         3
     );
+
+// Still-dismissed rows (flag set, no resurfacing rating) for the
+// "Show dismissed" toggle. Restoring unsets the flag; the plan
+// itself was never touched.
+$dismissedQueue = [];
+
+foreach ($liveUsers as $user) {
+    if (
+        empty($user['queueDismissedAt']) ||
+        !queue_is_dismissed(
+            ['queueDismissedAt' => $user['queueDismissedAt']],
+            $user['lastRatedAt'] ?? null
+        )
+    ) {
+        continue;
+    }
+
+    $dismissedQueue[] = $user;
+}
 
 $anyScored = false;
 
@@ -935,12 +1070,6 @@ $insightTitle =
                                 ?>
                         </div>
 
-                        <div class="dashboard-empty" id="noFilterMatches" hidden>
-                            No employees match this filter combination.
-                            <button class="ghost-button" type="button" id="clearDashboardFilters">
-                                Clear filters
-                            </button>
-                        </div>
 
                     </div>
 
@@ -1193,6 +1322,13 @@ $insightTitle =
 
                         </div>
 
+                        <div class="dashboard-empty" id="noFilterMatches" hidden>
+                            No employees match this filter combination.
+                            <button class="ghost-button" type="button" id="clearDashboardFilters">
+                                Clear filters
+                            </button>
+                        </div>
+
                     </div>
 
                     <a class="view-more" href="employees.php">
@@ -1201,28 +1337,17 @@ $insightTitle =
 
                 </div>
 
-                <aside class="insight-card pf-panel" id="insight">
-
-                    <div class="insight-top">
-
-                        <span class="insight-icon" aria-hidden="true"><?php echo $icons['cap']; ?></span>
-
-                        <span class="insight-label">
-                            Review queue
-                        </span>
-
+            <section class="queue-section" aria-labelledby="queueTitle">
+                <div class="queue-head">
+                    <div>
+                        <span class="eyebrow">Review queue · <?php echo count($insightQueue); ?> to review</span>
+                        <h2 id="queueTitle">
+                            <?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?>
+                        </h2>
                     </div>
+                </div>
 
-                    <h2>
-                        <?php
-                        echo htmlspecialchars(
-                            $insightTitle,
-                            ENT_QUOTES
-                        );
-                        ?>
-                    </h2>
-
-                    <?php if ($insightQueue): ?>
+                <?php if ($insightQueue): ?>
 
                         <ol class="insight-queue">
                             <?php foreach ($insightQueue as $queuePos => $queueEntry): ?>
@@ -1268,8 +1393,67 @@ $insightTitle =
                                             ?>
                                             target
                                         </span>
+                                        <form method="post" class="queue-dismiss-form">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="action" value="queue_dismiss" />
+                                            <input type="hidden" name="uid"
+                                                value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
+                                            <button class="queue-dismiss-btn" type="submit"
+                                                aria-label="Dismiss <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?> from the review queue">
+                                                Dismiss
+                                            </button>
+                                        </form>
                                     </div>
 
+                                    <div class="insight-actions">
+
+                                        <?php if ($queueAssigned): ?>
+
+                                            <button class="btn-primary" type="button" disabled>
+                                                Assigned
+                                            </button>
+
+                                            <form method="post" style="margin-top:8px;"
+                                                data-confirm="Remove this training assignment? The employee keeps their ratings and AI plan.">
+                                                <?php echo csrf_field(); ?>
+
+                                                <input type="hidden" name="action" value="unassign_training" />
+
+                                                <input type="hidden" name="uid"
+                                                    value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
+
+                                                <button class="ghost-button" type="submit" style="width:100%;">
+                                                    Unassign
+                                                </button>
+
+                                            </form>
+
+                                        <?php elseif ($queuePending): ?>
+
+                                            <a class="btn-primary" style="width:100%; text-align:center;"
+                                                href="review_recommendations.php">
+                                                Review plan
+                                            </a>
+
+                                        <?php elseif ($queueApproved): ?>
+
+                                            <button class="btn-primary" type="button" disabled>
+                                                Published
+                                            </button>
+
+                                        <?php else: ?>
+
+                                            <a class="ghost-button" style="width:100%; text-align:center;"
+                                                href="rate_employee.php?employee=<?php echo urlencode((string) ($queueUser['uid'] ?? '')); ?>">
+                                                Rate to refresh
+                                            </a>
+
+                                        <?php endif; ?>
+
+                                    </div>
+
+                                    <details class="insight-rec">
+                                        <summary>Recommendation</summary>
                                     <div class="recommendation-box">
 
                                         <span class="recommendation-icon" aria-hidden="true">
@@ -1343,57 +1527,11 @@ $insightTitle =
                                         </div>
 
                                     </div>
+                                    </details>
 
-                                    <div class="insight-actions">
-
-                                        <?php if ($queueAssigned): ?>
-
-                                            <button class="btn-primary" type="button" disabled>
-                                                Assigned
-                                            </button>
-
-                                            <form method="post" style="margin-top:8px;"
-                                                data-confirm="Remove this training assignment? The employee keeps their ratings and AI plan.">
-                                                <?php echo csrf_field(); ?>
-
-                                                <input type="hidden" name="action" value="unassign_training" />
-
-                                                <input type="hidden" name="uid"
-                                                    value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
-
-                                                <button class="ghost-button" type="submit" style="width:100%;">
-                                                    Unassign
-                                                </button>
-
-                                            </form>
-
-                                        <?php elseif ($queuePending): ?>
-
-                                            <a class="btn-primary" style="width:100%; text-align:center;"
-                                                href="review_recommendations.php">
-                                                Review plan
-                                            </a>
-
-                                        <?php elseif ($queueApproved): ?>
-
-                                            <button class="btn-primary" type="button" disabled>
-                                                Published
-                                            </button>
-
-                                        <?php else: ?>
-
-                                            <a class="ghost-button" style="width:100%; text-align:center;"
-                                                href="rate_employee.php?employee=<?php echo urlencode((string) ($queueUser['uid'] ?? '')); ?>">
-                                                Rate to refresh
-                                            </a>
-
-                                        <?php endif; ?>
-
-                                    </div>
                                 </li>
                             <?php endforeach; ?>
                         </ol>
-
                     <?php else: ?>
 
                         <p id="insightText">
@@ -1405,9 +1543,40 @@ $insightTitle =
                         </p>
 
                     <?php endif; ?>
-
-                </aside>
-
+                <?php if (!empty($dismissedQueue)): ?>
+                <details class="queue-dismissed">
+                    <summary>Show dismissed (<?php echo count($dismissedQueue); ?>)</summary>
+                    <ol class="queue-grid queue-dismissed-list">
+                        <?php foreach ($dismissedQueue as $dismissedUser): ?>
+                        <li class="insight-queue-item">
+                            <div class="insight-queue-head">
+                                <strong>
+                                    <?php echo htmlspecialchars($dismissedUser['name'], ENT_QUOTES); ?>
+                                </strong>
+                                <?php if (!empty($dismissedUser['hasScore'])): ?>
+                                <span class="insight-queue-gap">
+                                    <?php echo number_format((float) $dismissedUser['score'], 1); ?>
+                                    /
+                                    <?php echo number_format((float) ($dismissedUser['targetAvg'] ?? 4.2), 1); ?>
+                                    target
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="insight-actions">
+                                <form method="post">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="action" value="queue_restore" />
+                                    <input type="hidden" name="uid"
+                                        value="<?php echo htmlspecialchars((string) ($dismissedUser['uid'] ?? ''), ENT_QUOTES); ?>" />
+                                    <button class="ghost-button" type="submit" style="width:100%;">Restore</button>
+                                </form>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ol>
+                </details>
+                <?php endif; ?>
+            </section>
             </section>
 
         </main>

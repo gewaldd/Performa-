@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const kpiSearchInput = document.getElementById("kpiSearch");
   const kpiRows = Array.from(document.querySelectorAll(".kpi-row"));
   const exportKpiBtn = document.getElementById("exportKpiBtn");
-  const metricsPanel = document.querySelector(".metrics-panel");
+  const metricsPanel = document.getElementById("employeeKpiList");
 
   // Create an in-memory "No Results" element for search empty states
   const emptySearchState = document.createElement("div");
@@ -99,5 +99,30 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     });
+  }
+
+  // 3. Add KPI modal: the footer button opens it, [data-kpi-add-close]
+  // and backdrop clicks shut it, and data-auto-open reopens it after a
+  // failed submit so the error message and the form stay together.
+  const addDialog = document.getElementById("addKpiDialog");
+  if (addDialog && typeof addDialog.showModal === "function") {
+    document.querySelectorAll("[data-kpi-add-open]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        addDialog.showModal();
+      });
+    });
+    addDialog.querySelectorAll("[data-kpi-add-close]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        addDialog.close();
+      });
+    });
+    addDialog.addEventListener("click", (event) => {
+      if (event.target === addDialog) {
+        addDialog.close();
+      }
+    });
+    if (addDialog.dataset.autoOpen === "1") {
+      addDialog.showModal();
+    }
   }
 });
