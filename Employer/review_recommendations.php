@@ -459,19 +459,16 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
 
             <div class="seg" id="tabs" role="tablist" aria-label="Filter plans">
               <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'ready' ? ' is-active' : ''; ?>"
-                data-filter="ready" data-t="ready" role="tab" aria-selected="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>">
-                Ready to approve
-                <span class="n review-tab-count"><?php echo (int) $readyCount; ?></span>
+                data-filter="ready" data-t="ready" role="tab" aria-selected="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>">
+                Ready to approve<span class="n review-tab-count"><?php echo (int) $readyCount; ?></span>
               </button>
               <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'offline' ? ' is-active' : ''; ?>"
-                data-filter="offline" data-t="offline" role="tab" aria-selected="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>">
-                AI unavailable
-                <span class="n review-tab-count"><?php echo (int) $offlineCount; ?></span>
+                data-filter="offline" data-t="offline" role="tab" aria-selected="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>">
+                AI unavailable<span class="n review-tab-count"><?php echo (int) $offlineCount; ?></span>
               </button>
               <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'done' ? ' is-active' : ''; ?>"
-                data-filter="done" data-t="done" role="tab" aria-selected="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>">
-                Done
-                <span class="n review-tab-count"><?php echo (int) $decidedCount; ?></span>
+                data-filter="done" data-t="done" role="tab" aria-selected="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>">
+                Done<span class="n review-tab-count"><?php echo (int) $decidedCount; ?></span>
               </button>
             </div>
 
@@ -800,6 +797,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
           var on = tab.getAttribute('data-filter') === filter;
           tab.classList.toggle('is-active', on);
           tab.setAttribute('aria-selected', on ? 'true' : 'false');
+          tab.setAttribute('aria-checked', on ? 'true' : 'false');
         });
 
         if (status) {

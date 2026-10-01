@@ -1334,7 +1334,8 @@ foreach ($dismissedQueue as $du) {
       E.forEach(function(r) { if (c[r.st] !== undefined) c[r.st]++; });
       var defs = [["all", "All"], ["review", "Needs review"], ["good", "On track"], ["ready", "Ready for reg"], ["unrated", "Unrated"]];
       $("tabs").innerHTML = defs.filter(function(d) { return d[0] === "all" || c[d[0]] > 0; }).map(function(d) {
-        return '<button type="button" class="tab" role="tab" aria-selected="' + (st.t === d[0]) + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + c[d[0]] + '</span></button>';
+        var on = st.t === d[0];
+        return '<button type="button" class="tab' + (on ? ' is-active' : '') + '" role="tab" aria-selected="' + on + '" aria-checked="' + on + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + c[d[0]] + '</span></button>';
       }).join("");
     }
 

@@ -743,9 +743,9 @@ foreach ($directory as $e) {
 
         <div class="bar">
           <div class="tabs" role="tablist" id="tabs" aria-label="Employment type">
-            <button type="button" class="tab" data-t="all" role="tab" aria-selected="true">All<span class="n"><?php echo (int) $statTotal; ?></span></button>
-            <button type="button" class="tab" data-t="prob" role="tab" aria-selected="false">Probationary<span class="n"><?php echo (int) $statProb; ?></span></button>
-            <button type="button" class="tab" data-t="reg" role="tab" aria-selected="false">Regular<span class="n"><?php echo (int) $statReg; ?></span></button>
+            <button type="button" class="tab is-active" data-t="all" role="tab" aria-selected="true" aria-checked="true">All<span class="n"><?php echo (int) $statTotal; ?></span></button>
+            <button type="button" class="tab" data-t="prob" role="tab" aria-selected="false" aria-checked="false">Probationary<span class="n"><?php echo (int) $statProb; ?></span></button>
+            <button type="button" class="tab" data-t="reg" role="tab" aria-selected="false" aria-checked="false">Regular<span class="n"><?php echo (int) $statReg; ?></span></button>
           </div>
           <div class="tools">
             <div class="search">
@@ -1013,6 +1013,8 @@ foreach ($directory as $e) {
         tabBtns.forEach(function (b) {
           var isSel = b.getAttribute('data-t') === tab;
           b.setAttribute('aria-selected', isSel ? 'true' : 'false');
+          b.setAttribute('aria-checked', isSel ? 'true' : 'false');
+          b.classList.toggle('is-active', isSel);
         });
 
         document.querySelectorAll('#employeesMain .sort').forEach(function (b) {

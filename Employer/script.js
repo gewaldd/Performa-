@@ -625,6 +625,8 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
       const stored = getStoredPal();
       const on = v === "system" ? stored === "system" : stored !== "system" && PAL_MODE[stored] === v;
       b.setAttribute("aria-checked", on ? "true" : "false");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.classList.toggle("is-active", on);
     });
   }
 

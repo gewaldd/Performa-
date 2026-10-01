@@ -1156,7 +1156,8 @@ foreach ($reports as $index => $rep) {
     });
     var defs = [["all", "All"], ["Sent", "Sent"], ["Signed off", "Signed off"]];
     $("tabs").innerHTML = defs.map(function(d) {
-      return '<button type="button" class="tab" role="tab" aria-selected="' + (st.t === d[0]) + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + (c[d[0]] || 0) + '</span></button>';
+      var on = st.t === d[0];
+      return '<button type="button" class="tab' + (on ? ' is-active' : '') + '" role="tab" aria-selected="' + on + '" aria-checked="' + on + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + (c[d[0]] || 0) + '</span></button>';
     }).join("");
   }
 

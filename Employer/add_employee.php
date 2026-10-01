@@ -198,8 +198,8 @@ $selectedRoleKey = ($roleKey ?? 'probationary') === 'supervisor' ? 'supervisor' 
               <div>
                 <span class="l" style="display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:8px">Role</span>
                 <div class="seg full" id="role" role="radiogroup" aria-label="Role">
-                  <button type="button" class="tab<?php echo $selectedRoleKey !== 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey !== 'supervisor' ? 'true' : 'false'; ?>" data-v="probationary">Probationary employee</button>
-                  <button type="button" class="tab<?php echo $selectedRoleKey === 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey === 'supervisor' ? 'true' : 'false'; ?>" data-v="supervisor">Supervisor</button>
+                  <button type="button" class="tab<?php echo $selectedRoleKey !== 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey !== 'supervisor' ? 'true' : 'false'; ?>" aria-checked="<?php echo $selectedRoleKey !== 'supervisor' ? 'true' : 'false'; ?>" data-v="probationary">Probationary employee</button>
+                  <button type="button" class="tab<?php echo $selectedRoleKey === 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey === 'supervisor' ? 'true' : 'false'; ?>" aria-checked="<?php echo $selectedRoleKey === 'supervisor' ? 'true' : 'false'; ?>" data-v="supervisor">Supervisor</button>
                 </div>
                 <input type="hidden" name="role" id="roleInput" value="<?php echo htmlspecialchars($selectedRoleKey, ENT_QUOTES); ?>">
               </div>
@@ -251,6 +251,7 @@ $selectedRoleKey = ($roleKey ?? 'probationary') === 'supervisor' ? 'supervisor' 
             var active = (t === btn);
             t.classList.toggle('is-active', active);
             t.setAttribute('aria-selected', active ? 'true' : 'false');
+            t.setAttribute('aria-checked', active ? 'true' : 'false');
           });
           var val = btn.getAttribute('data-v') || 'probationary';
           if (roleInput) roleInput.value = val;

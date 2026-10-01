@@ -751,8 +751,8 @@ $gapVal = $latestOverallVal !== null ? ($latestOverallVal - $weightedTargetVal) 
         <?php endif; ?>
 
         <div class="seg" id="tabs" role="tablist" aria-label="KPI views">
-          <button type="button" class="tab" id="tab-sc" role="tab" data-p="score" aria-selected="true">Scorecard</button>
-          <button type="button" class="tab" id="tab-st" role="tab" data-p="tpl" aria-selected="false">Template settings</button>
+          <button type="button" class="tab is-active" id="tab-sc" role="tab" data-p="score" aria-selected="true" aria-checked="true">Scorecard</button>
+          <button type="button" class="tab" id="tab-st" role="tab" data-p="tpl" aria-selected="false" aria-checked="false">Template settings</button>
         </div>
 
         <!-- Section 1: Scorecard -->
@@ -798,8 +798,8 @@ $gapVal = $latestOverallVal !== null ? ($latestOverallVal - $weightedTargetVal) 
           <div class="lh">
             <span class="eyebrow">Competencies</span>
             <div class="seg" id="sort" role="radiogroup" aria-label="Sort">
-              <button type="button" class="tab" role="radio" data-m="gap" aria-selected="true">Worst gap</button>
-              <button type="button" class="tab" role="radio" data-m="tpl" aria-selected="false">Template order</button>
+              <button type="button" class="tab is-active" role="radio" data-m="gap" aria-selected="true" aria-checked="true">Worst gap</button>
+              <button type="button" class="tab" role="radio" data-m="tpl" aria-selected="false" aria-checked="false">Template order</button>
             </div>
           </div>
             <div id="list">
@@ -966,8 +966,16 @@ $gapVal = $latestOverallVal !== null ? ($latestOverallVal - $weightedTargetVal) 
       function show(t) {
         if (vSc) vSc.hidden = t !== 'sc';
         if (vSt) vSt.hidden = t !== 'st';
-        if (tabSc) tabSc.setAttribute('aria-selected', t === 'sc');
-        if (tabSt) tabSt.setAttribute('aria-selected', t === 'st');
+        if (tabSc) {
+          tabSc.setAttribute('aria-selected', t === 'sc');
+          tabSc.setAttribute('aria-checked', t === 'sc');
+          tabSc.classList.toggle('is-active', t === 'sc');
+        }
+        if (tabSt) {
+          tabSt.setAttribute('aria-selected', t === 'st');
+          tabSt.setAttribute('aria-checked', t === 'st');
+          tabSt.classList.toggle('is-active', t === 'st');
+        }
       }
 
       if (tabSc) tabSc.onclick = function () { show('sc'); };
@@ -980,7 +988,10 @@ $gapVal = $latestOverallVal !== null ? ($latestOverallVal - $weightedTargetVal) 
           var b = e.target.closest('.tab');
           if (!b) return;
           Array.from(sortSeg.querySelectorAll('.tab')).forEach(function (t) {
-            t.setAttribute('aria-selected', t === b ? 'true' : 'false');
+            var active = (t === b);
+            t.setAttribute('aria-selected', active ? 'true' : 'false');
+            t.setAttribute('aria-checked', active ? 'true' : 'false');
+            t.classList.toggle('is-active', active);
           });
           var mode = b.getAttribute('data-m');
           var cards = Array.from(kpiList.querySelectorAll('.kr'));

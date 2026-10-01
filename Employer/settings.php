@@ -296,9 +296,9 @@ $profileInitials = employer_avatar_initials($profileName);
                   <label class="eyebrow">Theme Mode</label>
                   <div class="ap-row">
                     <div class="seg" id="themeSeg" role="radiogroup" aria-label="Theme">
-                      <button class="tab" type="button" role="radio" data-v="light" aria-checked="false"><svg class="i"><use href="#i-sun"/></svg>Light</button>
-                      <button class="tab" type="button" role="radio" data-v="dark" aria-checked="false"><svg class="i"><use href="#i-moon"/></svg>Dark</button>
-                      <button class="tab" type="button" role="radio" data-v="system" aria-checked="true"><svg class="i"><use href="#i-mon"/></svg>System</button>
+                      <button class="tab" type="button" role="radio" data-v="light" aria-checked="false" aria-selected="false"><svg class="i"><use href="#i-sun"/></svg>Light</button>
+                      <button class="tab" type="button" role="radio" data-v="dark" aria-checked="false" aria-selected="false"><svg class="i"><use href="#i-moon"/></svg>Dark</button>
+                      <button class="tab is-active" type="button" role="radio" data-v="system" aria-checked="true" aria-selected="true"><svg class="i"><use href="#i-mon"/></svg>System</button>
                     </div>
                     <small id="active" aria-live="polite"></small>
                   </div>
