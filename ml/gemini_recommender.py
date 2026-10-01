@@ -18,9 +18,9 @@ for _p in (_HERE, _ROOT):
         sys.path.insert(0, _p)
 
 try:
-    from config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_TRAINING_TYPES
+    from config import GEMINI_API_KEY, GEMINI_MODEL
 except ImportError:
-    from ml.config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_TRAINING_TYPES
+    from ml.config import GEMINI_API_KEY, GEMINI_MODEL
 
 # NOTE: `google.genai` is imported lazily inside generate_recommendations().
 # Top-level import pulls asyncio -> _overlapped under Apache without SystemRoot
@@ -40,7 +40,17 @@ def _load_genai():
 
 def generate_recommendations(rf_output: dict, job_role: str = "Probationary Employee", industry: str = "General") -> dict:
     """
-    Calls Google Gemini API using Random Forest outputs to generate training interventions.
+    RF picks, Gemini explains.
+
+    The intervention *choice* (competency x RF class -> training_type /
+    title / description / timeline) comes from training_catalog via
+    rf_output["rf_recommendations"] and is NEVER LLM-authored. The LLM
+    writes ONLY the evaluation summary + one rationale sentence per pick.
+    Locked RF fields pass through untouched even if the LLM alters them.
+
+    If the LLM is unavailable (no key/SDK, quota 429, overload), the RF
+    picks still ship with empty rationales as generated_by "rf_only" —
+    reviewable immediately, unlike the old empty fallback.
     """
     weak_categories = rf_output.get("weak_categories", [])
     competency_classification = rf_output.get("competency_classification", {})
@@ -51,11 +61,43 @@ def generate_recommendations(rf_output: dict, job_role: str = "Probationary Empl
         d.setdefault("overall_prediction", rf_output.get("overall_prediction", {}))
         return d
 
+    def _uid():
+        return rf_output.get("employee_uid", "UNKNOWN")
+
+    def _month():
+        return rf_output.get("evaluation_month", "UNKNOWN")
+
+    picks = rf_output.get("rf_recommendations") or []
+    if not picks and weak_categories:
+        # Older RF payloads predate rf_recommendations: derive the same
+        # deterministic picks from the weak list + per-competency labels.
+        try:
+            from training_catalog import rf_recommendations as _derive
+        except ImportError:
+            from ml.training_catalog import rf_recommendations as _derive
+        labels = {
+            c: ((competency_classification.get(c, {}) or {}).get("classification", ""))
+            for c in weak_categories
+        }
+        picks = _derive(weak_categories, labels)
+
+    def _rf_only(reason: str) -> dict:
+        return _with_rf({
+            "employee_uid": _uid(),
+            "evaluation_month": _month(),
+            "summary": "Random Forest training picks ready; AI rationale unavailable.",
+            "error": reason,
+            "training_recommendations": [
+                dict(p, rationale="") for p in picks
+            ],
+            "generated_by": "rf_only",
+        })
+
     # If no performance gaps are identified, return a structured positive summary
     if not weak_categories:
         return _with_rf({
-            "employee_uid": rf_output.get("employee_uid", "UNKNOWN"),
-            "evaluation_month": rf_output.get("evaluation_month", "UNKNOWN"),
+            "employee_uid": _uid(),
+            "evaluation_month": _month(),
             "summary": "Employee consistently meets or exceeds performance expectations across all evaluated core competencies.",
             "training_recommendations": [],
             "generated_by": "gemini_api"
@@ -64,63 +106,44 @@ def generate_recommendations(rf_output: dict, job_role: str = "Probationary Empl
     api_key = os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY
     genai = _load_genai()
     if not api_key or genai is None:
-        return _with_rf({
-            "employee_uid": rf_output.get("employee_uid", "UNKNOWN"),
-            "evaluation_month": rf_output.get("evaluation_month", "UNKNOWN"),
-            "summary": "AI recommendation service unavailable.",
-            "error": "GEMINI_API_KEY environment variable or config parameter is not set."
-            if not api_key else "google-genai SDK not installed for this Python interpreter.",
-            "training_recommendations": [],
-            "generated_by": "fallback"
-        })
+        return _rf_only(
+            "GEMINI_API_KEY environment variable or config parameter is not set."
+            if not api_key else "google-genai SDK not installed for this Python interpreter."
+        )
 
     try:
         client = genai.Client(api_key=api_key)
     except Exception as e:
         # e.g. asyncio Winsock init failure under Apache service accounts
-        return _with_rf({
-            "employee_uid": rf_output.get("employee_uid", "UNKNOWN"),
-            "evaluation_month": rf_output.get("evaluation_month", "UNKNOWN"),
-            "summary": "AI recommendation service unavailable.",
-            "error": f"Gemini client init failed: {e}",
-            "training_recommendations": [],
-            "generated_by": "fallback"
-        })
+        return _rf_only(f"Gemini client init failed: {e}")
+
     overall = rf_output.get("overall_prediction", {})
+    gaps = {
+        c: (competency_classification.get(c, {}) or {})
+        for c in weak_categories
+    }
 
     prompt = f"""
     You are an expert HR Performance & Development Specialist for Small & Medium Enterprises (SMEs).
-    Analyze the Random Forest competency gap results for a probationary employee and generate targeted training recommendations.
+    A Random Forest model already CHOSE the training interventions below. DO NOT invent, remove,
+    re-type, or re-classify anything. Your ONLY job is explaining text.
 
     CONTEXT:
     - Industry: {industry}
     - Job Role: {job_role}
     - Overall RF prediction: {json.dumps(overall)}
-    - Flagged Weak Categories (by RF + threshold audit): {json.dumps(weak_categories)}
-    - Full RF Competency Classification (score/target/gap + Gini/Permutation importance): {json.dumps(competency_classification)}
+    - RF picks (LOCKED - repeat back exactly, add nothing): {json.dumps(picks)}
+    - Competency gaps (score/target/gap/importance): {json.dumps(gaps)}
     - Model version: {rf_output.get("model_version", "unknown")}
 
-    STRICT MANUSCRIPT CONSTRAINTS:
-    1. DO NOT re-classify or override any Random Forest classifications. Treat RF output as ground truth.
-    2. Provide actionable, step-by-step training recommendations ONLY for categories in Flagged Weak Categories.
-    3. training_type MUST be exactly one of: {json.dumps(GEMINI_TRAINING_TYPES)}.
-    4. Each rationale MUST cite the recorded score-vs-target gap and, where relevant, the feature importance weight.
-    5. Return STRICTLY VALID JSON adhering to the schema below. Output NO markdown formatting, NO triple backticks, and NO extra conversational text.
-    6. This is decision-support only; do not state hiring/firing decisions as final.
+    WRITE ONLY:
+    1. "summary": 2-3 sentence evaluation summary naming the weak areas.
+    2. "rationales": object mapping each competency_area to ONE sentence citing
+       its recorded score-vs-target gap (and feature importance where relevant).
 
-    REQUIRED JSON OUTPUT SCHEMA:
-    {{
-      "summary": "Synthesized evaluation summary highlighting specific performance gaps.",
-      "training_recommendations": [
-        {{
-          "competency_area": "attendance_punctuality",
-          "training_type": "on-the-job coaching",
-          "description": "Clear step-by-step recommendation for the employer and employee",
-          "timeline": "2-4 weeks",
-          "rationale": "Score 3.0 vs target 4.0 (gap 1.0); Gini importance 0.25 shows attendance drove the overall classification."
-        }}
-      ]
-    }}
+    Return STRICTLY VALID JSON with exactly those two keys. NO markdown
+    formatting, NO triple backticks, NO extra conversational text.
+    This is decision-support only; do not state hiring/firing decisions as final.
     """
 
     # Retry logic with exponential backoff for transient API server spikes.
@@ -145,28 +168,23 @@ def generate_recommendations(rf_output: dict, job_role: str = "Probationary Empl
             clean_text = clean_text.strip()
 
             data = json.loads(clean_text)
-            raw_recs = data.get("training_recommendations", [])
+            rationales = data.get("rationales", {})
+            if not isinstance(rationales, dict):
+                rationales = {}
             validated_recs = []
-            allowed_types = {t.lower(): t for t in GEMINI_TRAINING_TYPES}
 
-            for rec in raw_recs:
-                area = str(rec.get("competency_area", ""))
-                # Drop recommendations for non-weak categories (manuscript constraint)
+            for pick in picks:
+                area = str(pick.get("competency_area", ""))
+                # Defensive: picks are already weak-only; never emit others.
                 if weak_categories and area not in weak_categories:
                     continue
-                raw_type = str(rec.get("training_type", "on-the-job coaching"))
-                training_type = allowed_types.get(raw_type.strip().lower(), "on-the-job coaching")
-                validated_recs.append({
-                    "competency_area": area,
-                    "training_type": training_type,
-                    "description": str(rec.get("description", "")),
-                    "timeline": str(rec.get("timeline", "2-4 weeks")),
-                    "rationale": str(rec.get("rationale", ""))
-                })
+                merged = dict(pick)
+                merged["rationale"] = str(rationales.get(area, ""))
+                validated_recs.append(merged)
 
             return _with_rf({
-                "employee_uid": rf_output.get("employee_uid", "UNKNOWN"),
-                "evaluation_month": rf_output.get("evaluation_month", "UNKNOWN"),
+                "employee_uid": _uid(),
+                "evaluation_month": _month(),
                 "summary": str(data.get("summary", "")),
                 "training_recommendations": validated_recs,
                 "generated_by": "gemini_api"
@@ -178,8 +196,10 @@ def generate_recommendations(rf_output: dict, job_role: str = "Probationary Empl
             # tier for this model caps at ~20 requests/day, and every retry burns
             # the same pool while the "retry in Ns" hint keeps growing (30s, 58s,
             # ...). Retrying just pushes the reset further out and risks blowing
-            # the PHP bridge timeout. Fail fast to fallback; the employer can
-            # resubmit after the quota window resets.
+            # the PHP bridge timeout. Fail fast to rf_only: the RF picks stay
+            # reviewable and the employer can regenerate rationales later.
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                return _rf_only(error_msg)
             retryable = ("503", "UNAVAILABLE",
                          "overloaded", "Overloaded", "timeout", "Timeout", "timed out")
             if any(s in error_msg for s in retryable) and attempt < max_retries - 1:
@@ -196,14 +216,7 @@ def generate_recommendations(rf_output: dict, job_role: str = "Probationary Empl
                 delay *= 2
                 continue
 
-            return _with_rf({
-                "employee_uid": rf_output.get("employee_uid", "UNKNOWN"),
-                "evaluation_month": rf_output.get("evaluation_month", "UNKNOWN"),
-                "summary": "AI recommendation service unavailable.",
-                "error": error_msg,
-                "training_recommendations": [],
-                "generated_by": "fallback"
-            })
+            return _rf_only(error_msg)
 
 
 if __name__ == "__main__":

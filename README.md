@@ -82,11 +82,11 @@ Firestore Database	Cloud database for storing employee profiles, KPIs, ratings, 
 Firebase Hosting	Web application hosting
 AI & Machine Learning
 Tool	Purpose
-Random Forest	KPI pattern analysis, competency gap identification, regularization prediction
-Google Gemini API	Generating natural language narratives (training recommendations, regularization explanations)
+Random Forest	KPI pattern analysis, competency gap identification, training intervention selection, regularization prediction
+Google Gemini API	Rationale and summary narratives for RF-picked training interventions
 Additional Tools
 Tool	Purpose
 GitHub	Version control and team collaboration
-SendGrid	Email notifications for deadline alerts
+Brevo	Transactional email (welcome credentials, password resets, milestone alerts)
 Google Lighthouse	Performance testing and optimization
 Visual Studio Code	Code editor

@@ -76,16 +76,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     } else {
     $scores = [];
     $allValid = true;
+    $invalidLabel = '';
     foreach ($template['kpis'] as $kpi) {
         $val = $_POST['score_' . $kpi['key']] ?? null;
-        if ($val === null || $val === '' || (float) $val < 1 || (float) $val > 5) {
+        $kpiScale = kpi_scale_for($kpi);
+        if (
+            $val === null || $val === '' || !is_numeric($val) ||
+            (float) $val < $kpiScale['min'] || (float) $val > $kpiScale['max']
+        ) {
             $allValid = false;
+            $invalidLabel = (string) ($kpi['name'] ?? $kpi['key']);
         }
-        $scores[$kpi['key']] = (float) $val;
+        $scores[$kpi['key']] = kpi_clamp_score($kpi, $val);
     }
 
     if (!$allValid) {
-        $message = 'Please provide a valid score (1.0–5.0) for every KPI.';
+        $message = 'Please provide a valid score for every KPI' .
+            ($invalidLabel !== '' ? ' (check ' . $invalidLabel . ')' : '') . '.';
         $messageIsError = true;
     } else {
         try {
@@ -214,10 +221,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                         <div class="pf-rate-grid">
                             <?php foreach ($template['kpis'] as $kpi): ?>
                                 <?php
-                                $valDefault = isset($prevScores[$kpi['key']]) ? (float) $prevScores[$kpi['key']] : 3.0;
+                                // Scale-driven widget (same contract as the employer
+                                // rater): defaults render identically to the old
+                                // hardcoded 1/5/3.0 math.
+                                $supScale = kpi_scale_for($kpi);
+                                $supMid = ($supScale['min'] + $supScale['max']) / 2;
+                                $valDefault = isset($prevScores[$kpi['key']]) ? kpi_clamp_score($kpi, $prevScores[$kpi['key']]) : $supMid;
                                 $rateTarget = (float) $kpi['target'];
-                                $rateFill = max(0, min(100, (($valDefault - 1) / 4) * 100));
-                                $rateStatus = kpi_status_for_score($valDefault, $rateTarget);
+                                $rateFill = $supScale['max'] > $supScale['min']
+                                  ? max(0, min(100, (($valDefault - $supScale['min']) / ($supScale['max'] - $supScale['min'])) * 100))
+                                  : 0;
+                                $rateStatus = kpi_status_for_scale($valDefault, $rateTarget, $kpi);
                                 ?>
                                 <div class="pf-rate-row" data-rate-row>
                                     <div class="pf-rate-head">
@@ -228,13 +242,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                                         <span class="status-pill pf-rate-pill <?php echo htmlspecialchars($rateStatus['statusClass'], ENT_QUOTES); ?>" data-rate-pill><?php echo htmlspecialchars($rateStatus['status'], ENT_QUOTES); ?></span>
                                     </div>
                                     <div class="pf-rate-controls">
-                                        <input type="range" min="1" max="5" step="0.1" value="<?php echo number_format($valDefault, 1); ?>"
+                                        <input type="range" min="<?php echo htmlspecialchars((string) $supScale['min'], ENT_QUOTES); ?>" max="<?php echo htmlspecialchars((string) $supScale['max'], ENT_QUOTES); ?>" step="<?php echo htmlspecialchars((string) $supScale['step'], ENT_QUOTES); ?>" value="<?php echo number_format($valDefault, 1); ?>"
                                             data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
                                             style="--pf-fill: <?php echo number_format($rateFill, 1); ?>%;"
                                             aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> slider" />
                                         <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
                                             name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
-                                            class="pf-rate-value" type="number" min="1" max="5" step="0.1"
+                                            class="pf-rate-value" type="number" min="<?php echo htmlspecialchars((string) $supScale['min'], ENT_QUOTES); ?>" max="<?php echo htmlspecialchars((string) $supScale['max'], ENT_QUOTES); ?>" step="<?php echo htmlspecialchars((string) $supScale['step'], ENT_QUOTES); ?>"
                                             value="<?php echo number_format($valDefault, 1); ?>" required />
                                     </div>
                                 </div>
@@ -256,11 +270,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         // Targets for live average calculation
         window.__pfRateTargets = <?php
             $rateTargets = [];
+            $rateScales = [];
             foreach ($template['kpis'] as $rateKpi) {
                 $rateTargets[$rateKpi['key']] = (float) $rateKpi['target'];
+                $rateScales[$rateKpi['key']] = kpi_scale_for($rateKpi);
             }
             echo json_encode($rateTargets, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '{}';
         ?>;
+        // Per-KPI scales for generic clamping/fills/bands below. Defaults keep
+        // every formula below identical to the old hardcoded 1/5 math.
+        window.__pfRateScales = <?php
+            echo json_encode($rateScales, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?: '{}';
+        ?>;
+
+        function rateScaleFor(key) {
+            var s = (window.__pfRateScales || {})[key];
+            if (!s || isNaN(parseFloat(s.min)) || isNaN(parseFloat(s.max)) || !(parseFloat(s.max) > parseFloat(s.min))) {
+                return { min: 1, max: 5 };
+            }
+            return { min: parseFloat(s.min), max: parseFloat(s.max) };
+        }
+        function rateClamp(key, v) {
+            var s = rateScaleFor(key);
+            return Math.max(s.min, Math.min(s.max, v));
+        }
+        function rateFillPct(key, v) {
+            var s = rateScaleFor(key);
+            if (!(s.max > s.min)) return 0;
+            return Math.max(0, Math.min(100, ((v - s.min) / (s.max - s.min)) * 100));
+        }
+        window.__pfRateScaleFor = rateScaleFor;
+        window.__pfRateClamp = rateClamp;
+        window.__pfRateFillPct = rateFillPct;
 
         // Slider <-> number sync
         document.querySelectorAll('[data-rate-slider]').forEach(function (slider) {
@@ -269,7 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
             slider.addEventListener('input', function () { target.value = slider.value; });
             target.addEventListener('input', function () {
                 var v = parseFloat(target.value);
-                if (!isNaN(v)) slider.value = Math.max(1, Math.min(5, v));
+                if (!isNaN(v)) slider.value = window.__pfRateClamp(slider.getAttribute('data-rate-slider').replace(/^score_/, ''), v);
             });
         });
 
@@ -286,7 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                     var v = parseFloat(input.value);
                     if (isNaN(v)) return;
                     var key = input.name.replace(/^score_/, '');
-                    vals.push({ key: key, value: Math.max(1, Math.min(5, v)) });
+                    vals.push({ key: key, value: window.__pfRateClamp(key, v) });
                 });
                 return vals;
             }
@@ -381,17 +422,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
         })();
 
         // Live card chrome: slider fill, per-card status pill, preview tone.
-        // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
+        // Visual only -- mirrors kpi_status_for_scale() (target / 20%-of-scale
+        // warning band; identical to target-0.8 on default scales).
         // Existing sync/paint/submit logic above is untouched.
         (function () {
             var form = document.getElementById('rateForm');
             var preview = document.getElementById('ratePreview');
             if (!form) return;
             var targets = window.__pfRateTargets || {};
-            function statusFor(v, t) {
+            function statusFor(v, t, key) {
                 if (isNaN(t)) return { text: '', cls: '' };
                 if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
-                if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
+                var s = window.__pfRateScaleFor(key);
+                if (v >= t - 0.2 * (s.max - s.min)) return { text: 'Warning', cls: 'status-warning' };
                 return { text: 'Below Target', cls: 'status-danger' };
             }
             function refresh() {
@@ -403,14 +446,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                     if (!num) return;
                     var v = parseFloat(num.value);
                     if (isNaN(v)) return;
-                    v = Math.max(1, Math.min(5, v));
                     var key = num.name.replace(/^score_/, '');
+                    v = window.__pfRateClamp(key, v);
                     var t = parseFloat(targets[key]);
                     total++;
                     if (!isNaN(t) && v < t) below++;
-                    if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
+                    if (slider) slider.style.setProperty('--pf-fill', (window.__pfRateFillPct(key, v)).toFixed(1) + '%');
                     if (pill && !isNaN(t)) {
-                        var st = statusFor(v, t);
+                        var st = statusFor(v, t, key);
                         pill.textContent = st.text;
                         pill.classList.remove('status-good', 'status-warning', 'status-danger');
                         if (st.cls) pill.classList.add(st.cls);

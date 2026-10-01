@@ -7,10 +7,88 @@ require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../security_utils.php';
+require_once __DIR__ . '/../mailer.php';
+require_once __DIR__ . '/../audit_log.php';
 require_once __DIR__ . '/includes/collection_cache.php';
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
+}
+
+// Resend welcome credentials (used when the original welcome email failed
+// delivery). Rotates to a FRESH password rather than re-sending anything
+// previously displayed, forces rotation, and emails it — the manual relay
+// path stays a last resort, never the default.
+$resendError = '';
+
+if (
+  $_SERVER['REQUEST_METHOD'] === 'POST' &&
+  ($_POST['action'] ?? '') === 'resend_welcome' &&
+  !empty($_POST['email'])
+) {
+  $resendEmail = strtolower(trim((string) $_POST['email']));
+
+  try {
+    $match = null;
+
+    foreach (firestore_list_documents('Users') as $doc) {
+      if (strtolower(trim((string) ($doc['email'] ?? ''))) === $resendEmail) {
+        $match = $doc;
+
+        break;
+      }
+    }
+
+    if (!$match || empty($match['uid'])) {
+      throw new RuntimeException('Account not found for that email.');
+    }
+
+    require_employer_owns_user(
+      $match + ['uid' => $match['uid']],
+      'employees:resend_welcome'
+    );
+
+    $freshPassword = generate_secure_password(12);
+    identitytoolkit_update_password($match['uid'], $freshPassword);
+    $match['mustChangePassword'] = true;
+    firestore_write_document('Users', $match['uid'], $match);
+
+    $loginUrl = app_base_url() . '/login.php';
+    $resent = send_transactional_email(
+      $match['email'],
+      $match['name'] ?? $match['email'],
+      'Your Performa account is ready',
+      welcome_email_html(
+        $match['name'] ?? $match['email'],
+        $match['email'],
+        $freshPassword,
+        $loginUrl
+      )
+    );
+
+    unset($_SESSION['reveal_once_password'], $_SESSION['reveal_once_email']);
+
+    record_audit_event(
+      'welcome_email_resent',
+      'Resent welcome credentials to ' . $match['email'],
+      ['uid' => $match['uid'], 'emailDelivered' => $resent]
+    );
+
+    header(
+      'Location: employees.php?' . http_build_query([
+        'resent' => '1',
+        'name' => $match['name'] ?? $match['email'],
+        'email' => $match['email'],
+        'emailed' => $resent ? '1' : '0',
+      ])
+    );
+
+    exit;
+  } catch (Throwable $e) {
+    $resendError =
+      'Could not resend the welcome email: ' . $e->getMessage();
+  }
 }
 
 $profileName = $_SESSION['name'] ?? 'Unknown User';
@@ -34,6 +112,7 @@ $icons = [
   'hourglass' => employer_icon('hourglass'),
   'trend' => employer_icon('trend'),
   'cap' => employer_icon('cap'),
+  'mail' => employer_icon('mail'),
 ];
 
 /*
@@ -574,669 +653,484 @@ $pfPaletteJson =
     JSON_HEX_QUOT |
     JSON_HEX_AMP
   );
-?>
 
+/* =========================================================
+   STATS CALCULATION FOR DIRECTORY STATS CARDS
+   ========================================================= */
+$statTotal = count($directory);
+$statProb = 0;
+$statReg = 0;
+$statDue30 = 0;
+$statBelow = 0;
+$statExceed = 0;
+
+foreach ($directory as $e) {
+  $isProb = ($e['type'] ?? '') === 'Probationary';
+  if ($isProb) {
+    $statProb++;
+    if (isset($e['daysLeftValue']) && $e['daysLeftValue'] <= 30 && $e['daysLeftValue'] > 0) {
+      $statDue30++;
+    }
+  } else {
+    $statReg++;
+  }
+
+  $slug = $e['perfSlug'] ?? 'none';
+  $lbl = strtolower((string)($e['perfLabel'] ?? ''));
+  if ($slug === 'below' || strpos($lbl, 'needs review') !== false || strpos($lbl, 'below') !== false) {
+    $statBelow++;
+  } elseif ($slug === 'exceed' || strpos($lbl, 'exceed') !== false) {
+    $statExceed++;
+  }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
-  <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <?php employer_brand_head(); ?>
-
-  <title>
-    Employees · Performa
-  </title>
-
-  <meta name="description" content="Manage and organize your workforce directory." />
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Employees | Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
-
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
-
 </head>
 
 <body>
-
   <div class="app-shell">
+    <?php employer_render_shell('Employees'); ?>
 
-    <?php
-    employer_render_shell(
-      'Employees'
-    );
-    ?>
+    <main class="main employees-page" id="employeesMain">
+      <div class="in">
 
-    <main class="main employees-page">
-
-      <?php ob_start(); ?>
-
-          <button class="ghost-button" type="button" id="exportDirectoryBtn">
-            <span aria-hidden="true">
-              <?php
-              echo $icons['download'];
-              ?>
-            </span>
-            Export List
-          </button>
-
-          <a class="btn-primary" href="add_employee.php">
-            <span aria-hidden="true">
-              <?php
-              echo $icons['plus'];
-              ?>
-            </span>
-
-            Add Employee
-          </a>
-
-      <?php
-      $employeesActions = ob_get_clean();
-      employer_page_header(
-        'employeesTitle',
-        'Employees',
-        '<span class="eyebrow">Workforce</span>',
-        'Manage and organize your workforce directory.',
-        $employeesActions
-      );
-      ?>
-
-      <?php if (isset($_GET['created'])): ?>
-
-        <div class="alert-banner alert-success" role="status" aria-live="polite">
-
-          Account created for
-          <strong>
-            <?php
-            echo htmlspecialchars(
-              $_GET['name'] ?? '',
-              ENT_QUOTES
-            );
-            ?>
-          </strong>.
-
-          <?php if (!empty($_GET['emailed']) && $_GET['emailed'] === '1'): ?>
-
-            Login credentials were emailed to them directly.
-
-          <?php elseif (!empty($_SESSION['reveal_once_password'])): ?>
-
-            The welcome email couldn't be sent, so here's the temporary password once
-            (it will not be shown again after you leave this page) — share it with
-            <strong><?php echo htmlspecialchars($_SESSION['reveal_once_email'] ?? '', ENT_QUOTES); ?></strong>
-            through a secure channel:
-            <code>
-                  <?php
-                  echo htmlspecialchars(
-                    $_SESSION['reveal_once_password'],
-                    ENT_QUOTES
-                  );
-                  unset($_SESSION['reveal_once_password'], $_SESSION['reveal_once_email']);
-                  ?>
-                </code>
-
-          <?php else: ?>
-
-            The welcome email couldn't be sent and no password is available to display —
-            check the Brevo configuration in <code>.env</code>, then reset their password
-            from the employee's profile.
-
-          <?php endif; ?>
-
+        <div class="top">
+          <div>
+            <h1 id="h1">Employees</h1>
+            <p class="sub">Manage and organize your workforce directory.</p>
+          </div>
+          <div class="tr">
+            <button type="button" class="btn txt" id="exp">Export list</button>
+            <a href="register_employee.php" class="btn primary" style="text-decoration:none;">+ Add employee</a>
+          </div>
         </div>
 
-      <?php endif; ?>
+        <?php if (!empty($resendError)): ?>
+          <div class="alert alert-error" role="status" aria-live="polite" style="margin-bottom:20px;">
+            <?php echo htmlspecialchars($resendError, ENT_QUOTES); ?>
+          </div>
+        <?php endif; ?>
 
-      <!-- Metric mini strip: probationary cohort signals for the 180-day window. -->
-      <section class="metrics" aria-label="Probationary cohort metrics">
+        <?php if (!empty($flashEmail)): ?>
+          <div class="alert alert-success" role="status" aria-live="polite" style="margin-bottom:20px;">
+            Fresh credentials generated and emailed to <strong><?php echo htmlspecialchars($flashEmail, ENT_QUOTES); ?></strong>.
+          </div>
+        <?php endif; ?>
 
-        <?php foreach ($employeeMetrics as $employeeMetric): ?>
+        <section class="stats" id="stats">
+          <div class="st">
+            <div class="l">Employees</div>
+            <div class="v num"><?php echo (int) $statTotal; ?></div>
+            <div class="n"><?php echo (int) $statReg; ?> regular</div>
+          </div>
+          <div class="st">
+            <div class="l">On probation</div>
+            <div class="v num"><?php echo (int) $statProb; ?></div>
+            <div class="n"><?php echo (int) $statDue30; ?> due within 30 days</div>
+          </div>
+          <div class="st">
+            <div class="l">Below target</div>
+            <div class="v num" style="color:var(--bad)"><?php echo (int) $statBelow; ?></div>
+            <div class="n">Latest score under target</div>
+          </div>
+          <div class="st">
+            <div class="l">Exceeding target</div>
+            <div class="v num" style="color:var(--ok)"><?php echo (int) $statExceed; ?></div>
+            <div class="n">Score at or above target</div>
+          </div>
+        </section>
 
-          <article class="metric-card <?php echo htmlspecialchars($employeeMetric['modifier'], ENT_QUOTES); ?>">
-
-            <div class="metric-card-top">
-
-              <span class="metric-icon" aria-hidden="true">
-                <?php echo $icons[$employeeMetric['icon']]; ?>
-              </span>
-
+        <section class="cd tbl">
+          <div class="tb">
+            <div class="seg" role="tablist" id="tabs">
+              <button type="button" data-t="all" role="tab" aria-selected="true">All<span class="num"><?php echo (int) $statTotal; ?></span></button>
+              <button type="button" data-t="prob" role="tab" aria-selected="false">Probationary<span class="num"><?php echo (int) $statProb; ?></span></button>
+              <button type="button" data-t="reg" role="tab" aria-selected="false">Regular<span class="num"><?php echo (int) $statReg; ?></span></button>
             </div>
-
-            <div class="metric-meta">
-
-              <span>
-                <?php echo htmlspecialchars($employeeMetric['label'], ENT_QUOTES); ?>
-              </span>
-
-              <strong class="metric-value">
-                <?php echo htmlspecialchars($employeeMetric['value'], ENT_QUOTES); ?>
-                <small><?php echo htmlspecialchars($employeeMetric['suffix'], ENT_QUOTES); ?></small>
-              </strong>
-
-              <small class="metric-note">
-                <?php echo htmlspecialchars($employeeMetric['note'], ENT_QUOTES); ?>
-              </small>
-
+            <div class="f">
+              <input type="search" id="q" placeholder="Search name, email, department" aria-label="Search employees" autocomplete="off" />
+              <select id="dept" aria-label="Department">
+                <option value="all">All departments</option>
+                <?php foreach ($departments as $d): ?>
+                  <option value="<?php echo htmlspecialchars($d, ENT_QUOTES); ?>">
+                    <?php echo htmlspecialchars(ucfirst($d), ENT_QUOTES); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <select id="perf" aria-label="Performance">
+                <option value="all">All performance</option>
+                <option value="below">Below target</option>
+                <option value="exceed">Exceeding</option>
+                <option value="none">Not yet rated</option>
+              </select>
+              <select id="sort" aria-label="Sort">
+                <option value="def">Default order</option>
+                <option value="name">Name A to Z</option>
+                <option value="left">Fewest days left</option>
+                <option value="score">Lowest score</option>
+              </select>
+              <button type="button" class="btn txt" id="clr" hidden>Clear filters</button>
             </div>
+          </div>
 
-          </article>
+          <div class="rw rh">
+            <span>Employee</span>
+            <span>Department</span>
+            <span>Probation timeline</span>
+            <span>Performance</span>
+            <span></span>
+          </div>
 
-        <?php endforeach; ?>
-
-      </section>
-
-      <section class="filter-bar" aria-label="Directory filters">
-
-        <div class="filter-group">
-
-          <label class="search-bar" for="employeeSearch">
-
-            <span class="sr-only">
-              Search employees and departments
-            </span>
-
-            <span class="search-icon" aria-hidden="true">
-              <?php
-              echo $icons['search'];
-              ?>
-            </span>
-
-            <input type="search" id="employeeSearch" placeholder="Search employees, departments..." autocomplete="off" />
-
-          </label>
-
-          <label class="filter-select">
-
-            <span class="sr-only">
-              Department
-            </span>
-
-            <select id="deptFilter" class="perform-select perform-select--filter">
-
-              <option value="">
-                All departments
-              </option>
-
-              <?php foreach ($departments as $deptLower): ?>
-
+          <div id="list">
+            <?php if (!$directory): ?>
+              <div class="empty">No employees found.</div>
+            <?php else: ?>
+              <?php foreach ($directory as $idx => $row): ?>
                 <?php
-                // Options are deduped case-insensitively above; value carries
-                // the canonical lowercase form (JS normalizes both sides the
-                // same way). Display uses the first-seen original casing.
-                $deptRaw = '';
+                $isProb = ($row['type'] ?? '') === 'Probationary';
+                $perfFilterSlug = 'none';
+                $perfDotColor = 'var(--mut)';
+                $perfDisplayLabel = 'Not yet rated';
 
-                foreach ($directory as $deptRow) {
-                  if (
-                    strtolower(
-                      trim(
-                        (string) ($deptRow['dept'] ?? '')
-                      )
-                    ) === $deptLower
-                  ) {
-                    $deptRaw = (string) ($deptRow['dept'] ?? '');
-
-                    break;
+                if ($row['scoreValue'] !== null) {
+                  $sc = (float) $row['scoreValue'];
+                  $target = isset($row['targetAvgValue']) ? (float) $row['targetAvgValue'] : 3.0;
+                  if ($sc < $target) {
+                    $perfFilterSlug = 'below';
+                    $perfDotColor = 'var(--bad)';
+                    $perfDisplayLabel = 'Below target';
+                  } else {
+                    $perfFilterSlug = 'exceed';
+                    $perfDotColor = 'var(--ok)';
+                    $perfDisplayLabel = 'Exceeding';
+                  }
+                } elseif (!empty($row['perfLabel'])) {
+                  $lbl = strtolower((string) $row['perfLabel']);
+                  if (strpos($lbl, 'below') !== false || strpos($lbl, 'risk') !== false || strpos($lbl, 'review') !== false) {
+                    $perfFilterSlug = 'below';
+                    $perfDotColor = 'var(--bad)';
+                    $perfDisplayLabel = 'Below target';
+                  } elseif (strpos($lbl, 'exceed') !== false) {
+                    $perfFilterSlug = 'exceed';
+                    $perfDotColor = 'var(--ok)';
+                    $perfDisplayLabel = 'Exceeding';
                   }
                 }
                 ?>
-
-                <option value="<?php echo htmlspecialchars($deptLower, ENT_QUOTES); ?>">
-                  <?php
-                  echo htmlspecialchars(
-                    pf_dept_label($deptRaw) !== '' ? pf_dept_label($deptRaw) : $deptLower,
-                    ENT_QUOTES
-                  );
-                  ?>
-                </option>
-
-              <?php endforeach; ?>
-
-            </select>
-
-          </label>
-
-          <label class="filter-select">
-
-            <span class="sr-only">
-              Performance status
-            </span>
-
-            <select id="perfFilter" class="perform-select perform-select--filter">
-
-              <option value="">
-                All statuses
-              </option>
-
-              <option value="exceeding">
-                Exceeding
-              </option>
-
-              <option value="warning">
-                Warning
-              </option>
-
-              <option value="below-target">
-                Below Target
-              </option>
-
-              <option value="not-rated">
-                Not yet rated
-              </option>
-
-            </select>
-
-          </label>
-
-          <label class="filter-select">
-
-            <span class="sr-only">
-              Account status
-            </span>
-
-            <select id="statusFilter" class="perform-select perform-select--filter">
-
-              <option value="">
-                All account statuses
-              </option>
-
-              <option value="Active">
-                Active
-              </option>
-
-              <option value="Disabled">
-                Disabled
-              </option>
-
-            </select>
-
-          </label>
-
-          <label class="filter-select">
-
-            <span class="sr-only">
-              Employment type
-            </span>
-
-            <select id="typeFilter" class="perform-select perform-select--filter">
-
-              <option value="">
-                All types
-              </option>
-
-              <option value="Probationary">
-                Probationary
-              </option>
-
-              <option value="Regular">
-                Regular
-              </option>
-
-            </select>
-
-          </label>
-
-        </div>
-
-        <div class="filter-actions">
-
-          <span class="directory-count" id="directoryCount" aria-live="polite">
-            <?php echo count($directory); ?> employees
-          </span>
-
-          <label class="filter-select">
-
-            <span class="sr-only">
-              Sort by
-            </span>
-
-            <select id="sortDirectory" class="perform-select perform-select--filter">
-
-              <option value="default">
-                Default order
-              </option>
-
-              <option value="name">
-                Name A–Z
-              </option>
-
-              <option value="days-left">
-                Days left (soonest)
-              </option>
-
-            </select>
-
-          </label>
-
-          <button class="ghost-button" type="button" id="resetFiltersBtn">
-            Reset
-          </button>
-
-        </div>
-
-      </section>
-
-      <section class="directory-panel" role="table" aria-label="Employee directory">
-
-        <div class="directory-head" role="row">
-
-          <span role="columnheader">
-            Employee
-          </span>
-
-          <span role="columnheader">
-            Department
-          </span>
-
-          <span role="columnheader">
-            Probation Timeline / Triage
-          </span>
-
-          <span role="columnheader">
-            Current Performance Status
-          </span>
-
-          <span role="columnheader">
-            Action
-          </span>
-
-        </div>
-
-        <?php if (empty($directory)): ?>
-
-          <div class="empty-state">
-
-            <p>
-              No employees yet.
-              Create the first profile to get started.
-            </p>
-
-            <a class="btn-primary" href="add_employee.php">
-              Add Employee
-            </a>
-
-          </div>
-
-        <?php else: ?>
-
-          <div id="directoryRows">
-
-            <?php foreach ($directory as $person): ?>
-
-              <div class="directory-row" role="row" data-search="<?php
-              echo htmlspecialchars(
-                strtolower(
-                  $person['name'] .
-                  ' ' .
-                  $person['email'] .
-                  ' ' .
-                  $person['dept'] .
-                  ' ' .
-                  $person['role'] .
-                  ' ' .
-                  $person['status']
-                ),
-                ENT_QUOTES
-              );
-              ?>" data-dept="<?php
-              echo htmlspecialchars(
-                $person['dept'],
-                ENT_QUOTES
-              );
-              ?>" data-status="<?php
-              echo htmlspecialchars(
-                $person['status'],
-                ENT_QUOTES
-              );
-              ?>" data-type="<?php
-              echo htmlspecialchars(
-                $person['type'],
-                ENT_QUOTES
-              );
-              ?>" data-perf="<?php
-              echo htmlspecialchars(
-                $person['perfSlug'],
-                ENT_QUOTES
-              );
-              ?>" data-role="<?php
-              echo htmlspecialchars(
-                $person['role'],
-                ENT_QUOTES
-              );
-              ?>" data-days-left="<?php
-              echo htmlspecialchars(
-                isset($person['daysLeftValue'])
-                ? (string) $person['daysLeftValue']
-                : '',
-                ENT_QUOTES
-              );
-              ?>" data-name="<?php
-              echo htmlspecialchars(
-                strtolower($person['name']),
-                ENT_QUOTES
-              );
-              ?>" data-score="<?php
-              echo htmlspecialchars(
-                isset($person['scoreValue'])
-                ? number_format((float) $person['scoreValue'], 1)
-                : '',
-                ENT_QUOTES
-              );
-              ?>">
-
-                <div class="employee-cell" role="cell">
-
-                  <div class="avatar avatar-local"
-                    title="<?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>"
-                    aria-hidden="true"><?php echo htmlspecialchars($person['initials'], ENT_QUOTES); ?></div>
-
-                  <div>
-
-                    <div class="employee-name">
-
-                      <?php
-                      echo htmlspecialchars(
-                        $person['name'],
-                        ENT_QUOTES
-                      );
-                      ?>
-
-                    </div>
-
-                    <div class="employee-email">
-
-                      <?php
-                      echo htmlspecialchars(
-                        $person['email'],
-                        ENT_QUOTES
-                      );
-                      ?>
-
-                    </div>
-
-                    <div class="employee-flags">
-
-                      <span class="employee-flag<?php echo ($person['type'] ?? '') === 'Probationary' ? ' employee-flag-probation' : ''; ?>">
-                        <?php echo htmlspecialchars($person['type'], ENT_QUOTES); ?>
-                      </span>
-
-                      <?php if (($person['status'] ?? '') === 'Disabled'): ?>
-
-                        <span class="employee-flag employee-flag-disabled">
-                          Disabled
-                        </span>
-
+                <div class="row rw"
+                  data-idx="<?php echo (int) $idx; ?>"
+                  data-id="<?php echo htmlspecialchars($row['uid'], ENT_QUOTES); ?>"
+                  data-n="<?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>"
+                  data-em="<?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?>"
+                  data-d="<?php echo htmlspecialchars(strtolower((string)($row['dept'] ?? '')), ENT_QUOTES); ?>"
+                  data-t="<?php echo $isProb ? 'prob' : 'reg'; ?>"
+                  data-day="<?php echo $isProb && $row['daySinceValue'] !== null ? (int)$row['daySinceValue'] : -1; ?>"
+                  data-left="<?php echo $isProb && $row['daysLeftValue'] !== null ? (int)$row['daysLeftValue'] : -1; ?>"
+                  data-sc="<?php echo $row['scoreValue'] !== null ? (float)$row['scoreValue'] : -1; ?>"
+                  data-pf="<?php echo htmlspecialchars($perfFilterSlug, ENT_QUOTES); ?>">
+
+                  <div class="e" data-a="view" data-uid="<?php echo htmlspecialchars($row['uid'], ENT_QUOTES); ?>" style="cursor:pointer;">
+                    <span class="av"><?php echo htmlspecialchars($row['initials'], ENT_QUOTES); ?></span>
+                    <div class="nm">
+                      <b>
+                        <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>
+                        <?php if ($isProb): ?>
+                          <span class="ty" style="display:inline">Probationary</span>
+                        <?php endif; ?>
+                      </b>
+                      <?php if (!empty($row['email'])): ?>
+                        <span class="sm2"><?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?></span>
                       <?php endif; ?>
-
                     </div>
+                  </div>
 
+                  <span class="dp sm2" style="font-size:13.5px"><?php echo htmlspecialchars(!empty($row['dept']) ? ucfirst($row['dept']) : '-', ENT_QUOTES); ?></span>
+
+                  <div class="tm">
+                    <?php if ($isProb && $row['daySinceValue'] !== null && $row['daysLeftValue'] !== null): ?>
+                      <?php
+                      $probPeriod = $row['probationPeriod'] ?? 180;
+                      $dayVal = (int) $row['daySinceValue'];
+                      $leftVal = (int) $row['daysLeftValue'];
+                      $pctVal = (float) ($probPeriod > 0 ? min(100, max(0, round($dayVal / $probPeriod * 100))) : 0);
+                      $isLate = $leftVal <= 30;
+                      ?>
+                      <span class="num" style="font-size:12.5px">Day <?php echo $dayVal; ?></span>
+                      <span class="sm2 num"> · <?php echo $leftVal; ?> left</span>
+                      <div class="track">
+                        <div class="fill <?php echo $isLate ? 'late' : ''; ?>" style="width:<?php echo $pctVal; ?>%"></div>
+                      </div>
+                    <?php else: ?>
+                      <span class="sm2">-</span>
+                    <?php endif; ?>
+                  </div>
+
+                  <span class="ps stt">
+                    <i style="background:<?php echo $perfDotColor; ?>"></i>
+                    <?php echo htmlspecialchars($perfDisplayLabel, ENT_QUOTES); ?>
+                    <?php if ($row['scoreValue'] !== null && $perfFilterSlug !== 'none'): ?>
+                      <span class="num sm2"><?php echo number_format((float)$row['scoreValue'], 1); ?></span>
+                    <?php endif; ?>
+                  </span>
+
+                  <div class="act">
+                    <a href="employee_view.php?uid=<?php echo urlencode($row['uid']); ?>" class="btn tint" style="text-decoration:none;">View</a>
+                    <?php if (!empty($row['email'])): ?>
+                      <a href="mailto:<?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?>" class="btn x" title="Email <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>" aria-label="Email <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                      </a>
+                    <?php else: ?>
+                      <button type="button" class="btn x" disabled title="No email on file">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                      </button>
+                    <?php endif; ?>
                   </div>
 
                 </div>
-
-                <div role="cell" data-label="Department">
-
-                  <?php
-                  // Shorten role-derived pseudo-departments so the pill never
-                  // forces its column wide; raw value stays in title.
-                  $deptShort = $person['dept'];
-                  if (strtolower(trim($deptShort)) === 'probationary employee') {
-                    $deptShort = 'Probationary';
-                  }
-                  ?>
-
-                  <span class="dept-pill" title="<?php
-                  echo htmlspecialchars(
-                    $person['dept'],
-                    ENT_QUOTES
-                  );
-                  ?>">
-
-                    <?php
-                    echo htmlspecialchars(
-                      pf_dept_label($deptShort),
-                      ENT_QUOTES
-                    );
-                    ?>
-
-                  </span>
-
-                </div>
-
-                <div role="cell" data-label="Probation Timeline">
-
-                  <?php if (($person['type'] ?? '') === 'Probationary' && isset($person['daysLeftValue'], $person['daySinceValue'], $person['probationPercent'])): ?>
-
-                    <div class="timeline-cell" data-tone="<?php echo htmlspecialchars($person['triageTone'] !== '' ? $person['triageTone'] : 'ok', ENT_QUOTES); ?>">
-
-                      <span class="employee-triage<?php echo $person['triageTone'] !== '' ? ' triage-' . htmlspecialchars($person['triageTone'], ENT_QUOTES) : ''; ?>">
-                        <?php echo (int) $person['daysLeftValue']; ?> days left
-                        <span class="timeline-period">(Day <?php echo (int) $person['daySinceValue']; ?>/<?php echo (int) $person['probationPeriod']; ?>)</span>
-                      </span>
-
-                      <span class="pf-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                        aria-valuenow="<?php echo (int) $person['probationPercent']; ?>"
-                        aria-label="Probation progress: day <?php echo (int) $person['daySinceValue']; ?> of <?php echo (int) $person['probationPeriod']; ?>">
-                        <span class="pf-meter-fill" style="width: <?php echo (int) $person['probationPercent']; ?>%"></span>
-                      </span>
-
-                    </div>
-
-                  <?php else: ?>
-
-                    <span class="muted-cell">—</span>
-
-                  <?php endif; ?>
-
-                </div>
-
-                <div role="cell" data-label="Performance">
-
-                  <span class="status-pill <?php
-                  echo htmlspecialchars(
-                    $person['perfClass'],
-                    ENT_QUOTES
-                  );
-                  ?>">
-
-                    <?php
-                    echo htmlspecialchars(
-                      $person['perfLabel'],
-                      ENT_QUOTES
-                    );
-                    ?>
-
-                  </span>
-
-                </div>
-
-                <div role="cell" data-label="Actions">
-
-                  <a class="ghost-button" href="employee_view.php?uid=<?php echo urlencode($person['uid']); ?>"
-                    aria-label="Manage <?php echo htmlspecialchars($person['name'], ENT_QUOTES); ?>">
-                    View
-                  </a>
-
-                </div>
-
-              </div>
-
-            <?php endforeach; ?>
-
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
 
-          <div id="noFilterResults" class="dashboard-empty" hidden>
-            <p>No employees match these filters.</p>
-            <button class="ghost-button" type="button" id="clearFiltersBtn">Reset filters</button>
+          <div class="ft">
+            <span id="cap"></span>
+            <div>
+              <button type="button" class="btn tint" id="prev" disabled>Previous</button>
+              <button type="button" class="btn tint" id="next" disabled>Next</button>
+            </div>
           </div>
+        </section>
 
-        <?php endif; ?>
-
-        <div class="pagination-bar">
-
-          <span id="paginationSummary" aria-live="polite">
-
-            Showing
-            <strong>
-              <?php
-              echo min(
-                count($directory),
-                8
-              );
-              ?>
-            </strong>
-
-            of
-
-            <strong>
-              <?php
-              echo count($directory);
-              ?>
-            </strong>
-
-            employees
-
-          </span>
-
-          <div class="page-buttons">
-
-            <button class="page-btn" type="button" id="prevPageBtn">
-              Previous
-            </button>
-
-            <nav class="page-numbers" id="pageNumbers" aria-label="Directory pages"></nav>
-
-            <span id="pageIndicator" class="sr-only" aria-live="polite"></span>
-
-            <button class="page-btn" type="button" id="nextPageBtn">
-              Next
-            </button>
-
-          </div>
-
-        </div>
-
-      </section>
-
+      </div>
     </main>
 
+    <div class="toast" id="toast" hidden></div>
   </div>
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
-  <script src="<?php echo htmlspecialchars(employer_asset('employees.js'), ENT_QUOTES); ?>"></script>
 
   <script>
     window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
   </script>
 
-</body>
+  <script>
+    (function () {
+      var list = document.getElementById('list');
+      if (!list) return;
+      var qInput = document.getElementById('q');
+      var deptSelect = document.getElementById('dept');
+      var perfSelect = document.getElementById('perf');
+      var sortSelect = document.getElementById('sort');
+      var clrBtn = document.getElementById('clr');
+      var cap = document.getElementById('cap');
+      var prevBtn = document.getElementById('prev');
+      var nextBtn = document.getElementById('next');
+      var tabBtns = Array.from(document.querySelectorAll('#tabs button'));
+      var expBtn = document.getElementById('exp');
+      var toastEl = document.getElementById('toast');
+      var toastTimer;
 
+      function toast(msg) {
+        if (!toastEl) return;
+        clearTimeout(toastTimer);
+        toastEl.hidden = false;
+        toastEl.textContent = msg;
+        toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3500);
+      }
+
+      var PS = 8;
+      var tab = 'all';
+      var page = 1;
+      var rows = Array.from(list.querySelectorAll('.row'));
+
+      function isDirty() {
+        return (qInput && qInput.value.trim() !== '') ||
+               (deptSelect && deptSelect.value !== 'all') ||
+               (perfSelect && perfSelect.value !== 'all') ||
+               (sortSelect && sortSelect.value !== 'def') ||
+               tab !== 'all';
+      }
+
+      function getMatched() {
+        var query = qInput ? qInput.value.trim().toLowerCase() : '';
+        var dVal = deptSelect ? deptSelect.value : 'all';
+        var pVal = perfSelect ? perfSelect.value : 'all';
+        var sVal = sortSelect ? sortSelect.value : 'def';
+
+        var filtered = rows.filter(function (r) {
+          if (tab !== 'all') {
+            var tType = r.getAttribute('data-t') || '';
+            if (tType !== tab) return false;
+          }
+          if (dVal !== 'all') {
+            var rDept = r.getAttribute('data-d') || '';
+            if (rDept !== dVal) return false;
+          }
+          if (pVal !== 'all') {
+            var rPerf = r.getAttribute('data-pf') || '';
+            if (rPerf !== pVal) return false;
+          }
+          if (query) {
+            var n = (r.getAttribute('data-n') || '').toLowerCase();
+            var em = (r.getAttribute('data-em') || '').toLowerCase();
+            var dp = (r.getAttribute('data-d') || '').toLowerCase();
+            if (n.indexOf(query) === -1 && em.indexOf(query) === -1 && dp.indexOf(query) === -1) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        filtered.sort(function (a, b) {
+          if (sVal === 'name') {
+            var na = (a.getAttribute('data-n') || '').toLowerCase();
+            var nb = (b.getAttribute('data-n') || '').toLowerCase();
+            return na.localeCompare(nb);
+          } else if (sVal === 'left') {
+            var la = parseInt(a.getAttribute('data-left') || '-1', 10);
+            var lb = parseInt(b.getAttribute('data-left') || '-1', 10);
+            if (la === -1 && lb === -1) return 0;
+            if (la === -1) return 1;
+            if (lb === -1) return -1;
+            return la - lb;
+          } else if (sVal === 'score') {
+            var sa = parseFloat(a.getAttribute('data-sc') || '-1');
+            var sb = parseFloat(b.getAttribute('data-sc') || '-1');
+            if (sa === -1 && sb === -1) return 0;
+            if (sa === -1) return 1;
+            if (sb === -1) return -1;
+            return sa - sb;
+          } else {
+            var ia = parseInt(a.getAttribute('data-idx') || '0', 10);
+            var ib = parseInt(b.getAttribute('data-idx') || '0', 10);
+            return ia - ib;
+          }
+        });
+
+        return filtered;
+      }
+
+      function render() {
+        var matched = getMatched();
+        var total = matched.length;
+        var pages = Math.max(1, Math.ceil(total / PS));
+        if (page > pages) page = pages;
+
+        rows.forEach(function (r) { r.style.display = 'none'; });
+
+        var start = (page - 1) * PS;
+        var end = Math.min(page * PS, total);
+        matched.slice(start, end).forEach(function (r) {
+          r.style.display = '';
+          list.appendChild(r);
+        });
+
+        if (cap) {
+          cap.textContent = total ? ('Showing ' + (total === 0 ? 0 : start + 1) + ' to ' + end + ' of ' + total) : 'No employees match.';
+        }
+
+        if (prevBtn) prevBtn.disabled = page <= 1;
+        if (nextBtn) nextBtn.disabled = page >= pages || total === 0;
+        if (clrBtn) clrBtn.hidden = !isDirty();
+
+        tabBtns.forEach(function (b) {
+          var isSel = b.getAttribute('data-t') === tab;
+          b.setAttribute('aria-selected', isSel ? 'true' : 'false');
+        });
+      }
+
+      tabBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          tab = b.getAttribute('data-t') || 'all';
+          page = 1;
+          render();
+        });
+      });
+
+      if (qInput) qInput.addEventListener('input', function () { page = 1; render(); });
+      if (deptSelect) deptSelect.addEventListener('change', function () { page = 1; render(); });
+      if (perfSelect) perfSelect.addEventListener('change', function () { page = 1; render(); });
+      if (sortSelect) sortSelect.addEventListener('change', function () { page = 1; render(); });
+
+      if (clrBtn) {
+        clrBtn.addEventListener('click', function () {
+          if (qInput) qInput.value = '';
+          if (deptSelect) deptSelect.value = 'all';
+          if (perfSelect) perfSelect.value = 'all';
+          if (sortSelect) sortSelect.value = 'def';
+          tab = 'all';
+          page = 1;
+          render();
+        });
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+          if (page > 1) { page--; render(); }
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          page++; render();
+        });
+      }
+
+      document.addEventListener('click', function (e) {
+        var viewEl = e.target.closest('.e[data-a="view"]');
+        if (viewEl) {
+          var uid = viewEl.getAttribute('data-uid');
+          if (uid) {
+            window.location.href = 'employee_view.php?uid=' + encodeURIComponent(uid);
+          }
+        }
+      });
+
+      if (expBtn) {
+        expBtn.addEventListener('click', function () {
+          var matched = getMatched();
+          if (!matched.length) {
+            toast('No employees to export');
+            return;
+          }
+          var csvRows = [["Name", "Email", "Department", "Type", "Day", "Days Left", "Score", "Performance"].join(',')];
+          matched.forEach(function (r) {
+            var n = '"' + (r.getAttribute('data-n') || '').replace(/"/g, '""') + '"';
+            var em = '"' + (r.getAttribute('data-em') || '').replace(/"/g, '""') + '"';
+            var d = '"' + (r.getAttribute('data-d') || '').replace(/"/g, '""') + '"';
+            var t = r.getAttribute('data-t') === 'prob' ? 'Probationary' : 'Regular';
+            var day = r.getAttribute('data-day') !== '-1' ? r.getAttribute('data-day') : '';
+            var left = r.getAttribute('data-left') !== '-1' ? r.getAttribute('data-left') : '';
+            var sc = r.getAttribute('data-sc') !== '-1' ? r.getAttribute('data-sc') : '';
+            var pf = r.getAttribute('data-pf') || '';
+            csvRows.push([n, em, d, t, day, left, sc, pf].join(','));
+          });
+          var blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'employees_directory.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast('Exported ' + matched.length + ' employees');
+        });
+      }
+
+      render();
+    })();
+  </script>
+</body>
 </html>

@@ -11,6 +11,20 @@ $profileRoleDisplay = ucwords(str_replace('_', ' ', $profileRole));
 $profileEmail = $_SESSION['email'] ?? '';
 $profileDepartment = $_SESSION['department'] ?? '';
 
+$notifyMilestones = true;
+
+try {
+  if (!empty($_SESSION['uid'])) {
+    $prefDoc = firestore_get_document('Users', $_SESSION['uid']) ?? [];
+
+    if (is_array($prefDoc) && array_key_exists('notifyMilestones', $prefDoc)) {
+      $notifyMilestones = (bool) $prefDoc['notifyMilestones'];
+    }
+  }
+} catch (Throwable $e) {
+  // Preference read failure keeps alerts on (fail-open for deadlines).
+}
+
 $message = '';
 $messageTone = 'info';
 $action = $_POST['action'] ?? '';
@@ -59,6 +73,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_profile') {
       $message = 'We could not save your profile right now. Please try again.';
       $messageTone = 'error';
     }
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_notifications') {
+  try {
+    if (empty($_SESSION['uid'])) {
+      throw new RuntimeException('You must be signed in.');
+    }
+
+    $existing = firestore_get_document('Users', $_SESSION['uid']) ?? [];
+    $existing['notifyMilestones'] = !empty($_POST['notifyMilestones']);
+    firestore_write_document('Users', $_SESSION['uid'], $existing);
+    $notifyMilestones = $existing['notifyMilestones'];
+
+    $message = 'Notification preferences saved.';
+    $messageTone = 'success';
+  } catch (Throwable $e) {
+    error_log(
+      'Employer settings notification update failed: ' .
+      $e->getMessage()
+    );
+
+    $message = 'We could not save your preferences right now. Please try again.';
+    $messageTone = 'error';
   }
 }
 
@@ -320,6 +358,35 @@ $profileInitials = employer_avatar_initials($profileName);
           <div class="form-actions">
             <button class="btn-primary" type="submit">
               Update Password
+            </button>
+          </div>
+        </form>
+
+      </section>
+
+      <section class="settings-panel settings-notifications-panel">
+
+        <div class="settings-section-heading">
+          <div>
+            <h2>Notifications</h2>
+            <p>Deadline milestone alerts for your probationers.</p>
+          </div>
+        </div>
+
+        <form method="post" class="settings-form">
+          <?php echo csrf_field(); ?>
+          <input type="hidden" name="action" value="save_notifications" />
+
+          <div class="form-group">
+            <label class="checkline" for="notifyMilestones">
+              <input id="notifyMilestones" name="notifyMilestones" type="checkbox" value="1" <?php echo $notifyMilestones ? 'checked' : ''; ?> />
+              <span>Milestone alerts — notify me when a probationer reaches day 150, 165 or 178.</span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-primary" type="submit">
+              Save Preferences
             </button>
           </div>
         </form>

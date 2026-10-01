@@ -197,6 +197,79 @@ if (isset($_GET['restored'])) {
     $dashMessageType = 'success';
 }
 
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['action'] ?? '') === 'send_acknowledgement' &&
+    !empty($_POST['uid'])
+) {
+    try {
+        $ackUid = trim((string) $_POST['uid']);
+
+        $ackTarget =
+            firestore_get_document('Users', $ackUid) ?? [];
+
+        require_employer_owns_user(
+            $ackTarget + ['uid' => $ackUid],
+            'dashboard:send_acknowledgement'
+        );
+
+        // Dispatch the latest approved plan for acknowledgement. The
+        // approved content was authored by the review gate; this only
+        // (re)creates the monthly acknowledgement + notification pair,
+        // so resending is idempotent by document ID.
+        $assigned = $ackTarget['assignedTraining'] ?? null;
+
+        if (!is_string($assigned) || trim($assigned) === '') {
+            throw new RuntimeException('No approved plan to send yet.');
+        }
+
+        $ackMonth = date('Y-m');
+        $ackMonthLabel = date('F Y');
+
+        firestore_write_document('Acknowledgements', $ackUid . '_' . $ackMonth, [
+            'employeeUid' => $ackUid,
+            'month' => $ackMonthLabel,
+            'status' => 'Pending',
+            'timestamp' => null,
+            'createdAt' => date('c'),
+            'planSummary' => $assigned,
+            'dispatchedBy' => $_SESSION['name'] ?? 'Employer',
+            'dispatchedAt' => date('c'),
+        ]);
+
+        firestore_write_document('notifications', $ackUid . '_' . $ackMonth . '_dispatch', [
+            'employeeUid' => $ackUid,
+            'title' => 'Monthly summary sent for acknowledgement',
+            'detail' => 'Your ' . $ackMonthLabel . ' performance summary is ready for acknowledgement.',
+            'type' => 'info',
+            'createdAt' => date('c'),
+        ]);
+
+        unset($_SESSION['dashboard_live_data'], $_SESSION['dashboard_cache_time']);
+
+        record_audit_event(
+            'acknowledgement_dispatched',
+            'Sent monthly summary for acknowledgement to ' . $ackUid,
+            ['employee' => $ackUid]
+        );
+
+        header(
+            'Location: employer_dashboard.php?dispatched=' .
+            urlencode($ackUid)
+        );
+
+        exit;
+    } catch (Throwable $e) {
+        $dashMessage = 'Could not send the summary. Please try again.';
+        $dashMessageType = 'error';
+    }
+}
+
+if (isset($_GET['dispatched'])) {
+    $dashMessage = 'Monthly summary sent for acknowledgement.';
+    $dashMessageType = 'success';
+}
+
 /* assign_course removed: direct assignment bypassed the manuscript's
  * review-before-send step (P.121). See review_recommendations.php approve. */
 
@@ -550,6 +623,12 @@ if ($cacheValid) {
                 'day' =>
                     pf_day($daysSince),
 
+                'daysSince' =>
+                    $daysSince,
+
+                'periodDays' =>
+                    $probationPeriodDays,
+
                 'daysLeft' =>
                     $daysLeft . ' days left',
 
@@ -735,7 +814,7 @@ $metrics = [
                 $overallPerformance,
                 1
             )
-            : '—',
+            : '-',
 
         'suffix' =>
             $overallPerformance !== null
@@ -765,6 +844,7 @@ $metrics = [
 */
 
 $nearestDeadlineDays = null;
+$nearestDeadlineName = null;
 
 foreach ($liveUsers as $user) {
     $days =
@@ -781,6 +861,79 @@ foreach ($liveUsers as $user) {
         )
     ) {
         $nearestDeadlineDays = $days;
+        $nearestDeadlineName = (string) ($user['name'] ?? '');
+    }
+}
+
+/*
+ * Automated milestone alerts (manuscript 150/165/178-day tracker).
+ * Runs on dashboard load; idempotent by document ID ({uid}_milestone_{m});
+ * honors the employer's notification preference (default on). The
+ * notification document IS the record, so no audit event is written.
+ */
+$notifyMilestonesPref = true;
+
+try {
+    if (!empty($_SESSION['uid'])) {
+        $prefDoc = firestore_get_document('Users', $_SESSION['uid']) ?? [];
+
+        if (is_array($prefDoc) && array_key_exists('notifyMilestones', $prefDoc)) {
+            $notifyMilestonesPref = (bool) $prefDoc['notifyMilestones'];
+        }
+    }
+} catch (Throwable $e) {
+    // Preference read failure keeps alerts on (fail-open for deadlines).
+}
+
+if ($notifyMilestonesPref) {
+    try {
+        $seenMilestones = [];
+
+        foreach (firestore_list_documents('notifications') as $note) {
+            if (isset($note['employeeUid'], $note['milestoneDay'])) {
+                $seenMilestones[
+                    (string) $note['employeeUid'] . '|' . (string) $note['milestoneDay']
+                ] = true;
+            }
+        }
+
+        foreach ($liveUsers as $user) {
+            $period = max(1, (int) ($user['periodDays'] ?? 180));
+            $since = (int) ($user['daysSince'] ?? 0);
+            $left = (int) ($user['daysLeftValue'] ?? 0);
+
+            foreach ([150, 165, 178] as $milestoneDay) {
+                if ($milestoneDay >= $period || $since < $milestoneDay) {
+                    continue;
+                }
+
+                $seenKey = (string) ($user['uid'] ?? '') . '|' . (string) $milestoneDay;
+
+                if (isset($seenMilestones[$seenKey])) {
+                    continue;
+                }
+
+                firestore_write_document(
+                    'notifications',
+                    (string) ($user['uid'] ?? '') . '_milestone_' . (string) $milestoneDay,
+                    [
+                        'employeeUid' => $user['uid'] ?? '',
+                        'milestoneDay' => $milestoneDay,
+                        'title' => 'Probation milestone: day ' . $milestoneDay,
+                        'detail' => ($user['name'] ?? 'A probationer') .
+                            ' reached day ' . $milestoneDay .
+                            ' of ' . $period .
+                            ' (' . $left . ' days left).',
+                        'type' => 'deadline',
+                        'createdAt' => date('c'),
+                    ]
+                );
+
+                $seenMilestones[$seenKey] = true;
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('Dashboard milestone alerts failed: ' . $e->getMessage());
     }
 }
 
@@ -951,37 +1104,46 @@ $pfPaletteJson =
         JSON_HEX_AMP
     );
 
-$insightTitle =
-    $insightQueue
-    ? 'Intervention Suggested'
-    : 'No Data Yet';
+$unratedCount = $probationaryCount - $scoredCount;
+
+$tabCounts = [
+    'all' => $probationaryCount,
+    'needs-review' => 0,
+    'on-track' => 0,
+    'ready-for-reg' => 0,
+    'due-soon' => 0,
+];
+
+foreach ($liveUsers as $u) {
+    $sk = $u['statusKey'] ?? '';
+    if (isset($tabCounts[$sk])) {
+        $tabCounts[$sk]++;
+    }
+    $dLeft = (int) ($u['daysLeftValue'] ?? 0);
+    if ($dLeft > 0 && $dLeft <= 30) {
+        $tabCounts['due-soon']++;
+    }
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php employer_brand_head(); ?>
-
     <title>Dashboard · Performa</title>
-
     <meta name="description"
         content="Employer KPI dashboard for probationary employee evaluation and training recommendations." />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
     <link
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-
     <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
     <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES); ?>" />
 </head>
 
 <body>
@@ -990,595 +1152,326 @@ $insightTitle =
 
         <?php employer_render_shell('Dashboard'); ?>
 
-        <main class="main" id="dashboard">
+        <main class="main dashboard-page" id="dashboard">
+            <div class="in">
 
-            <?php ob_start(); ?>
-                    <label class="search-bar">
-                        <span class="sr-only">
-                            Search employees or reports
-                        </span>
-
-                        <span class="search-icon" aria-hidden="true">
-                            <?php echo $icons['search']; ?>
-                        </span>
-
-                        <input id="dashboardSearch" type="search" placeholder="Search employees by name, role, or status..."
-                            autocomplete="off" />
-                    </label>
-
-                    <?php if ($nearestDeadlineDays !== null): ?>
-
-                        <div class="deadline-pill" title="<?php echo (int) $nearestDeadlineDays; ?> day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?> until nearest regularization deadline">
-
-                            <span class="deadline-icon" aria-hidden="true">
-                                <?php echo $icons['bell']; ?>
-                            </span>
-
-                            <?php echo (int) $nearestDeadlineDays; ?>
-
-                            day<?php echo $nearestDeadlineDays === 1 ? '' : 's'; ?>
-
-                            until nearest regularization deadline
-
-                        </div>
-
-                    <?php endif; ?>
-
-                    <a class="btn-primary" href="add_employee.php">
-                        <?php echo $icons['plus']; ?>
-                        Add Employee
-                    </a>
-            <?php
-            $dashboardActions = ob_get_clean();
-            employer_page_header(
-                'dashboardTitle',
-                'Probationary Overview',
-                '<span class="eyebrow">Regularization cycle</span>',
-                'Track and evaluate employees approaching regularization.',
-                $dashboardActions
-            );
-            ?>
-
-            <?php if ($dashMessage !== ''): ?>
-                <div class="alert alert-<?php echo $dashMessageType === 'error' ? 'error' : 'success'; ?>" role="status">
-                    <?php echo htmlspecialchars($dashMessage, ENT_QUOTES); ?>
-                </div>
-            <?php endif; ?>
-
-            <section class="metrics" id="kpis" aria-label="Key dashboard metrics">
-
-                <?php foreach ($metrics as $metric): ?>
-
-                    <article class="metric-card">
-
-                        <div class="metric-card-top">
-
-                            <div class="metric-icon <?php echo htmlspecialchars($metric['iconClass'], ENT_QUOTES); ?>">
-                                <?php
-                                echo $icons[
-                                    $metric['icon']
-                                ];
-                                ?>
-                            </div>
-
-                            <div class="metric-badge <?php echo htmlspecialchars($metric['tone'], ENT_QUOTES); ?>">
-                                <?php
-                                echo htmlspecialchars(
-                                    $metric['badge'],
-                                    ENT_QUOTES
-                                );
-                                ?>
-                        </div>
-
-
-                    </div>
-
-                        <div class="metric-meta">
-
-                            <span>
-                                <?php
-                                echo htmlspecialchars(
-                                    $metric['label'],
-                                    ENT_QUOTES
-                                );
-                                ?>
-                            </span>
-
-                            <strong>
-
-                                <?php
-                                echo htmlspecialchars(
-                                    $metric['value'],
-                                    ENT_QUOTES
-                                );
-                                ?>
-
-                                <?php if (!empty($metric['suffix'])): ?>
-
-                                    <small>
-                                        <?php
-                                        echo htmlspecialchars(
-                                            $metric['suffix'],
-                                            ENT_QUOTES
-                                        );
-                                        ?>
-                                    </small>
-
-                                <?php endif; ?>
-
-                            </strong>
-
-                        </div>
-
-                    </article>
-
-                <?php endforeach; ?>
-
-            </section>
-
-            <section class="content-grid">
-
-                <div class="panel evaluations" id="employees">
-
-                    <div class="panel-header">
-
-                        <div>
-
-                            <span class="eyebrow">Probation ledger · <?php echo (int) $probationaryCount; ?> active</span>
-
-                            <h2>
-                                Active Evaluations
-                            </h2>
-
-                        </div>
-
-                        <div class="panel-actions">
-
-                            <button class="ghost-button" type="button" id="exportEvaluationsBtn">
-                                <?php echo $icons['download']; ?>
-                                Export CSV
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <div class="table-toolbar">
-
-                        <div class="chip-group" role="group" aria-label="Evaluation filters">
-
-                            <button class="filter-chip active" type="button" data-filter="all">
-                                All
-                            </button>
-
-                            <button class="filter-chip" type="button" data-filter="needs-review">
-                                Needs Review
-                            </button>
-
-                            <button class="filter-chip" type="button" data-filter="on-track">
-                                On Track
-                            </button>
-
-                            <button class="filter-chip" type="button" data-filter="ready-for-reg">
-                                Ready
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <div class="table-wrap" role="table" aria-label="Active probationary evaluations">
-
-                        <div class="table-head" role="row">
-                            <span role="columnheader">
-                                EMPLOYEE
-                            </span>
-
-                            <span role="columnheader">
-                                TIMELINE PROGRESS
-                            </span>
-
-                            <span role="columnheader">
-                                KPI SCORE
-                            </span>
-
-                            <span role="columnheader">
-                                STATUS
-                            </span>
-                        </div>
-
-                        <div id="evaluationRows">
-
-                            <?php if (empty($evaluations)): ?>
-
-                                <div class="dashboard-empty">
-                                    No probationary employees are currently available.
-                                    <a class="btn-primary" href="add_employee.php">Add Employee</a>
-                                </div>
-
-                            <?php else: ?>
-
-                                <?php foreach ($evaluations as $employee): ?>
-
-                                    <div class="table-row" role="row" data-search="<?php
-                                    echo htmlspecialchars(
-                                        strtolower(
-                                            $employee['name'] .
-                                            ' ' .
-                                            $employee['role'] .
-                                            ' ' .
-                                            $employee['status']
-                                        ),
-                                        ENT_QUOTES
-                                    );
-                                    ?>" data-filter="<?php
-                                    echo htmlspecialchars(
-                                        $employee['statusKey'],
-                                        ENT_QUOTES
-                                    );
-                                    ?>">
-
-                                        <div class="employee-cell" role="cell">
-
-                                            <div class="avatar avatar-local"
-                                                title="<?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>"
-                                                aria-hidden="true"><?php echo htmlspecialchars($employee['initials'], ENT_QUOTES); ?></div>
-
-                                            <div>
-
-                                                <div class="employee-name">
-                                                    <?php
-                                                    echo htmlspecialchars(
-                                                        $employee['name'],
-                                                        ENT_QUOTES
-                                                    );
-                                                    ?>
-                                                </div>
-
-                                                <div class="employee-role">
-                                                    <?php
-                                                    echo htmlspecialchars(
-                                                        $employee['role'],
-                                                        ENT_QUOTES
-                                                    );
-                                                    ?>
-                                                </div>
-
-                                            </div>
-
-                                        </div>
-
-                                        <div class="timeline-cell" role="cell" data-label="Timeline">
-
-                                            <div class="timeline-text">
-
-                                                <span class="timeline-day">
-                                                    <?php
-                                                    echo htmlspecialchars(
-                                                        $employee['day'],
-                                                        ENT_QUOTES
-                                                    );
-                                                    ?>
-                                                </span>
-
-                                                <span class="timeline-left"
-                                                    style="color:<?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;">
-                                                    <?php
-                                                    echo htmlspecialchars(
-                                                        $employee['daysLeft'],
-                                                        ENT_QUOTES
-                                                    );
-                                                    ?>
-                                                </span>
-
-                                            </div>
-
-                                            <div class="timeline-bar">
-
-                                                <span style="
-                                                    width:<?php echo (int) $employee['progress']; ?>%;
-                                                    background:<?php echo htmlspecialchars($employee['accentColor'], ENT_QUOTES); ?>;
-                                                "></span>
-
-                                            </div>
-
-                                        </div>
-
-                                        <div class="score-cell" role="cell" data-label="KPI Score">
-                                            <?php
-                                            echo employer_score_meter(
-                                                $employee['hasScore'] ? (float) $employee['score'] : null,
-                                                5.0,
-                                                isset($employee['targetAvg']) ? (float) $employee['targetAvg'] : null
-                                            );
-                                            ?>
-                                        </div>
-
-                                        <div class="status-cell" role="cell" data-label="Status">
-
-                                            <span
-                                                class="status-pill <?php echo htmlspecialchars($employee['statusClass'], ENT_QUOTES); ?>">
-                                                <?php
-                                                echo htmlspecialchars(
-                                                    $employee['status'],
-                                                    ENT_QUOTES
-                                                );
-                                                ?>
-                                            </span>
-
-                                            <a href="rate_employee.php?employee=<?php echo urlencode($employee['uid']); ?>"
-                                                class="eval-btn" title="Evaluate Employee"
-                                                aria-label="Evaluate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>">
-                                                <?php echo $icons['target']; ?>
-                                            </a>
-
-                                        </div>
-
-                                    </div>
-
-                                <?php endforeach; ?>
-
-                            <?php endif; ?>
-
-                        </div>
-
-                        <div class="dashboard-empty" id="noFilterMatches" hidden>
-                            No employees match this filter combination.
-                            <button class="ghost-button" type="button" id="clearDashboardFilters">
-                                Clear filters
-                            </button>
-                        </div>
-
-                    </div>
-
-                    <a class="view-more" href="employees.php">
-                        View All Probationary Staff →
-                    </a>
-
-                </div>
-
-            <section class="queue-section" aria-labelledby="queueTitle">
-                <div class="queue-head">
+                <div class="top">
                     <div>
-                        <span class="eyebrow">Review queue · <?php echo count($insightQueue); ?> to review</span>
-                        <h2 id="queueTitle">
-                            <?php echo htmlspecialchars($insightTitle, ENT_QUOTES); ?>
-                        </h2>
+                        <h1 id="h1">Probationary overview</h1>
+                        <p class="sub">Track and evaluate employees approaching regularization.</p>
+                    </div>
+                    <div class="tr">
+                        <button type="button" class="btn txt" id="exportEvaluationsBtn">Export CSV</button>
+                        <a class="btn primary" href="add_employee.php" style="text-decoration:none;">
+                            + Add employee
+                        </a>
                     </div>
                 </div>
 
-                <?php if ($insightQueue): ?>
+                <?php if ($dashMessage !== ''): ?>
+                    <div class="alert alert-<?php echo $dashMessageType === 'error' ? 'error' : 'success'; ?>" role="status" style="margin-bottom:20px;">
+                        <?php echo htmlspecialchars($dashMessage, ENT_QUOTES); ?>
+                    </div>
+                <?php endif; ?>
 
-                        <ol class="insight-queue">
-                            <?php foreach ($insightQueue as $queuePos => $queueEntry): ?>
-                                <?php
-                                $queueUser = $queueEntry['user'];
-                                $queueTone = $queueEntry['tone'] ?? 'needs';
-                                $queueAi = $queueUser['aiPlan'] ?? null;
-                                $queueTop = is_array($queueAi) && is_array($queueAi['top'] ?? null)
-                                    ? $queueAi['top']
-                                    : null;
-                                $queueAssigned = !empty($queueUser['assignedTraining']);
-                                $queuePending = !$queueAssigned
-                                    && is_array($queueAi)
-                                    && ($queueAi['status'] ?? '') === 'pending_approval'
-                                    && $queueAi['hasRecs'];
-                                $queueApproved = !$queueAssigned
-                                    && is_array($queueAi)
-                                    && ($queueAi['status'] ?? '') === 'approved';
-                                ?>
-                                <li class="insight-queue-item tone-<?php echo htmlspecialchars($queueTone, ENT_QUOTES); ?>">
-                                    <div class="insight-queue-head">
-                                        <strong>
-                                            <?php
-                                            echo htmlspecialchars(
-                                                $queueUser['name'],
-                                                ENT_QUOTES
-                                            );
-                                            ?>
-                                        </strong>
-                                        <span class="insight-queue-gap">
-                                            <?php
-                                            echo number_format(
-                                                (float) $queueUser['score'],
-                                                1
-                                            );
-                                            ?>
-                                            /
-                                            <?php
-                                            echo number_format(
-                                                (float) ($queueUser['targetAvg'] ?? 4.2),
-                                                1
-                                            );
-                                            ?>
-                                            target
-                                        </span>
-                                        <form method="post" class="queue-dismiss-form">
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="action" value="queue_dismiss" />
-                                            <input type="hidden" name="uid"
-                                                value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
-                                            <button class="queue-dismiss-btn" type="submit"
-                                                aria-label="Dismiss <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?> from the review queue">
-                                                Dismiss
-                                            </button>
-                                        </form>
-                                    </div>
+                <!-- 1. 4 Square Stat Cards -->
+                <section class="stats" id="stats" aria-label="Key probationary metrics">
+                    <div class="st">
+                        <div class="l">Probationary</div>
+                        <div class="v num"><?php echo (int) $probationaryCount; ?></div>
+                        <div class="n">
+                            <?php echo $unratedCount > 0 ? (int) $unratedCount . ' without ratings' : 'All employees rated'; ?>
+                        </div>
+                    </div>
 
-                                    <div class="insight-actions">
+                    <div class="st">
+                        <div class="l">Due within 30 days</div>
+                        <div class="v num"><?php echo (int) $nearDeadlineCount; ?></div>
+                        <div class="n">
+                            <?php if ($nearestDeadlineDays !== null): ?>
+                                Next: <?php echo htmlspecialchars($nearestDeadlineName, ENT_QUOTES); ?>, <?php echo (int) $nearestDeadlineDays; ?> days
+                            <?php else: ?>
+                                None nearing deadline
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
-                                        <?php if ($queueAssigned): ?>
+                    <div class="st">
+                        <div class="l">Needs attention</div>
+                        <div class="v num" style="color:var(--bad)"><?php echo count($insightQueue); ?></div>
+                        <div class="n">
+                            <?php echo count($insightQueue) > 0 ? 'Intervention suggested' : 'All on track'; ?>
+                        </div>
+                    </div>
 
-                                            <button class="btn-primary" type="button" disabled>
-                                                Assigned
-                                            </button>
+                    <div class="st">
+                        <div class="l">Average score</div>
+                        <div class="v num" style="color:var(--ok)">
+                            <?php echo $overallPerformance !== null ? number_format($overallPerformance, 1) : '-'; ?><small style="font-size:14px;color:var(--mut);font-weight:400;margin-left:4px;">/ 5.0</small>
+                        </div>
+                        <div class="n">
+                            <?php echo (int) $scoredCount; ?> rated of <?php echo (int) $probationaryCount; ?>
+                        </div>
+                    </div>
+                </section>
 
-                                            <form method="post" style="margin-top:8px;"
-                                                data-confirm="Remove this training assignment? The employee keeps their ratings and AI plan.">
-                                                <?php echo csrf_field(); ?>
+                <!-- 2. Needs Your Attention Queue (Square Card) -->
+                <?php if (!empty($insightQueue) || !empty($dismissedQueue)): ?>
+                    <section class="cd" style="padding:20px;margin-bottom:24px;" aria-labelledby="queueHeading">
+                        <div class="sh" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <h2 id="queueHeading" style="font-size:18px;font-weight:600;margin:0;">Needs your attention</h2>
+                                <span class="pill status-pill-needs-review" style="font-weight:600;"><?php echo count($insightQueue); ?></span>
+                            </div>
+                        </div>
 
-                                                <input type="hidden" name="action" value="unassign_training" />
-
-                                                <input type="hidden" name="uid"
-                                                    value="<?php echo htmlspecialchars((string) ($queueUser['uid'] ?? ''), ENT_QUOTES); ?>" />
-
-                                                <button class="ghost-button" type="submit" style="width:100%;">
-                                                    Unassign
-                                                </button>
-
-                                            </form>
-
-                                        <?php elseif ($queuePending): ?>
-
-                                            <a class="btn-primary" style="width:100%; text-align:center;"
-                                                href="review_recommendations.php">
-                                                Review plan
-                                            </a>
-
-                                        <?php elseif ($queueApproved): ?>
-
-                                            <button class="btn-primary" type="button" disabled>
-                                                Published
-                                            </button>
-
-                                        <?php else: ?>
-
-                                            <a class="ghost-button" style="width:100%; text-align:center;"
-                                                href="rate_employee.php?employee=<?php echo urlencode((string) ($queueUser['uid'] ?? '')); ?>">
-                                                Rate to refresh
-                                            </a>
-
-                                        <?php endif; ?>
-
-                                    </div>
-
-                                    <details class="insight-rec">
-                                        <summary>Recommendation</summary>
-                                    <div class="recommendation-box">
-
-                                        <span class="recommendation-icon" aria-hidden="true">
-                                            <?php echo $icons['cap']; ?>
-                                        </span>
-
-                                        <div>
-
-                                            <?php if ($queueTop): ?>
-                                                <div class="recommendation-label">
-                                                    Recommended Action:
+                        <?php if (!empty($insightQueue)): ?>
+                            <div class="attention-list" role="list">
+                                <?php foreach ($insightQueue as $queueEntry): ?>
+                                    <?php
+                                    $queueUser = $queueEntry['user'];
+                                    $gap = (float) $queueEntry['gap'];
+                                    $score = (float) $queueUser['score'];
+                                    $target = (float) ($queueUser['targetAvg'] ?? 4.2);
+                                    $queueAi = $queueUser['aiPlan'] ?? null;
+                                    $queueTop = is_array($queueAi) && is_array($queueAi['top'] ?? null)
+                                        ? $queueAi['top']
+                                        : null;
+                                    $queueAssigned = !empty($queueUser['assignedTraining']);
+                                    $queuePending = !$queueAssigned
+                                        && is_array($queueAi)
+                                        && ($queueAi['status'] ?? '') === 'pending_approval'
+                                        && !empty($queueAi['hasRecs']);
+                                    $queueApproved = !$queueAssigned
+                                        && is_array($queueAi)
+                                        && ($queueAi['status'] ?? '') === 'approved';
+                                    ?>
+                                    <div class="attention-row" role="listitem" data-uid="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>">
+                                        <div class="attention-row-main">
+                                            <div class="attention-info">
+                                                <div class="av" aria-hidden="true"><?php echo htmlspecialchars($queueUser['initials'], ENT_QUOTES); ?></div>
+                                                <a href="employee_view.php?uid=<?php echo urlencode($queueUser['uid']); ?>" class="attention-name">
+                                                    <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?>
+                                                </a>
+                                                <div class="attention-metrics">
+                                                    <span class="score-vs-target num">
+                                                        <?php echo number_format($score, 1); ?> vs <?php echo number_format($target, 1); ?> target
+                                                    </span>
+                                                    <span class="metric-separator" aria-hidden="true">·</span>
+                                                    <span class="gap-danger num">-<?php echo number_format(abs($gap), 1); ?></span>
                                                 </div>
+                                            </div>
 
-                                                <strong>
-                                                    <?php
-                                                    echo htmlspecialchars(
-                                                        ucwords(
-                                                            str_replace(
-                                                                '_',
-                                                                ' ',
-                                                                (string) ($queueTop['competency_area'] ?? '')
-                                                            )
-                                                        ) . ' — ' . (string) ($queueTop['training_type'] ?? ''),
-                                                        ENT_QUOTES
-                                                    );
-                                                    ?>
-                                                </strong>
-
-                                                <?php if (!empty($queueTop['description'])): ?>
-                                                    <div class="microcopy">
-                                                        <?php
-                                                        echo htmlspecialchars(
-                                                            $queueTop['description'],
-                                                            ENT_QUOTES
-                                                        );
-                                                        ?>
-                                                    </div>
+                                            <div class="attention-actions">
+                                                <?php if ($queuePending): ?>
+                                                    <a href="review_recommendations.php" class="btn primary btn-sm" style="font-size:12.5px;padding:5px 12px;text-decoration:none;">
+                                                        Review plan
+                                                    </a>
+                                                <?php elseif ($queueAssigned): ?>
+                                                    <button type="button" class="btn txt btn-sm" disabled style="opacity:.6;">
+                                                        Assigned
+                                                    </button>
+                                                <?php elseif ($queueApproved): ?>
+                                                    <button type="button" class="btn txt btn-sm" disabled style="opacity:.6;">
+                                                        Published
+                                                    </button>
+                                                <?php else: ?>
+                                                    <a href="rate_employee.php?employee=<?php echo urlencode($queueUser['uid']); ?>" class="btn tint btn-sm" style="font-size:12.5px;padding:5px 12px;">
+                                                        Rate to refresh
+                                                    </a>
                                                 <?php endif; ?>
 
-                                                <div class="microcopy">
-                                                    <?php if (!empty($queueTop['timeline'])): ?>
-                                                        Timeline: <?php echo htmlspecialchars($queueTop['timeline'], ENT_QUOTES); ?> ·
-                                                    <?php endif; ?>
-                                                    Source: <?php echo htmlspecialchars(($queueAi['generated_by'] ?? '') === 'gemini_api' ? 'RF + Gemini' : 'system', ENT_QUOTES); ?>
-                                                    <?php echo htmlspecialchars($queueAi['model_version'] ?? '', ENT_QUOTES); ?>
-                                                </div>
-                                            <?php else: ?>
-                                                <?php
-                                                $queueErr = is_array($queueAi)
-                                                    ? (string) ($queueAi['error'] ?? '')
-                                                    : '';
-                                                $queueNoPlanReason = !is_array($queueAi)
-                                                    ? 'No AI plan on file yet — an employer rating generates one.'
-                                                    : (
-                                                        stripos($queueErr, '429') !== false ||
-                                                        stripos($queueErr, 'RESOURCE_EXHAUSTED') !== false ||
-                                                        stripos($queueErr, 'quota') !== false
-                                                        ? 'The AI service hit its usage quota for that cycle — re-submitting a rating regenerates the plan.'
-                                                        : 'The AI service was unavailable for that cycle — re-submitting a rating regenerates the plan.'
-                                                    );
-                                                ?>
-                                                <div class="recommendation-label">
-                                                    No AI plan yet
-                                                </div>
-
-                                                <div class="microcopy">
-                                                    <?php echo htmlspecialchars($queueNoPlanReason, ENT_QUOTES); ?>
-                                                </div>
-                                            <?php endif; ?>
-
+                                                <form method="post" class="queue-dismiss-inline-form" style="margin:0;display:inline;">
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="action" value="queue_dismiss" />
+                                                    <input type="hidden" name="uid" value="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>" />
+                                                    <button type="submit" class="btn x" aria-label="Dismiss <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?> from attention queue" title="Dismiss">&times;</button>
+                                                </form>
+                                            </div>
                                         </div>
 
+                                        <details class="attention-rec-disclosure">
+                                            <summary style="font-weight:500;">Recommendation</summary>
+                                            <div class="attention-rec-box">
+                                                <?php if ($queueTop): ?>
+                                                    <div class="rec-title">
+                                                        <strong>
+                                                            <?php
+                                                            echo htmlspecialchars(
+                                                                ucwords(str_replace('_', ' ', (string) ($queueTop['competency_area'] ?? ''))) .
+                                                                ' - ' . (string) ($queueTop['training_type'] ?? ''),
+                                                                ENT_QUOTES
+                                                            );
+                                                            ?>
+                                                        </strong>
+                                                    </div>
+                                                    <?php if (!empty($queueTop['description'])): ?>
+                                                        <p style="margin:4px 0 6px;color:var(--mut);font-size:12.5px;"><?php echo htmlspecialchars($queueTop['description'], ENT_QUOTES); ?></p>
+                                                    <?php endif; ?>
+                                                    <div style="font-size:11.5px;color:var(--mut);">
+                                                        <?php if (!empty($queueTop['timeline'])): ?>
+                                                            Timeline: <?php echo htmlspecialchars($queueTop['timeline'], ENT_QUOTES); ?> ·
+                                                        <?php endif; ?>
+                                                        Source: <?php echo htmlspecialchars(($queueAi['generated_by'] ?? '') === 'gemini_api' ? 'RF + Gemini' : (($queueAi['generated_by'] ?? '') === 'rf_only' ? 'RF only' : 'System'), ENT_QUOTES); ?>
+                                                        <?php echo htmlspecialchars($queueAi['model_version'] ?? '', ENT_QUOTES); ?>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <p style="margin:0;color:var(--mut);font-size:12.5px;">No AI plan on file yet. An employer rating generates one.</p>
+                                                <?php endif; ?>
+                                            </div>
+                                        </details>
                                     </div>
-                                    </details>
-
-                                </li>
-                            <?php endforeach; ?>
-                        </ol>
-                    <?php else: ?>
-
-                        <p id="insightText">
-                            <?php if ($anyScored): ?>
-                                No interventions needed — every rated employee meets their target.
-                            <?php else: ?>
-                                No employee has been rated yet. Insights will appear here once KPI ratings exist.
-                            <?php endif; ?>
-                        </p>
-
-                    <?php endif; ?>
-                <?php if (!empty($dismissedQueue)): ?>
-                <details class="queue-dismissed">
-                    <summary>Show dismissed (<?php echo count($dismissedQueue); ?>)</summary>
-                    <ol class="queue-grid queue-dismissed-list">
-                        <?php foreach ($dismissedQueue as $dismissedUser): ?>
-                        <li class="insight-queue-item">
-                            <div class="insight-queue-head">
-                                <strong>
-                                    <?php echo htmlspecialchars($dismissedUser['name'], ENT_QUOTES); ?>
-                                </strong>
-                                <?php if (!empty($dismissedUser['hasScore'])): ?>
-                                <span class="insight-queue-gap">
-                                    <?php echo number_format((float) $dismissedUser['score'], 1); ?>
-                                    /
-                                    <?php echo number_format((float) ($dismissedUser['targetAvg'] ?? 4.2), 1); ?>
-                                    target
-                                </span>
-                                <?php endif; ?>
+                                <?php endforeach; ?>
                             </div>
-                            <div class="insight-actions">
-                                <form method="post">
-                                    <?php echo csrf_field(); ?>
-                                    <input type="hidden" name="action" value="queue_restore" />
-                                    <input type="hidden" name="uid"
-                                        value="<?php echo htmlspecialchars((string) ($dismissedUser['uid'] ?? ''), ENT_QUOTES); ?>" />
-                                    <button class="ghost-button" type="submit" style="width:100%;">Restore</button>
-                                </form>
-                            </div>
-                        </li>
-                        <?php endforeach; ?>
-                    </ol>
-                </details>
+                        <?php endif; ?>
+
+                        <?php if (!empty($dismissedQueue)): ?>
+                            <details class="queue-dismissed-toggle" style="margin-top:12px;">
+                                <summary style="font-size:12.5px;color:var(--mut);cursor:pointer;">Show dismissed (<?php echo count($dismissedQueue); ?>)</summary>
+                                <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+                                    <?php foreach ($dismissedQueue as $dismissedUser): ?>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--hov);border-radius:4px;">
+                                            <span style="font-size:13px;"><?php echo htmlspecialchars($dismissedUser['name'], ENT_QUOTES); ?></span>
+                                            <form method="post" style="margin:0;">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="action" value="queue_restore" />
+                                                <input type="hidden" name="uid" value="<?php echo htmlspecialchars($dismissedUser['uid'], ENT_QUOTES); ?>" />
+                                                <button type="submit" class="btn txt" style="font-size:12px;padding:2px 6px;">Restore</button>
+                                            </form>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </details>
+                        <?php endif; ?>
+                    </section>
                 <?php endif; ?>
-            </section>
-            </section>
 
+                <!-- 3. Probationers Table Section (Square Card .cd.tbl) -->
+                <section class="cd tbl" aria-labelledby="probationersTitle">
+                    <div class="tb">
+                        <div class="seg" role="tablist" id="dashboardTabs" aria-label="Filter probationers by status">
+                            <button type="button" class="tab-chip" data-filter="all" role="tab" aria-selected="true">
+                                All <span class="num"><?php echo (int) $tabCounts['all']; ?></span>
+                            </button>
+                            <button type="button" class="tab-chip" data-filter="needs-review" role="tab" aria-selected="false">
+                                Needs review <span class="num"><?php echo (int) $tabCounts['needs-review']; ?></span>
+                            </button>
+                            <button type="button" class="tab-chip" data-filter="on-track" role="tab" aria-selected="false">
+                                On track <span class="num"><?php echo (int) $tabCounts['on-track']; ?></span>
+                            </button>
+                            <button type="button" class="tab-chip" data-filter="ready-for-reg" role="tab" aria-selected="false">
+                                Ready <span class="num"><?php echo (int) $tabCounts['ready-for-reg']; ?></span>
+                            </button>
+                            <button type="button" class="tab-chip" data-filter="due-soon" role="tab" aria-selected="false">
+                                Due soon <span class="num"><?php echo (int) $tabCounts['due-soon']; ?></span>
+                            </button>
+                        </div>
+
+                        <div class="f">
+                            <input type="search" id="dashboardSearch" placeholder="Search name or status..." autocomplete="off" aria-label="Search probationers" />
+                            <select id="dashboardSort" aria-label="Sort probationers">
+                                <option value="attention">Needs attention first</option>
+                                <option value="days-left">Fewest days left</option>
+                                <option value="score-asc">Lowest score</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="rw rh">
+                        <span>Employee</span>
+                        <span>Timeline (180 days)</span>
+                        <span>KPI score</span>
+                        <span>Status</span>
+                        <span style="text-align:right;">Action</span>
+                    </div>
+
+                    <div id="evaluationRows">
+                        <?php if (empty($evaluations)): ?>
+                            <div class="empty">
+                                No probationary employees found.
+                                <div style="margin-top:12px;">
+                                    <a class="btn primary" href="add_employee.php" style="text-decoration:none;">Add Employee</a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($evaluations as $employee): ?>
+                                <?php
+                                $dueDays = (int) ($employee['daysLeftValue'] ?? 0);
+                                $isDueSoon = ($dueDays > 0 && $dueDays <= 30);
+                                ?>
+                                <div class="row rw table-data-row" role="row"
+                                     data-uid="<?php echo htmlspecialchars($employee['uid'] ?? '', ENT_QUOTES); ?>"
+                                     data-search="<?php echo htmlspecialchars(strtolower($employee['name'] . ' ' . $employee['status']), ENT_QUOTES); ?>"
+                                     data-filter="<?php echo htmlspecialchars($employee['statusKey'], ENT_QUOTES); ?>"
+                                     data-due-soon="<?php echo $isDueSoon ? '1' : '0'; ?>"
+                                     data-days-left="<?php echo $dueDays; ?>"
+                                     data-score="<?php echo $employee['hasScore'] ? (float) $employee['score'] : -1; ?>">
+
+                                    <div class="e">
+                                        <div class="av" aria-hidden="true"><?php echo htmlspecialchars($employee['initials'], ENT_QUOTES); ?></div>
+                                        <div class="nm">
+                                            <b>
+                                                <a href="employee_view.php?uid=<?php echo urlencode($employee['uid']); ?>" class="employee-name-single">
+                                                    <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>
+                                                </a>
+                                            </b>
+                                            <span class="sm2"><?php echo htmlspecialchars($employee['role'] ?? 'Probationary', ENT_QUOTES); ?></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="tm">
+                                        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                                            <span class="timeline-day num sm2"><?php echo htmlspecialchars($employee['day'], ENT_QUOTES); ?></span>
+                                            <span class="timeline-left num sm2"><?php echo htmlspecialchars($employee['daysLeft'], ENT_QUOTES); ?></span>
+                                        </div>
+                                        <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo (int) $employee['progress']; ?>" aria-label="<?php echo (int) $employee['progress']; ?>% probation completed">
+                                            <div class="fill <?php echo $isDueSoon ? 'late' : ''; ?>" style="width: <?php echo (int) $employee['progress']; ?>%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="sc">
+                                        <?php if ($employee['hasScore']): ?>
+                                            <div style="display:flex;align-items:baseline;gap:4px;">
+                                                <strong class="score-num num" style="font-size:16px;"><?php echo number_format((float) $employee['score'], 1); ?></strong>
+                                                <span class="sm2 num">/ 5.0</span>
+                                            </div>
+                                            <div class="track" style="margin-top:4px;">
+                                                <div class="fill" style="width: <?php echo min(100, max(0, (int) round(((float)$employee['score'] / 5.0) * 100))); ?>%;"></div>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="sm2">No ratings yet</span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <div class="stt">
+                                        <span class="pill status-pill status-pill-<?php echo htmlspecialchars($employee['statusKey'], ENT_QUOTES); ?>">
+                                            <?php echo htmlspecialchars($employee['status'], ENT_QUOTES); ?>
+                                        </span>
+                                    </div>
+
+                                    <div class="act">
+                                        <a href="rate_employee.php?employee=<?php echo urlencode($employee['uid']); ?>" class="btn tint btn-rate-row" aria-label="Rate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>">
+                                            Rate
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="empty" id="noFilterMatches" hidden>
+                        No employees match this filter combination.
+                        <div style="margin-top: 10px;">
+                            <button class="btn txt" type="button" id="clearDashboardFilters">Clear filters</button>
+                        </div>
+                    </div>
+
+                    <div class="ft">
+                        <a class="btn txt" href="employees.php" style="text-decoration:none;">View all probationary staff &rarr;</a>
+                    </div>
+                </section>
+
+            </div>
         </main>
 
     </div>

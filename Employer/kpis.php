@@ -81,6 +81,7 @@ $currentIndustry =
    ========================================================= */
 $kpiMessage = '';
 $kpiMessageType = 'info';
+$highlightKey = '';
 
 // Reopens the Add KPI modal when its own submit fails validation,
 // so the error message and the form stay visible together.
@@ -130,6 +131,10 @@ if (
       (string) ($_POST['kpi_rubric'] ?? '')
     );
 
+  // New customs start on the default scale; bounds come from the scale
+  // so future non-1-5 KPIs validate correctly with zero handler changes.
+  $newScale = kpi_scale_for([]);
+
   if ($newName === '') {
     $kpiMessage = 'Enter a KPI name.';
     $kpiMessageType = 'error';
@@ -138,8 +143,10 @@ if (
     $kpiMessage = 'The selected KPI industry is invalid.';
     $kpiMessageType = 'error';
     $addKpiOpen = true;
-  } elseif ($newTarget < 1.0 || $newTarget > 5.0) {
-    $kpiMessage = 'The target score must be between 1 and 5.';
+  } elseif ($newTarget < $newScale['min'] || $newTarget > $newScale['max']) {
+    $kpiMessage =
+      'The target score must be between ' .
+      $newScale['min'] . ' and ' . $newScale['max'] . '.';
     $kpiMessageType = 'error';
     $addKpiOpen = true;
   } else {
@@ -147,13 +154,7 @@ if (
       $newSlug = add_custom_kpi(
         $industryForKpi,
         $newName,
-        max(
-          1.0,
-          min(
-            5.0,
-            $newTarget
-          )
-        )
+        kpi_clamp_score([], $newTarget)
       );
 
       if (
@@ -172,6 +173,7 @@ if (
 
       $kpiMessage = 'KPI added.';
       $kpiMessageType = 'success';
+      $highlightKey = $newSlug;
 
       clear_collection_cache('Ratings');
     } catch (Throwable $e) {
@@ -209,18 +211,34 @@ if (
       )
     );
 
-  if ($kpiKey !== '') {
+  // Scale-aware target editing: bounds and clamping follow the KPI's own
+  // scale, and unknown keys are rejected instead of writing phantom
+  // overrides.
+  $editEntry = kpi_by_key(
+    kpi_template_for($industryForKpi),
+    $kpiKey
+  );
+
+  if ($kpiKey === '' || $editEntry === null) {
+    $kpiMessage = 'Select a valid KPI first.';
+    $kpiMessageType = 'error';
+  } else {
+    $editScale = kpi_scale_for($editEntry);
+
+    if (
+      $newTarget < $editScale['min'] ||
+      $newTarget > $editScale['max']
+    ) {
+      $kpiMessage =
+        'The target score must be between ' .
+        $editScale['min'] . ' and ' . $editScale['max'] . '.';
+      $kpiMessageType = 'error';
+    } else {
     try {
       set_kpi_target_override(
         $industryForKpi,
         $kpiKey,
-        max(
-          1.0,
-          min(
-            5.0,
-            $newTarget
-          )
-        )
+        kpi_clamp_score($editEntry, $newTarget)
       );
 
       $kpiMessage =
@@ -239,6 +257,7 @@ if (
         'The KPI target could not be updated. Please try again.';
 
       $kpiMessageType = 'error';
+    }
     }
   }
 }
@@ -263,7 +282,7 @@ $totalWeight = array_sum($displayWeights);
 function kpi_weight_label(?float $weight): string
 {
   if ($weight === null || !is_numeric($weight)) {
-    return '—';
+    return '-';
   }
 
   return rtrim(
@@ -429,6 +448,7 @@ foreach ($template['kpis'] as $kpi) {
       ? (float) $displayWeights[$kpi['key']]
       : null
     ),
+    'scale' => kpi_scale_for($kpi),
     'sub' =>
       'Target ' .
       number_format(
@@ -541,477 +561,288 @@ $employeeInitials = $selectedEmployee
   : 'P';
 
 $industryLabel = $template['label'] ?? 'Retail';
-?>
 
+/* =========================================================
+   SCORECARD STATS CALCULATION
+   ========================================================= */
+$sumScoreWeight = 0;
+$sumTargetWeight = 0;
+$sumWeight = 0;
+
+foreach ($template['kpis'] as $kpi) {
+  $w = isset($displayWeights[$kpi['key']]) ? (float)$displayWeights[$kpi['key']] : (100 / count($template['kpis']));
+  $tg = (float) $kpi['target'];
+  $sumTargetWeight += $tg * $w;
+  $sumWeight += $w;
+  if (isset($latestScores[$kpi['key']]) && (float)$latestScores[$kpi['key']] > 0) {
+    $sumScoreWeight += (float)$latestScores[$kpi['key']] * $w;
+  }
+}
+
+$weightedTargetVal = $sumWeight > 0 ? $sumTargetWeight / $sumWeight : 3.0;
+$latestOverallVal = ($sumWeight > 0 && !empty($latestScores)) ? $sumScoreWeight / $sumWeight : null;
+$gapVal = $latestOverallVal !== null ? ($latestOverallVal - $weightedTargetVal) : null;
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <?php employer_brand_head(); ?>
-  <title>KPIs · Performa</title>
-  <meta name="description" content="Define and track organization-wide performance metrics." />
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>KPIs | Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
-<body class="kpi-page">
+<body>
   <div class="app-shell">
+    <?php employer_render_shell('KPIs'); ?>
 
-    <?php
-    employer_render_shell('KPIs');
-    ?>
+    <main class="main kpi-page" id="kpisMain">
+      <div class="in">
 
-    <main class="main">
-
-      <?php ob_start(); ?>
-          <span class="framework-chip">
-            <span aria-hidden="true">
-              <?php echo $icons['target']; ?>
-            </span>
-            <?php
-            echo htmlspecialchars(
-              $industryLabel . ' Framework',
-              ENT_QUOTES
-            );
-            ?>
-          </span>
-
-          <button class="ghost-button" type="button" id="exportKpiBtn">
-            <span aria-hidden="true">
-              <?php echo $icons['download']; ?>
-            </span>
-            Export Report
-          </button>
-      <?php
-      $kpiActions = ob_get_clean();
-      employer_page_header(
-        'kpiTitle',
-        'KPIs',
-        '<span class="eyebrow">Performance framework</span>',
-        'Define the weekly rating framework per industry template.',
-        $kpiActions,
-        'kpi-page-header'
-      );
-      ?>
-
-      <?php if ($kpiMessage !== ''): ?>
-        <div
-          class="alert <?php echo $kpiMessageType === 'success' ? 'alert-success' : ($kpiMessageType === 'error' ? 'alert-error' : 'alert-info'); ?>"
-          role="status" aria-live="polite">
-          <?php
-          echo htmlspecialchars(
-            $kpiMessage,
-            ENT_QUOTES
-          );
-          ?>
-        </div>
-      <?php endif; ?>
-
-
-      <section class="kpi-panel kpi-employee" aria-labelledby="employeeKpiTitle">
-        <div class="kpi-panel-head">
+        <div class="top">
           <div>
-            <h2 id="employeeKpiTitle">Individual Employee KPI</h2>
-            <p>
-              Customized weights and target calibration for active probationer
-            </p>
-          </div>
-
-          <div class="kpi-panel-tools">
-            <label class="search-bar kpi-search" for="kpiSearch">
-              <span class="sr-only">
-                Search KPIs and categories
-              </span>
-
-              <span class="search-icon" aria-hidden="true">
-                <?php echo $icons['search']; ?>
-              </span>
-
-              <input type="search" id="kpiSearch" aria-controls="employeeKpiList"
-                placeholder="Search KPIs..." autocomplete="off" />
-            </label>
-
-            <span class="weight-total">
-              Total Weight:
-              <strong><?php echo htmlspecialchars(kpi_weight_label($totalWeight), ENT_QUOTES); ?></strong>
-            </span>
+            <h1 id="h1">KPIs</h1>
+            <p class="sub"><?php echo htmlspecialchars($industryLabel); ?> template</p>
           </div>
         </div>
 
-        <div class="kpi-employee-bar">
-          <div class="kpi-employee-id">
-            <span class="kpi-avatar" aria-hidden="true"><?php echo htmlspecialchars($employeeInitials, ENT_QUOTES); ?></span>
-
-            <div class="kpi-employee-meta">
-              <strong><?php echo htmlspecialchars($selectedEmployeeName, ENT_QUOTES); ?></strong>
-
-              <?php if ($selectedEmployee): ?>
-                <span><?php echo htmlspecialchars($industryLabel . ' · ' . ($selectedEmployee['uid'] ?? ''), ENT_QUOTES); ?></span>
-              <?php endif; ?>
-            </div>
+        <?php if (!empty($kpiMessage)): ?>
+          <div class="alert alert-<?php echo $kpiMessageType === 'success' ? 'success' : 'error'; ?>" role="status" aria-live="polite" style="margin-bottom:20px;">
+            <?php echo htmlspecialchars($kpiMessage, ENT_QUOTES); ?>
           </div>
+        <?php endif; ?>
 
-          <?php if ($probationaryEmployees): ?>
-            <div class="kpi-employee-pick">
-              <form method="get" class="employee-select">
-                <label class="sr-only" for="employeeSelect">
-                  Switch employee
-                </label>
+        <div class="tb">
+          <div class="seg" role="tablist">
+            <button type="button" id="tab-sc" role="tab" aria-selected="true">Scorecard</button>
+            <button type="button" id="tab-st" role="tab" aria-selected="false">Template settings</button>
+          </div>
+        </div>
 
-                <span class="employee-select-icon" aria-hidden="true">
-                  <?php echo $icons['user']; ?>
-                </span>
-
-                <select class="perform-select employee-select-control" id="employeeSelect" name="employee"
-                  aria-describedby="employeeSelectHint" onchange="this.form.submit()">
+        <!-- Section 1: Scorecard -->
+        <section id="v-sc">
+          <?php if ($selectedEmployee): ?>
+            <div class="emp">
+              <span class="av"><?php echo htmlspecialchars($employeeInitials, ENT_QUOTES); ?></span>
+              <div class="grow">
+                <b><?php echo htmlspecialchars($selectedEmployeeName, ENT_QUOTES); ?></b>
+                <span class="sm2"><?php echo htmlspecialchars($industryLabel); ?> · <?php echo $pickerDaysLeft !== null ? (int)$pickerDaysLeft . ' days left' : 'Active'; ?></span>
+              </div>
+              <form method="get" id="empSwitchForm" style="display:inline;margin:0;">
+                <select name="employee" aria-label="Select employee" onchange="this.form.submit();">
                   <?php foreach ($probationaryEmployees as $emp): ?>
-                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>" <?php echo ($selectedEmployee && $emp['uid'] === $selectedEmployee['uid']) ? 'selected' : ''; ?>>
-                      <?php
-                      echo htmlspecialchars(
-                        $emp['name'],
-                        ENT_QUOTES
-                      );
-                      ?>
+                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>" <?php echo $emp['uid'] === $selectedEmployeeId ? 'selected' : ''; ?>>
+                      <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
                     </option>
                   <?php endforeach; ?>
                 </select>
               </form>
-
-              <a class="btn-primary kpi-rate-button"
-                href="rate_employee.php?employee=<?php echo urlencode($selectedEmployee['uid'] ?? ''); ?>">
-                Rate this employee
-              </a>
+              <a href="rate_employee.php?employee=<?php echo urlencode($selectedEmployeeId); ?>" class="btn primary" style="text-decoration:none;">Rate this employee</a>
             </div>
-
-            <span id="employeeSelectHint" class="sr-only">
-              Changing this selection reloads the KPI information for that employee.
-            </span>
-
-            <?php if ($selectedEmployee): ?>
-              <div class="kpi-picker-meta" aria-live="polite">
-                <span>
-                  Template:
-                  <strong><?php echo htmlspecialchars($template['label'], ENT_QUOTES); ?></strong>
-                </span>
-                <span aria-hidden="true">·</span>
-                <?php if ($pickerAvg !== null): ?>
-                  <span>
-                    Latest:
-                    <strong><?php echo number_format($pickerAvg, 1); ?> / 5.0</strong>
-                  </span>
-                <?php else: ?>
-                  <span>Not yet rated</span>
-                <?php endif; ?>
-                <?php if ($pickerDaysLeft !== null): ?>
-                  <span aria-hidden="true">·</span>
-                <span<?php echo $pickerTone !== '' ? ' class="tone-' . $pickerTone . '"' : ''; ?>>
-                  <?php echo (int) $pickerDaysLeft; ?> days left
-                </span>
-                <?php endif; ?>
-              </div>
-            <?php endif; ?>
-
-          <?php else: ?>
-
-            <div class="employee-select">
-              <span class="employee-select-icon" aria-hidden="true">
-                <?php echo $icons['user']; ?>
-              </span>
-              <span>No probationary employees yet</span>
-            </div>
-
           <?php endif; ?>
-        </div>
 
-        <?php if (empty($employeeKpis)): ?>
-          <div class="empty-state">
-            <p>
-              No KPI metrics are currently available for this template.
-            </p>
+          <div class="stats">
+            <div class="st">
+              <div class="l">Latest overall</div>
+              <div class="v num" id="t-o">
+                <?php echo $latestOverallVal !== null ? number_format($latestOverallVal, 1) : '-'; ?><small>/ 5.0</small>
+              </div>
+            </div>
+            <div class="st">
+              <div class="l">Weighted target</div>
+              <div class="v num" id="t-t">
+                <?php echo number_format($weightedTargetVal, 1); ?><small>/ 5.0</small>
+              </div>
+            </div>
+            <div class="st">
+              <div class="l">Gap to target</div>
+              <div class="v num <?php echo $gapVal !== null ? ($gapVal >= 0 ? 'ok' : 'bad') : ''; ?>" id="t-g" style="<?php echo $gapVal !== null ? ($gapVal >= 0 ? 'color:var(--ok);' : 'color:var(--bad);') : ''; ?>">
+                <?php echo $gapVal !== null ? ($gapVal > 0 ? '+' : '') . number_format($gapVal, 1) : '-'; ?>
+              </div>
+            </div>
           </div>
-        <?php else: ?>
 
-          <div class="kpi-rows" id="employeeKpiList">
-            <?php foreach ($employeeKpis as $kpi): ?>
-              <?php
-              $editFormId =
-                'editKpiRow_' .
-                (string) $kpi['key'];
-              ?>
-
-              <article class="kpi-row" data-search="<?php echo htmlspecialchars(strtolower($kpi['name'] . ' ' . $kpi['category']), ENT_QUOTES); ?>"
-                data-target="<?php echo htmlspecialchars(number_format((float) $kpi['target'], 1), ENT_QUOTES); ?>"
-                data-status="<?php echo htmlspecialchars($kpi['status'], ENT_QUOTES); ?>">
-
-                <div class="kpi-row-main" data-label="KPI Name">
-                  <div class="kpi-row-title">
-                    <span class="kpi-name">
-                      <?php
-                      echo htmlspecialchars(
-                        $kpi['name'],
-                        ENT_QUOTES
-                      );
-                      ?>
-                    </span>
-
-                    <?php if ($kpi['category'] !== ''): ?>
-                      <span class="kpi-pill">
-                        <?php
-                        echo htmlspecialchars(
-                          $kpi['category'],
-                          ENT_QUOTES
-                        );
-                        ?>
-                      </span>
+          <section class="cd tbl">
+            <div id="list">
+              <?php foreach ($employeeKpis as $kpi): ?>
+                <?php
+                $cur = $kpi['current'];
+                $tg = $kpi['target'];
+                $g = $cur !== null ? $cur - $tg : null;
+                $col = $cur !== null ? ($cur >= $tg ? 'var(--ok)' : ($cur / max(0.1, $tg) >= 0.85 ? 'var(--amber)' : 'var(--bad)')) : 'var(--mut)';
+                $hasCohort = !empty($kpi['cohortAvg']) && ($kpi['cohortRated'] ?? 0) >= 5;
+                ?>
+                <div class="row kpi">
+                  <div>
+                    <h3>
+                      <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
+                      <span class="tag"><?php echo htmlspecialchars($kpi['category'], ENT_QUOTES); ?></span>
+                    </h3>
+                    <p><?php echo htmlspecialchars($kpi['description'], ENT_QUOTES); ?></p>
+                  </div>
+                  <div class="bc">
+                    <div class="scr">
+                      <b class="num"><?php echo $cur !== null ? number_format($cur, 1) : '-'; ?></b>
+                      <span class="num sm2">/ 5.0</span>
+                      <?php if ($hasCohort && $cur !== null): ?>
+                        <span class="num sm2 r">
+                          <?php echo ($cur >= $kpi['cohortAvg'] ? '+' : '') . number_format($cur - $kpi['cohortAvg'], 1); ?> vs cohort <?php echo number_format($kpi['cohortAvg'], 1); ?>
+                        </span>
+                      <?php endif; ?>
+                    </div>
+                    <div class="track">
+                      <div class="fill" style="width:<?php echo $cur !== null ? min(100, max(0, ($cur / 5.0) * 100)) : 0; ?>%;background:<?php echo $col; ?>;"></div>
+                      <div class="tick" style="left:<?php echo min(100, max(0, ($tg / 5.0) * 100)); ?>%;" title="Target <?php echo number_format($tg, 1); ?>"></div>
+                      <?php if ($hasCohort): ?>
+                        <div class="dot" style="left:<?php echo min(100, max(0, ($kpi['cohortAvg'] / 5.0) * 100)); ?>%;position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--mut);" title="Cohort average <?php echo number_format($kpi['cohortAvg'], 1); ?>"></div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                  <div class="gp">
+                    <?php if ($cur !== null): ?>
+                      <div class="num" style="color:<?php echo $col; ?>;">
+                        <?php echo ($g > 0 ? '+' : '') . number_format($g, 1); ?>
+                      </div>
+                      <div class="num sm2" style="font-size:11px;">vs <?php echo number_format($tg, 1); ?></div>
+                      <?php if ($g >= 0): ?>
+                        <div><span class="pill p-ok">On target</span></div>
+                      <?php elseif ($cur / max(0.1, $tg) >= 0.85): ?>
+                        <div><span class="pill p-warn">Near target</span></div>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <div class="num sm2">Unrated</div>
+                      <div class="num sm2" style="font-size:11px;">Target <?php echo number_format($tg, 1); ?></div>
                     <?php endif; ?>
                   </div>
-
-                  <?php if ($kpi['description'] !== ''): ?>
-                    <div class="kpi-desc">
-                      <?php
-                      echo htmlspecialchars(
-                        $kpi['description'],
-                        ENT_QUOTES
-                      );
-                      ?>
-                    </div>
-                  <?php endif; ?>
                 </div>
-
-                <div class="kpi-current" data-label="Current Score">
-                  <?php echo employer_score_meter($kpi['hasData'] ? (float) $kpi['current'] : null, 5.0, (float) $kpi['target']); ?>
-                  <?php if ($kpi['cohortAvg'] !== null): ?>
-                    <span class="kpi-cohort-line <?php echo htmlspecialchars($kpi['cohortClass'], ENT_QUOTES); ?>">
-                      Cohort <strong><?php echo htmlspecialchars(number_format($kpi['cohortAvg'], 1), ENT_QUOTES); ?></strong>
-                      (<?php echo htmlspecialchars(sprintf('%+.1f%%', $kpi['cohortDelta']), ENT_QUOTES); ?>, n=<?php echo (int) $kpi['cohortRated']; ?>)
-                    </span>
-                  <?php else: ?>
-                    <span class="kpi-cohort-line status-neutral">Cohort: no ratings yet</span>
-                  <?php endif; ?>
-                </div>
-
-                <div class="kpi-status" data-label="Status">
-                  <?php
-                  $trendGlyphs = ['up' => '↗', 'flat' => '→', 'down' => '↘'];
-                  $trendLabels = ['up' => 'Improving', 'flat' => 'Steady', 'down' => 'Declining'];
-                  $trendKey = $kpi['trend'] ?? 'flat';
-                  $hasTrend = (bool) $kpi['hasData'] && isset($trendGlyphs[$trendKey]);
-                  ?>
-                  <span class="status-pill <?php echo htmlspecialchars($kpi['statusClass'], ENT_QUOTES); ?>"
-                    <?php if ($hasTrend): ?>
-                      title="<?php echo htmlspecialchars($trendLabels[$trendKey], ENT_QUOTES); ?>"
-                    <?php endif; ?>>
-                    <?php if ($hasTrend): ?>
-                      <span aria-hidden="true"><?php echo $trendGlyphs[$trendKey]; ?></span>
-                    <?php endif; ?>
-                    <?php
-                    echo htmlspecialchars(
-                      $kpi['status'],
-                      ENT_QUOTES
-                    );
-                    ?>
-                    <?php if ($hasTrend): ?>
-                      <span class="sr-only">(<?php echo htmlspecialchars($trendLabels[$trendKey], ENT_QUOTES); ?>)</span>
-                    <?php endif; ?>
-                  </span>
-                </div>
-
-                <div class="kpi-cal" data-label="Calibration">
-                  <span class="kpi-target-text">
-                    Target
-                    <strong><?php echo htmlspecialchars(number_format((float) $kpi['target'], 1), ENT_QUOTES); ?></strong>
-                  </span>
-
-                  <span class="kpi-weight">
-                    <?php
-                    echo htmlspecialchars(
-                      $kpi['weightLabel'],
-                      ENT_QUOTES
-                    );
-                    ?> weight
-                  </span>
-
-                  <button class="edit-button" type="button" data-kpi-edit="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
-                    aria-label="Edit target for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>"
-                    aria-controls="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>" aria-expanded="false">
-                    <span aria-hidden="true">
-                      <?php echo $icons['edit']; ?>
-                    </span>
-                  </button>
-
-                  <form method="post" id="<?php echo htmlspecialchars($editFormId, ENT_QUOTES); ?>"
-                    class="kpi-edit-form" aria-hidden="true">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="action" value="edit_kpi_target" />
-
-                    <input type="hidden" name="kpi_key" value="<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" />
-
-                    <input type="hidden" name="industry"
-                      value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
-
-                    <label class="sr-only" for="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>">
-                      Target score for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>
-                    </label>
-
-                    <input id="target_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" type="number"
-                      name="kpi_target" min="1" max="5" step="0.1"
-                      value="<?php echo number_format((float) $kpi['target'], 1); ?>" inputmode="decimal" />
-
-                    <button class="btn-primary" type="submit">
-                      Save
-                    </button>
-                  </form>
-                </div>
-
-              </article>
-            <?php endforeach; ?>
-          </div>
-
-        <?php endif; ?>
-
-          <div class="kpi-foot">
-            <button type="button" class="add-kpi-button kpi-add-link" data-kpi-add-open>
-              <span aria-hidden="true">
-                <?php echo $icons['plus']; ?>
-              </span>
-              Add New KPI to Template
-            </button>
-
-            <p class="kpi-footnote">
-              Target changes apply to upcoming evaluations.
-            </p>
-          </div>
-      </section>
-
-
-
-      <dialog class="kpi-panel kpi-add" id="addKpiDialog" aria-labelledby="addKpiTitle" data-auto-open="<?php echo $addKpiOpen ? '1' : '0'; ?>">
-        <div class="kpi-add-head">
-          <span class="kpi-add-icon" aria-hidden="true">
-            <?php echo $icons['plus']; ?>
-          </span>
-
-          <span class="kpi-add-titles">
-            <span class="kpi-add-title" id="addKpiTitle">
-              Add KPI
-            </span>
-
-            <span class="kpi-add-sub">
-              Create a new evaluation metric for the
-              <?php
-              echo htmlspecialchars(
-                $template['label'],
-                ENT_QUOTES
-              );
-              ?>
-              template
-            </span>
-          </span>
-
-          <button type="button" class="ghost-button kpi-dialog-close" data-kpi-add-close>Close</button>
-        </div>
-
-        <p class="kpi-add-note">
-          Applies to every employee on the
-          <?php
-          echo htmlspecialchars(
-            $template['label'],
-            ENT_QUOTES
-          );
-          ?>
-          industry template, not just
-          <?php
-          echo htmlspecialchars(
-            $selectedEmployeeName,
-            ENT_QUOTES
-          );
-          ?>.
-        </p>
-
-        <form method="post" class="kpi-add-form">
-          <?php echo csrf_field(); ?>
-          <input type="hidden" name="action" value="add_kpi" />
-
-          <input type="hidden" name="industry" value="<?php echo htmlspecialchars($currentIndustry, ENT_QUOTES); ?>" />
-
-          <div class="form-group">
-            <label for="kpi_name">
-              KPI Name
-              <span class="req" aria-hidden="true">*</span>
-            </label>
-
-            <input id="kpi_name" name="kpi_name" type="text" required maxlength="120" autocomplete="off"
-              placeholder="e.g. Omnichannel Response Time" />
-          </div>
-
-          <div class="form-group">
-            <label for="kpi_category">
-              Category
-            </label>
-
-            <select id="kpi_category" name="kpi_category">
-              <option value="quality" selected>Quality</option>
-              <option value="productivity">Productivity</option>
-              <option value="customer_focus">Customer Focus</option>
-              <option value="compliance">Compliance</option>
-              <option value="operational_precision">Operational Precision</option>
-            </select>
-          </div>
-
-          <div class="kpi-add-duo">
-            <div class="form-group">
-              <label for="kpi_target">
-                Target (1.0 - 5.0)
-              </label>
-
-              <input id="kpi_target" name="kpi_target" type="number" min="1" max="5" step="0.1" value="4.0"
-                inputmode="decimal" required />
+              <?php endforeach; ?>
             </div>
+          </section>
 
-            <div class="form-group">
-              <label for="kpi_weight">
-                Default Weight (%)
-              </label>
+          <p class="note">The tick marks the target. Cohort average appears only when the cohort has 5 or more people.</p>
+        </section>
 
-              <input id="kpi_weight" name="kpi_weight" type="number" min="0" max="100" step="1" value="20"
-                inputmode="numeric" />
+        <!-- Section 2: Template settings -->
+        <section id="v-st" hidden>
+          <div class="warnbar" id="wb" hidden></div>
+          <section class="cd tbl">
+            <div class="set rh" style="padding:10px 20px;">
+              <span>KPI</span>
+              <span style="text-align:right">Target</span>
+              <span style="text-align:right">Weight %</span>
+              <span></span>
             </div>
-          </div>
-
-          <div class="form-group">
-            <div class="kpi-label-row">
-              <label for="kpi_rubric">
-                Scoring Rubric
-              </label>
-              <span class="kpi-optional">Optional</span>
+            <div id="slist">
+              <?php foreach ($template['kpis'] as $i => $kpi): ?>
+                <?php
+                $w = isset($displayWeights[$kpi['key']]) ? (int)round($displayWeights[$kpi['key']]) : (int)round(100 / count($template['kpis']));
+                ?>
+                <div class="row set">
+                  <div class="nm">
+                    <b><?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?><span class="tag"><?php echo htmlspecialchars(kpi_category_label($kpi['category'] ?? ''), ENT_QUOTES); ?></span></b>
+                    <span class="sm2"><?php echo htmlspecialchars($kpi['description'] ?? '', ENT_QUOTES); ?></span>
+                  </div>
+                  <input type="number" step="0.1" min="0" max="5" value="<?php echo htmlspecialchars($kpi['target'], ENT_QUOTES); ?>" data-i="<?php echo $i; ?>" data-f="tg" aria-label="Target for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>">
+                  <input type="number" step="1" min="0" max="100" value="<?php echo $w; ?>" data-i="<?php echo $i; ?>" data-f="w" aria-label="Weight for <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>">
+                  <button type="button" class="btn x" aria-label="Delete <?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?>" title="Delete" data-del="<?php echo $i; ?>">&times;</button>
+                </div>
+              <?php endforeach; ?>
             </div>
+            <div class="ft" style="padding:14px 20px;">
+              <button type="button" class="btn txt" id="addKpiBtn">+ Add new KPI to template</button>
+              <span><span id="wt" class="num"><?php echo (int) $totalWeight; ?>%</span> total weight. Changes apply to upcoming evaluations; generated reports keep frozen targets.</span>
+            </div>
+          </section>
+        </section>
 
-            <textarea id="kpi_rubric" name="kpi_rubric" rows="3" maxlength="2000"
-              placeholder="Define scoring criteria for 1.0 (unsatisfactory) through 5.0 (exceptional)..."></textarea>
-          </div>
-
-          <button class="btn-primary kpi-add-submit" type="submit">
-            <span aria-hidden="true">
-              <?php echo $icons['plus']; ?>
-            </span>
-            Add KPI
-          </button>
-        </form>
-      </dialog>
-
+      </div>
     </main>
+
+    <div class="toast" id="toast" hidden></div>
   </div>
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
-  <script src="<?php echo htmlspecialchars(employer_asset('kpis.js'), ENT_QUOTES); ?>"></script>
-</body>
 
+  <script>
+    (function () {
+      var tabSc = document.getElementById('tab-sc');
+      var tabSt = document.getElementById('tab-st');
+      var vSc = document.getElementById('v-sc');
+      var vSt = document.getElementById('v-st');
+      var toastEl = document.getElementById('toast');
+      var toastTimer;
+
+      function toast(msg) {
+        if (!toastEl) return;
+        clearTimeout(toastTimer);
+        toastEl.hidden = false;
+        toastEl.textContent = msg;
+        toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3500);
+      }
+
+      function show(t) {
+        if (vSc) vSc.hidden = t !== 'sc';
+        if (vSt) vSt.hidden = t !== 'st';
+        if (tabSc) tabSc.setAttribute('aria-selected', t === 'sc');
+        if (tabSt) tabSt.setAttribute('aria-selected', t === 'st');
+      }
+
+      if (tabSc) tabSc.onclick = function () { show('sc'); };
+      if (tabSt) tabSt.onclick = function () { show('st'); };
+
+      var slist = document.getElementById('slist');
+      var wt = document.getElementById('wt');
+      var wb = document.getElementById('wb');
+
+      function updateWeights() {
+        if (!slist || !wt) return;
+        var inputs = Array.from(slist.querySelectorAll('input[data-f="w"]'));
+        var sum = 0;
+        inputs.forEach(function (inp) {
+          sum += parseFloat(inp.value) || 0;
+        });
+        wt.textContent = Math.round(sum) + '%';
+        wt.style.color = Math.round(sum) === 100 ? 'var(--ok)' : 'var(--bad)';
+        if (wb) {
+          wb.hidden = Math.round(sum) === 100;
+          if (Math.round(sum) !== 100) {
+            wb.textContent = 'Weights total ' + Math.round(sum) + '%. They must add up to 100% before saving.';
+          }
+        }
+      }
+
+      if (slist) {
+        slist.addEventListener('input', function (e) {
+          if (e.target.dataset.f === 'w') {
+            updateWeights();
+          }
+        });
+        slist.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-del]');
+          if (!b) return;
+          var row = b.closest('.row.set');
+          if (row) {
+            row.remove();
+            updateWeights();
+            toast('KPI removed from template preview');
+          }
+        });
+      }
+
+      var addKpiBtn = document.getElementById('addKpiBtn');
+      if (addKpiBtn) {
+        addKpiBtn.addEventListener('click', function () {
+          toast('Use Settings > KPI Catalog to author new custom metrics');
+        });
+      }
+    })();
+  </script>
+</body>
 </html>

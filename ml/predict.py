@@ -7,7 +7,8 @@ Manuscript alignment (Final Manuscript Sept 2026, P.121 + P.272):
 - RF predicts OVERALL month class + calibrated probability via predict_proba.
 - Per-competency gaps via classify_score(score, target) with target-0.8 buffer
   (aligns with kpi_templates.php::kpi_status_for_score).
-- weak_categories = per-competency needs/critical -> passed to Gemini.
+- weak_categories = per-competency needs/critical -> RF-owned training picks
+-   (rf_recommendations from training_catalog, never LLM-authored).
 - Gini + permutation importances returned for Article 296 audit trail.
 - Returns overall_prediction + per-competency breakdown (no hardcoded probs).
 """
@@ -47,6 +48,11 @@ except ImportError:
         classify_score,
         get_weak_categories,
     )
+
+try:
+    from training_catalog import rf_recommendations as _rf_picks
+except ImportError:
+    from ml.training_catalog import rf_recommendations as _rf_picks
 
 # Industry KPI key -> canonical competency (covers all 5 templates + canonical names)
 KEY_ALIASES: Dict[str, str] = {
@@ -132,6 +138,7 @@ def _threshold_fallback(normalized: Dict[str, float], targets: Dict[str, float],
         from ml.labels import overall_label_from_per_category, per_category_labels
     per_labels = per_category_labels(normalized, targets)
     overall = overall_label_from_per_category(per_labels)
+    weak_fb = get_weak_categories(per_labels)
     per_comp: Dict[str, dict] = {}
     for cat in COMPETENCY_CATEGORIES:
         score = float(normalized[cat])
@@ -157,7 +164,8 @@ def _threshold_fallback(normalized: Dict[str, float], targets: Dict[str, float],
             "fallback_reason": reason,
         },
         "competency_classification": per_comp,
-        "weak_categories": get_weak_categories(per_labels),
+        "weak_categories": weak_fb,
+        "rf_recommendations": _rf_picks(weak_fb, per_labels),
         "model_version": MODEL_VERSION + "+threshold-fallback",
         "model_params": {},
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -236,6 +244,10 @@ def predict_competencies(
 
     weak = get_weak_categories(per_labels)
 
+    # RF-owned picks: the intervention choice lives in training_catalog,
+    # never in LLM text. Gemini downstream only writes rationales.
+    rf_picks = _rf_picks(weak, per_labels)
+
     return {
         "employee_uid": employee_uid,
         "evaluation_month": evaluation_month,
@@ -250,6 +262,7 @@ def predict_competencies(
         },
         "competency_classification": per_comp,
         "weak_categories": weak,
+        "rf_recommendations": rf_picks,
         "model_version": bundle.get("version", MODEL_VERSION),
         "model_params": bundle.get("params", {}),
         "generated_at": datetime.now(timezone.utc).isoformat(),

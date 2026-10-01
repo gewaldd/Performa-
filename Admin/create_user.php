@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../firebase_init.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../security_utils.php';
+require_once __DIR__ . '/../mailer.php';
 require_once __DIR__ . '/../audit_log.php';
 
 require_login();
@@ -15,15 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $role = $_POST['role'] ?? '';
     $industry = trim((string) ($_POST['industry'] ?? 'retail'));
-    $password = trim($_POST['password'] ?? '');
 
     if (!$name || !$email || !$role) {
         $message = 'Name, email and role are required.';
     } elseif ($role === 'probationary_employee' && !array_key_exists($industry, kpi_templates())) {
         $message = 'Please select a valid industry for the probationary employee.';
     } else {
-        if (!$password)
-            $password = bin2hex(random_bytes(6));
+        // Always server-generated (same generator as the employer flow):
+        // a human-chosen "temporary password" defeats the forced rotation.
+        $password = generate_secure_password(12);
         try {
             $uid = identitytoolkit_create_user($name, $email, $password);
             $userData = [
@@ -48,13 +50,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $userData['managedByOrg'] = $uid;
             }
             firestore_write_document('Users', $uid, $userData);
+
+            // Deliver the credential by email; fall back to a one-time
+            // on-screen display only when delivery fails.
+            $loginUrl = app_base_url() . '/login.php';
+            $emailSent = send_transactional_email(
+                $email,
+                $name,
+                'Your Performa account is ready',
+                welcome_email_html($name, $email, $password, $loginUrl)
+            );
+
             record_audit_event(
                 'User account created',
                 sprintf('%s created a %s account for %s.', $_SESSION['name'] ?? 'System Admin', $role, $name),
-                ['targetUid' => $uid, 'targetRole' => $role]
+                ['targetUid' => $uid, 'targetRole' => $role, 'emailDelivered' => $emailSent]
             );
 
-            $message = "User created for $name. Temporary password: $password";
+            if ($emailSent) {
+                $message = "User created for $name. Login credentials were emailed to them.";
+            } else {
+                $message = "User created for $name. The welcome email couldn't be sent — temporary password: $password — share it through a secure channel.";
+            }
             $message_type = 'success';
         } catch (\Throwable $e) {
             $err = $e->getMessage();
@@ -223,9 +240,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
-                        <div class="form-row">
-                            <label for="password">Temporary password (optional)</label>
-                            <input id="password" name="password" type="text" />
+                        <div class="form-row full-width">
+                            <span style="color:var(--muted);font-size:12px;">A secure temporary password is generated
+                                automatically and emailed to the new user — they will be asked to change it on
+                                first login.</span>
                         </div>
                         <div class="form-row full-width" id="industryRow" hidden>
                             <label for="industry">Industry for KPI template</label>

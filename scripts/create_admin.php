@@ -1,6 +1,7 @@
 <?php
 // Run from CLI: php scripts/create_admin.php admin@example.com "Admin Name" "TempPass123!"
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../security_utils.php';
 
 if (php_sapi_name() !== 'cli') {
     echo "This script must be run from the command line.\n";
@@ -9,7 +10,7 @@ if (php_sapi_name() !== 'cli') {
 
 $email = $argv[1] ?? null;
 $name = $argv[2] ?? 'System Admin';
-$password = $argv[3] ?? bin2hex(random_bytes(6));
+$password = $argv[3] ?? generate_secure_password(12);
 
 if (!$email) {
     echo "Usage: php scripts/create_admin.php email@example.com 'Name' [password]\n";
@@ -23,6 +24,7 @@ try {
         'email' => $email,
         'role' => 'admin',
         'createdAt' => date('c'),
+        'mustChangePassword' => true,
     ]);
 
     echo "Created admin $email with temporary password: $password\n";

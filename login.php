@@ -318,6 +318,19 @@
             display: flex;
         }
 
+        .login-success {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            background: rgba(22, 167, 109, 0.1);
+            border: 1px solid rgba(22, 167, 109, 0.28);
+            color: #0f7a52;
+            border-radius: 12px;
+            padding: 11px 13px;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
         .login-footer-link {
             text-align: center;
             font-size: 13px;
@@ -493,11 +506,6 @@
                 ? '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-5.5 0-9.5-3.5-11-7 1.09-2.36 2.86-4.34 5-5.65M9.9 4.24A10.94 10.94 0 0 1 12 4c5.5 0 9.5 3.5 11 7-.6 1.3-1.44 2.5-2.47 3.53M14.12 14.12a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 1l22 22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
                 : '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/>';
         };
-
-        window.showForgotPasswordNote = function (event) {
-            event.preventDefault();
-            showError('Password resets are handled by your administrator — please ask your supervisor or employer.');
-        };
     </script>
 </head>
 
@@ -522,6 +530,9 @@
             <p class="login-subtitle">Sign in to see your progress — or to manage your team.</p>
 
             <div class="login-panel">
+                <?php if (isset($_GET['reset'])): ?>
+                    <div class="login-success" role="status">Password reset successful — sign in with your new password.</div>
+                <?php endif; ?>
                 <div class="login-error" id="login-error" role="alert">
                     <span></span>
                 </div>
@@ -540,7 +551,7 @@
                     <div class="field-group">
                         <div class="field-label-row">
                             <label class="field-label" for="password">Password</label>
-                            <button type="button" class="field-link" onclick="showForgotPasswordNote(event)">Forgot password?</button>
+                            <a class="field-link" href="forgot_password.php">Forgot password?</a>
                         </div>
                         <div class="input-shell has-toggle">
                             <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -560,7 +571,7 @@
                 </form>
 
                 <div class="login-footer-link">
-                    Having trouble signing in? Ask your supervisor or employer for help.
+                    Having trouble signing in? <a class="field-link" href="forgot_password.php">Reset your password</a> or ask your supervisor or employer for help.
                 </div>
             </div>
 

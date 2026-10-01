@@ -12,17 +12,20 @@ $navItems = [
 ];
 
 require_once __DIR__ . '/../firebase_init.php';
+require_once __DIR__ . '/../security_utils.php';
+require_once __DIR__ . '/../mailer.php';
 require_once __DIR__ . '/../audit_log.php';
 
 $accountMessage = '';
 $accountMessageType = 'info';
-$resetPasswordPopup = null;
 $probationDaysPopup = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
   $uid = trim((string) ($_POST['uid'] ?? ''));
 
-  if ($uid === '' || !in_array($action, ['reset_password', 'toggle_status', 'set_probation_days'], true)) {
+  // Password resets are self-service (forgot_password.php); admins manage
+  // access via deactivate/reactivate, never passwords.
+  if ($uid === '' || !in_array($action, ['toggle_status', 'set_probation_days'], true)) {
     $accountMessage = 'Invalid account action.';
     $accountMessageType = 'error';
   } elseif ($action === 'set_probation_days') {
@@ -60,35 +63,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         throw new RuntimeException('User account was not found.');
       }
 
-      if ($action === 'reset_password') {
-        $temporaryPassword = bin2hex(random_bytes(6));
-        identitytoolkit_update_password($uid, $temporaryPassword);
-        record_audit_event(
-          'Password reset',
-          sprintf('%s reset the password for %s.', $_SESSION['name'] ?? 'System Admin', $account['name'] ?? $account['email'] ?? 'a user'),
-          ['targetUid' => $uid]
-        );
-        $resetPasswordPopup = [
-          'name' => $account['name'] ?? $account['email'] ?? 'user',
-          'password' => $temporaryPassword,
-        ];
-        $accountMessageType = 'success';
-      } else {
-        if ($uid === ($_SESSION['uid'] ?? '')) {
-          throw new RuntimeException('You cannot deactivate your own admin account.');
-        }
-        $currentlyDisabled = strtolower((string) ($account['status'] ?? 'Active')) === 'disabled';
-        identitytoolkit_disable_user($uid, !$currentlyDisabled);
-        $account['status'] = $currentlyDisabled ? 'Active' : 'Disabled';
-        firestore_write_document('Users', $uid, $account);
-        record_audit_event(
-          $currentlyDisabled ? 'Account reactivated' : 'Account deactivated',
-          sprintf('%s %s the account for %s.', $_SESSION['name'] ?? 'System Admin', $currentlyDisabled ? 'reactivated' : 'deactivated', $account['name'] ?? $account['email'] ?? 'a user'),
-          ['targetUid' => $uid, 'status' => $account['status']]
-        );
-        $accountMessage = $currentlyDisabled ? 'Account reactivated.' : 'Account deactivated.';
-        $accountMessageType = 'success';
+      // toggle_status is the only account action left here: password
+      // resets moved to employee self-service (forgot_password.php).
+      if ($uid === ($_SESSION['uid'] ?? '')) {
+        throw new RuntimeException('You cannot deactivate your own admin account.');
       }
+      $currentlyDisabled = strtolower((string) ($account['status'] ?? 'Active')) === 'disabled';
+      identitytoolkit_disable_user($uid, !$currentlyDisabled);
+      $account['status'] = $currentlyDisabled ? 'Active' : 'Disabled';
+      firestore_write_document('Users', $uid, $account);
+      record_audit_event(
+        $currentlyDisabled ? 'Account reactivated' : 'Account deactivated',
+        sprintf('%s %s the account for %s.', $_SESSION['name'] ?? 'System Admin', $currentlyDisabled ? 'reactivated' : 'deactivated', $account['name'] ?? $account['email'] ?? 'a user'),
+        ['targetUid' => $uid, 'status' => $account['status']]
+      );
+      $accountMessage = $currentlyDisabled ? 'Account reactivated.' : 'Account deactivated.';
+      $accountMessageType = 'success';
     } catch (Throwable $e) {
       $accountMessage = $e->getMessage();
       $accountMessageType = 'error';
@@ -285,7 +275,7 @@ try {
         <h1>Create and manage accounts for every role in the system.</h1>
       </section>
 
-      <?php if ($accountMessage && $resetPasswordPopup === null): ?>
+      <?php if ($accountMessage): ?>
         <div class="alert alert-<?php echo htmlspecialchars($accountMessageType, ENT_QUOTES); ?>" role="status">
           <?php echo htmlspecialchars($accountMessage, ENT_QUOTES); ?>
         </div>
@@ -343,11 +333,6 @@ try {
                     </form>
                   <?php endif; ?>
                   <form method="post">
-                    <input type="hidden" name="action" value="reset_password" />
-                    <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />
-                    <button class="ghost-button" type="submit">Reset Password</button>
-                  </form>
-                  <form method="post">
                     <input type="hidden" name="action" value="toggle_status" />
                     <input type="hidden" name="uid" value="<?php echo htmlspecialchars($account['uid'], ENT_QUOTES); ?>" />
                     <button class="ghost-button"
@@ -380,21 +365,6 @@ try {
     <span>System-level access · Account &amp; configuration management</span>
   </footer>
 
-  <?php if ($resetPasswordPopup !== null): ?>
-    <div class="password-modal" id="passwordModal" role="presentation">
-      <section class="password-dialog" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
-        <h2 id="passwordModalTitle">Password reset successful</h2>
-        <p>A temporary password has been generated for
-          <?php echo htmlspecialchars($resetPasswordPopup['name'], ENT_QUOTES); ?>.</p>
-        <span
-          class="temporary-password"><?php echo htmlspecialchars($resetPasswordPopup['password'], ENT_QUOTES); ?></span>
-        <div class="password-dialog-actions">
-          <button class="primary-button" type="button" id="closePasswordModal">Done</button>
-        </div>
-      </section>
-    </div>
-  <?php endif; ?>
-
   <?php if ($probationDaysPopup !== null): ?>
     <div class="password-modal" id="probationDaysModal" role="presentation">
       <section class="password-dialog" role="dialog" aria-modal="true" aria-labelledby="probationDaysModalTitle">
@@ -411,16 +381,6 @@ try {
 
   <script src="script.js"></script>
   <script src="accounts-script.js"></script>
-  <?php if ($resetPasswordPopup !== null): ?>
-    <script>
-      const passwordModal = document.getElementById('passwordModal');
-      const closePasswordModal = document.getElementById('closePasswordModal');
-      closePasswordModal?.addEventListener('click', () => passwordModal?.setAttribute('hidden', ''));
-      passwordModal?.addEventListener('click', (event) => {
-        if (event.target === passwordModal) passwordModal.setAttribute('hidden', '');
-      });
-    </script>
-  <?php endif; ?>
   <?php if ($probationDaysPopup !== null): ?>
     <script>
       const probationDaysModal = document.getElementById('probationDaysModal');

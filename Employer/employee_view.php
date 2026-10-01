@@ -6,6 +6,9 @@ require_once __DIR__ . '/includes/roles.php';
 require_csrf();
 require_once __DIR__ . '/employer_layout.php';
 require_once __DIR__ . '/../kpi_templates.php';
+require_once __DIR__ . '/../security_utils.php';
+require_once __DIR__ . '/../mailer.php';
+require_once __DIR__ . '/../audit_log.php';
 
 $uid = $_GET['uid'] ?? ($_POST['uid'] ?? '');
 if (!$uid) {
@@ -23,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_profile') {
   $existing['name'] = trim($_POST['name'] ?? ($existing['name'] ?? ''));
   $existing['email'] = trim($_POST['email'] ?? ($existing['email'] ?? ''));
   $existing['department'] = trim($_POST['department'] ?? ($existing['department'] ?? ''));
+  if (isset($_POST['jobRole'])) {
+    $existing['jobRole'] = trim($_POST['jobRole']);
+  }
   if (isset($_POST['industry'])) {
     $existing['industry'] = trim($_POST['industry']);
   }
@@ -65,6 +71,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'save_regularization') 
     $messageTone = 'success';
   } catch (\Throwable $e) {
     $message = 'Failed to save decision: ' . $e->getMessage();
+    $messageTone = 'error';
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_welcome') {
+  try {
+    $target = firestore_get_document('Users', $uid) ?? [];
+    require_employer_owns_user($target + ['uid' => $uid], 'employee_view:resend_welcome');
+
+    // Fresh rotation (never re-sends a previously displayed password).
+    $freshPassword = generate_secure_password(12);
+    identitytoolkit_update_password($uid, $freshPassword);
+    $target['mustChangePassword'] = true;
+    firestore_write_document('Users', $uid, $target);
+
+    $loginUrl = app_base_url() . '/login.php';
+    $resent = send_transactional_email(
+      $target['email'] ?? '',
+      $target['name'] ?? ($target['email'] ?? ''),
+      'Your Performa account is ready',
+      welcome_email_html(
+        $target['name'] ?? ($target['email'] ?? ''),
+        $target['email'] ?? '',
+        $freshPassword,
+        $loginUrl
+      )
+    );
+
+    unset($_SESSION['reveal_once_password'], $_SESSION['reveal_once_email']);
+
+    record_audit_event(
+      'welcome_email_resent',
+      'Resent welcome credentials to ' . ($target['email'] ?? $uid),
+      ['uid' => $uid, 'emailDelivered' => $resent]
+    );
+
+    if ($resent) {
+      $message = 'Welcome email re-sent.';
+      $messageTone = 'success';
+    } else {
+      $_SESSION['reveal_once_password'] = $freshPassword;
+      $_SESSION['reveal_once_email'] = $target['email'] ?? '';
+      $message = 'Email delivery failed again — the temporary password is shown below, one time only.';
+      $messageTone = 'error';
+    }
+  } catch (Throwable $e) {
+    $message = 'Could not resend the welcome email: ' . $e->getMessage();
     $messageTone = 'error';
   }
 }
@@ -143,32 +196,68 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
   <div class="app-shell">
     <?php employer_render_shell('Employees'); ?>
     <main class="main content-narrow pf-employee-view">
-      <div class="page-header">
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <?php echo employer_icon('menu'); ?>
-        </button>
-        <div class="ph-main">
-          <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
-          <nav class="ph-crumb" aria-label="Breadcrumb">
-            <span>Employees</span>
-            <span aria-hidden="true">/</span>
-            <span><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></span>
-          </nav>
-          <h1><?php echo htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES); ?></h1>
-          <p><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES); ?>
-            &middot; <span class="status-pill <?php echo $statusLabel === 'Disabled' ? 'status-danger' : 'status-good'; ?>"><?php echo htmlspecialchars($statusLabel, ENT_QUOTES); ?></span>
-          </p>
-        </div>
-        <?php if ($isProbationary): ?>
-          <div class="ph-actions">
-            <a class="ghost-button" href="rate_employee.php?employee=<?php echo urlencode($uid); ?>">Rate KPIs</a>
-            <a class="ghost-button" href="kpis.php?employee=<?php echo urlencode($uid); ?>">View KPI Dashboard</a>
-          </div>
-        <?php endif; ?>
-      </div>
+      <?php
+      $viewCrumbName = htmlspecialchars($profile['name'] ?? 'Employee', ENT_QUOTES);
+      $viewStatusClass = $statusLabel === 'Disabled' ? 'status-danger' : 'status-good';
+      $viewStatusHtml = '<span class="status-pill ' . $viewStatusClass . '">'
+        . htmlspecialchars($statusLabel, ENT_QUOTES) . '</span>';
+      $viewActions = '';
+      if ($isProbationary) {
+        $viewActions = '<a class="ghost-button" href="rate_employee.php?employee='
+          . urlencode($uid) . '">Rate KPIs</a>'
+          . '<a class="ghost-button" href="kpis.php?employee='
+          . urlencode($uid) . '">View KPI Dashboard</a>';
+      }
+      employer_page_header(
+        'employeeViewTitle',
+        $profile['name'] ?? 'Employee',
+        '<a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>'
+          . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Employees</span>'
+          . '<span aria-hidden="true">/</span><span>' . $viewCrumbName . '</span></nav>',
+        htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES) . ' &middot; ' . $viewStatusHtml,
+        $viewActions
+      );
+      ?>
 
       <?php if ($message): ?>
         <div class="alert <?php echo $messageTone === 'error' ? 'alert-error' : ($messageTone === 'success' ? 'alert-success' : 'alert-info'); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>"><?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
+      <?php endif; ?>
+
+      <?php if (isset($_GET['created']) || isset($_GET['resent'])): ?>
+        <?php
+        $announceVerb = isset($_GET['resent'])
+          ? 'New sign-in credentials were generated for'
+          : 'Account created for';
+        $flashEmail = (string) ($_SESSION['reveal_once_email'] ?? '');
+        $resendEmail = (string) ($_GET['email'] ?? ($flashEmail !== '' ? $flashEmail : ''));
+        ?>
+        <div class="alert alert-success" role="status" aria-live="polite">
+          <?php echo htmlspecialchars($announceVerb, ENT_QUOTES); ?>
+          <strong><?php echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES); ?></strong>.
+          <?php if (!empty($_GET['emailed']) && $_GET['emailed'] === '1'): ?>
+            Login credentials were emailed to them directly.
+          <?php elseif (!empty($_SESSION['reveal_once_password'])): ?>
+            The welcome email couldn't be sent, so here's the temporary password once
+            (it will not be shown again after you leave this page) — share it with
+            <strong><?php echo htmlspecialchars($flashEmail, ENT_QUOTES); ?></strong>
+            through a secure channel:
+            <code><?php
+              echo htmlspecialchars($_SESSION['reveal_once_password'], ENT_QUOTES);
+              unset($_SESSION['reveal_once_password'], $_SESSION['reveal_once_email']);
+            ?></code>
+          <?php else: ?>
+            The welcome email couldn't be sent and no password is available to display —
+            check the Brevo configuration in <code>.env</code>.
+          <?php endif; ?>
+          <?php if ($resendEmail !== ''): ?>
+            <form method="post" class="resend-form">
+              <?php echo csrf_field(); ?>
+              <input type="hidden" name="action" value="resend_welcome" />
+              <input type="hidden" name="uid" value="<?php echo htmlspecialchars($uid, ENT_QUOTES); ?>" />
+              <button class="ghost-button" type="submit">Resend welcome email</button>
+            </form>
+          <?php endif; ?>
+        </div>
       <?php endif; ?>
 
       <div class="settings-panel pf-view-panel">
@@ -245,6 +334,12 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
                     </option>
                   <?php endforeach; ?>
                 </select>
+              </div>
+              <div class="form-group">
+                <label for="jobRole">Job Role</label>
+                <input id="jobRole" name="jobRole" type="text"
+                  value="<?php echo htmlspecialchars($profile['jobRole'] ?? '', ENT_QUOTES); ?>"
+                  placeholder="e.g. Cashier, Agent, Crew" />
               </div>
             <?php endif; ?>
           </div>

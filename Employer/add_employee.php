@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $industry = trim($_POST['industry'] ?? 'retail');
     $hireDate = trim($_POST['hireDate'] ?? '');
     $supervisorId = trim($_POST['supervisorId'] ?? '');
+    $jobRole = trim($_POST['jobRole'] ?? '');
 
     if (!$name || !$email || !$roleKey || !$department) {
         $message = 'Please fill out name, email, department and role.';
@@ -115,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($role === 'probationary_employee') {
                         $newUser['industry'] = $industry;
                         $newUser['hireDate'] = $hireDate;
+                        $newUser['jobRole'] = $jobRole;
                         $newUser['supervisorId'] = $supervisorId;
                         $newUser['supervisorName'] = $supervisorName;
                     }
@@ -142,13 +144,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // then, a one-time session flash, never a URL param, so
                     // it can't be bookmarked, shared by accident, or sit in
                     // server access logs.
-                    $redirectParams = ['created' => '1', 'name' => $name, 'emailed' => $emailSent ? '1' : '0'];
+                    $redirectParams = ['created' => '1', 'name' => $name, 'email' => $email, 'emailed' => $emailSent ? '1' : '0'];
                     if (!$emailSent) {
                         $_SESSION['reveal_once_password'] = $password;
                         $_SESSION['reveal_once_email'] = $email;
                     }
 
-                    header('Location: employees.php?' . http_build_query($redirectParams));
+                    // Land on the new profile so the next step (rate, resend,
+                    // review) needs no search; the banner there carries the
+                    // credential state.
+                    header('Location: employee_view.php?uid=' . urlencode($uid) . '&' . http_build_query($redirectParams));
                     exit;
                 } catch (\Throwable $e) {
                     $message = 'Failed to create user: ' . $e->getMessage();
@@ -181,21 +186,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="app-shell">
         <?php employer_render_shell('Employees'); ?>
         <main class="main content-narrow">
-            <div class="page-header">
-                <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-                    <?php echo employer_icon('menu'); ?>
-                </button>
-                <div class="ph-main">
-                    <a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>
-                    <nav class="ph-crumb" aria-label="Breadcrumb">
-                        <span>Employees</span>
-                        <span aria-hidden="true">/</span>
-                        <span>Add</span>
-                    </nav>
-                    <h1>Add Employee</h1>
-                    <p>Create a workforce account for a new probationary employee or supervisor.</p>
-                </div>
-            </div>
+            <?php
+            employer_page_header(
+              'addEmployeeTitle',
+              'Add Employee',
+              '<a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>'
+                . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Employees</span>'
+                . '<span aria-hidden="true">/</span><span>Add</span></nav>',
+              'Create a workforce account for a new probationary employee or supervisor.',
+              ''
+            );
+            ?>
 
             <div class="settings-panel pf-add-panel">
                 <?php if ($message): ?>
@@ -248,8 +249,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="hireDate">Hire Date <span class="required-mark">*</span></label>
                             <input id="hireDate" name="hireDate" type="date"
                                 max="<?php echo date('Y-m-d'); ?>"
-                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? date('Y-m-d'), ENT_QUOTES); ?>" />
+                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
                             <span class="field-hint">Only applies to probationary employees.</span>
+                        </div>
+                        <div class="form-group" id="jobRoleField">
+                            <label for="jobRole">Job Role</label>
+                            <input id="jobRole" name="jobRole" type="text"
+                                value="<?php echo htmlspecialchars($_POST['jobRole'] ?? '', ENT_QUOTES); ?>"
+                                placeholder="e.g. Cashier, Agent, Crew" />
+                            <span class="field-hint">Only applies to probationary employees. Shown on ratings and reports.</span>
                         </div>
                         <div class="form-group" id="supervisorField">
                             <label for="supervisorId">Assign Supervisor</label>
@@ -296,6 +304,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         roleSelect.addEventListener('change', syncIndustryVisibility);
         syncIndustryVisibility();
+
+        // Live duplicate-email hint (UX only; the server re-checks on submit).
+        const emailInput = document.getElementById('email');
+        let emailHint = document.getElementById('emailTakenHint');
+        if (emailInput && !emailHint) {
+            emailHint = document.createElement('span');
+            emailHint.id = 'emailTakenHint';
+            emailHint.className = 'field-hint';
+            emailHint.setAttribute('role', 'status');
+            emailInput.closest('.form-group').appendChild(emailHint);
+        }
+        async function checkEmailLive() {
+            if (!emailInput || !emailHint) return;
+            const v = emailInput.value.trim();
+            emailHint.textContent = '';
+            if (!v || v.indexOf('@') === -1) return;
+            try {
+                const res = await fetch('check_email.php?email=' + encodeURIComponent(v), { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.taken) emailHint.textContent = 'An account with that email already exists.';
+            } catch (e) { /* server validates on submit regardless */ }
+        }
+        if (emailInput) emailInput.addEventListener('blur', checkEmailLive);
     </script>
 </body>
 

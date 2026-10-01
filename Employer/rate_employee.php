@@ -153,7 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   $scores = [];
   foreach ($template['kpis'] as $kpi) {
     $raw = $_POST['score_' . $kpi['key']] ?? null;
-    $scores[$kpi['key']] = $raw !== null ? (float) $raw : 0.0;
+    // Server-side clamp into the KPI's own scale (browser min/max is not
+    // a trust boundary); missing inputs stay 0.0 = unrated, as before.
+    $scores[$kpi['key']] = $raw !== null ? kpi_clamp_score($kpi, $raw) : 0.0;
   }
 
   // Execute ML Pipeline
@@ -182,14 +184,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       'overall_prediction' => $aiData['overall_prediction']['classification'] ?? ($aiData['overall_prediction'] ?? 'unknown'),
       'ml_error' => $aiData['error'] ?? null,
     ];
-    if (($aiRecommendationsData['generated_by'] ?? '') === 'fallback' && !empty($aiRecommendationsData['ml_error'])) {
+    if (in_array($aiRecommendationsData['generated_by'] ?? '', ['fallback', 'rf_only'], true) && !empty($aiRecommendationsData['ml_error'])) {
       error_log('ML fallback reason: ' . substr((string) $aiRecommendationsData['ml_error'], 0, 500));
     }
   }
 
   $docId = $selectedUid . '_' . date('Y-m-d');
   try {
-    // Single atomic commit: Rating + ML recommendations + Notifications
+    // Single atomic commit: rating + ML recommendations + employer feedback.
+    // Acknowledgements + notifications are NOT created here: per the
+    // manuscript nothing reaches the employee until the employer approves
+    // (review gate), which authors them — see review_recommendations.php.
     firestore_batch_write([
       [
         'collection' => 'Ratings',
@@ -203,28 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           'ratedBy' => $_SESSION['uid'],
           'scores' => $scores,
           'aiRecommendations' => $aiRecommendationsData
-        ],
-      ],
-      [
-        'collection' => 'Acknowledgements',
-        'documentId' => $selectedUid . '_' . date('Y-m'),
-        'data' => [
-          'employeeUid' => $selectedUid,
-          'month' => date('F Y'),
-          'status' => 'Pending',
-          'timestamp' => null,
-          'createdAt' => date('c'),
-        ],
-      ],
-      [
-        'collection' => 'notifications',
-        'documentId' => $selectedUid . '_' . date('Y-m') . '_summary',
-        'data' => [
-          'employeeUid' => $selectedUid,
-          'title' => 'Performance summary ready',
-          'detail' => 'Your ' . date('F Y') . ' performance summary is available for acknowledgement.',
-          'type' => 'info',
-          'createdAt' => date('c'),
         ],
       ],
       [
@@ -242,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
     ]);
     
     if ($aiRecommendationsData && ($aiRecommendationsData['status'] ?? '') === 'pending_approval') {
-      $message = 'Rating & AI Recommendations saved for ' . htmlspecialchars($selectedEmployee['name']) . ' (Pending Manager Approval).';
+      $message = 'Rating & AI Recommendations saved for ' . htmlspecialchars($selectedEmployee['name']) . ' (Pending Manager Approval). <a href="review_recommendations.php">Review AI plan</a>';
     } else {
       $message = 'Rating saved for ' . htmlspecialchars($selectedEmployee['name']) . '.';
     }
@@ -273,21 +256,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   <div class="app-shell">
     <?php employer_render_shell('KPIs'); ?>
     <main class="main content-narrow">
-      <div class="page-header">
-        <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
-          <?php echo employer_icon('menu'); ?>
-        </button>
-        <div class="ph-main">
-          <a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>
-          <nav class="ph-crumb" aria-label="Breadcrumb">
-            <span>KPIs</span>
-            <span aria-hidden="true">/</span>
-            <span>Rate</span>
-          </nav>
-          <h1>Weekly Performance Rating</h1>
-          <p>Score this week's KPIs for a probationary employee. Use the slider or type a value from 1.0 to 5.0.</p>
-        </div>
-      </div>
+      <?php
+      employer_page_header(
+        'rateTitle',
+        'Weekly Performance Rating',
+        '<a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>'
+          . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>KPIs</span>'
+          . '<span aria-hidden="true">/</span><span>Rate</span></nav>',
+        'Score this week\'s KPIs for a probationary employee. Use the slider or type a value from 1.0 to 5.0.',
+        ''
+      );
+      ?>
 
       <div class="settings-panel pf-rate-panel">
         <?php if ($message): ?>
@@ -325,9 +304,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
               <?php foreach ($template['kpis'] as $kpi): ?>
                 <?php
                 $rateTarget = (float) $kpi['target'];
-                $rateDefault = 3.0;
-                $rateFill = max(0, min(100, (($rateDefault - 1) / 4) * 100));
-                $rateStatus = kpi_status_for_score($rateDefault, $rateTarget);
+                // Scale-driven widget: defaults render identically to the old
+                // hardcoded 1/5/3.0 math (midpoint of 1-5 is 3.0); non-1-5
+                // scales re-render min/max/step/fill automatically.
+                $rateScale = kpi_scale_for($kpi);
+                $rateDefault = ($rateScale['min'] + $rateScale['max']) / 2;
+                $rateFill = $rateScale['max'] > $rateScale['min']
+                  ? max(0, min(100, (($rateDefault - $rateScale['min']) / ($rateScale['max'] - $rateScale['min'])) * 100))
+                  : 0;
+                $rateStatus = kpi_status_for_scale($rateDefault, $rateTarget, $kpi);
                 ?>
                 <div class="pf-rate-row" data-rate-row>
                   <div class="pf-rate-head">
@@ -338,11 +323,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
                     <span class="status-pill pf-rate-pill <?php echo htmlspecialchars($rateStatus['statusClass'], ENT_QUOTES); ?>" data-rate-pill><?php echo htmlspecialchars($rateStatus['status'], ENT_QUOTES); ?></span>
                   </div>
                   <div class="pf-rate-controls">
-                    <input type="range" min="1" max="5" step="0.1" value="3.0" data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
+                    <input type="range" min="<?php echo htmlspecialchars((string) $rateScale['min'], ENT_QUOTES); ?>" max="<?php echo htmlspecialchars((string) $rateScale['max'], ENT_QUOTES); ?>" step="<?php echo htmlspecialchars((string) $rateScale['step'], ENT_QUOTES); ?>" value="<?php echo htmlspecialchars((string) $rateDefault, ENT_QUOTES); ?>" data-rate-slider="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>"
                       style="--pf-fill: <?php echo number_format($rateFill, 1); ?>%;"
                       aria-label="<?php echo htmlspecialchars($kpi['name'], ENT_QUOTES); ?> slider" />
-                    <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" class="pf-rate-value" type="number" min="1"
-                      max="5" step="0.1" value="3.0" required />
+                    <input id="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" name="score_<?php echo htmlspecialchars($kpi['key'], ENT_QUOTES); ?>" class="pf-rate-value" type="number" min="<?php echo htmlspecialchars((string) $rateScale['min'], ENT_QUOTES); ?>"
+                      max="<?php echo htmlspecialchars((string) $rateScale['max'], ENT_QUOTES); ?>" step="<?php echo htmlspecialchars((string) $rateScale['step'], ENT_QUOTES); ?>" value="<?php echo htmlspecialchars((string) $rateDefault, ENT_QUOTES); ?>" required />
                   </div>
                 </div>
               <?php endforeach; ?>
@@ -360,23 +345,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   <script>
     window.__pfRateTargets = <?php
       $rateTargets = [];
+      $rateScales = [];
       foreach ($template['kpis'] as $rateKpi) {
         $rateTargets[$rateKpi['key']] = (float) $rateKpi['target'];
+        $rateScales[$rateKpi['key']] = kpi_scale_for($rateKpi);
       }
       echo json_encode(
         $rateTargets,
         JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
       ) ?: '{}';
     ?>;
+    // Per-KPI scales for generic clamping/fills/bands below. Defaults keep
+    // every formula below identical to the old hardcoded 1/5 math.
+    window.__pfRateScales = <?php
+      echo json_encode(
+        $rateScales,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+      ) ?: '{}';
+    ?>;
   </script>
   <script>
+    // Scale helpers shared by every block below. With default 1-5 scales
+    // each formula reproduces the old hardcoded math exactly.
+    function rateScaleFor(key) {
+      var s = (window.__pfRateScales || {})[key];
+      if (!s || isNaN(parseFloat(s.min)) || isNaN(parseFloat(s.max)) || !(parseFloat(s.max) > parseFloat(s.min))) {
+        return { min: 1, max: 5 };
+      }
+      return { min: parseFloat(s.min), max: parseFloat(s.max) };
+    }
+    function rateClamp(key, v) {
+      var s = rateScaleFor(key);
+      return Math.max(s.min, Math.min(s.max, v));
+    }
+    function rateFillPct(key, v) {
+      var s = rateScaleFor(key);
+      if (!(s.max > s.min)) return 0;
+      return Math.max(0, Math.min(100, ((v - s.min) / (s.max - s.min)) * 100));
+    }
+    window.__pfRateScaleFor = rateScaleFor;
+    window.__pfRateClamp = rateClamp;
+    window.__pfRateFillPct = rateFillPct;
     document.querySelectorAll('[data-rate-slider]').forEach(function (slider) {
       var target = document.getElementById(slider.getAttribute('data-rate-slider'));
       if (!target) return;
       slider.addEventListener('input', function () { target.value = slider.value; });
       target.addEventListener('input', function () {
         var v = parseFloat(target.value);
-        if (!isNaN(v)) slider.value = Math.max(1, Math.min(5, v));
+        if (!isNaN(v)) slider.value = window.__pfRateClamp(slider.getAttribute('data-rate-slider').replace(/^score_/, ''), v);
       });
     });
 
@@ -395,7 +411,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       var baseline = {};
       form.querySelectorAll('input[name^="score_"]').forEach(function (input) {
         var v = parseFloat(input.value);
-        baseline[input.name.replace(/^score_/, '')] = isNaN(v) ? 3.0 : v;
+        var key = input.name.replace(/^score_/, '');
+        if (isNaN(v)) {
+          var sc = window.__pfRateScaleFor(key);
+          v = (sc.min + sc.max) / 2;
+        }
+        baseline[key] = v;
       });
 
       function readScores() {
@@ -404,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           var v = parseFloat(input.value);
           if (isNaN(v)) return;
           var key = input.name.replace(/^score_/, '');
-          vals.push({ key: key, value: Math.max(1, Math.min(5, v)) });
+          vals.push({ key: key, value: window.__pfRateClamp(key, v) });
         });
         return vals;
       }
@@ -506,7 +527,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       });
     })();
     // Live card chrome: slider fill, per-card status pill, preview tone.
-    // Visual only -- mirrors kpi_status_for_score() thresholds (target / target-0.8).
+    // Visual only -- mirrors kpi_status_for_scale() (target / 20%-of-scale
+    // warning band; identical to target-0.8 on default scales).
     // Runs after the preview painter above: paint() resets the strip with
     // innerHTML = '', so the tone dot is (re)inserted here, never before.
     (function () {
@@ -514,10 +536,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
       var preview = document.getElementById('ratePreview');
       if (!form) return;
       var targets = window.__pfRateTargets || {};
-      function statusFor(v, t) {
+      function statusFor(v, t, key) {
         if (isNaN(t)) return { text: '', cls: '' };
         if (v >= t) return { text: 'Exceeding', cls: 'status-good' };
-        if (v >= t - 0.8) return { text: 'Warning', cls: 'status-warning' };
+        var s = window.__pfRateScaleFor(key);
+        if (v >= t - 0.2 * (s.max - s.min)) return { text: 'Warning', cls: 'status-warning' };
         return { text: 'Below Target', cls: 'status-danger' };
       }
       function refresh() {
@@ -529,14 +552,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
           if (!num) return;
           var v = parseFloat(num.value);
           if (isNaN(v)) return;
-          v = Math.max(1, Math.min(5, v));
           var key = num.name.replace(/^score_/, '');
+          v = window.__pfRateClamp(key, v);
           var t = parseFloat(targets[key]);
           total++;
           if (!isNaN(t) && v < t) below++;
-          if (slider) slider.style.setProperty('--pf-fill', (((v - 1) / 4) * 100).toFixed(1) + '%');
+          if (slider) slider.style.setProperty('--pf-fill', (window.__pfRateFillPct(key, v)).toFixed(1) + '%');
           if (pill && !isNaN(t)) {
-            var st = statusFor(v, t);
+            var st = statusFor(v, t, key);
             pill.textContent = st.text;
             pill.classList.remove('status-good', 'status-warning', 'status-danger');
             if (st.cls) pill.classList.add(st.cls);

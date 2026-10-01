@@ -611,6 +611,80 @@ function kpi_status_for_score(float $current, float $target): array
     return ['status' => 'Below Target', 'statusClass' => 'status-danger'];
 }
 
+// Flexible scoring scales (WS4). Every KPI carries an implicit 1.0-5.0
+// scale unless its template entry defines 'scale' =>
+// ['min' => .., 'max' => .., 'step' => ..]. All readers below MUST go
+// through kpi_scale_for() + kpi_clamp_score() instead of hardcoding
+// 1/5/0.1 — with default scales the behavior is byte-identical to the
+// old inline math (warn band 20% of range == 0.8 on 1-5).
+function kpi_scale_for($kpi): array
+{
+    $scale = is_array($kpi) ? ($kpi['scale'] ?? null) : null;
+
+    $min = isset($scale['min']) && is_numeric($scale['min'])
+        ? (float) $scale['min']
+        : 1.0;
+
+    $max = isset($scale['max']) && is_numeric($scale['max'])
+        ? (float) $scale['max']
+        : 5.0;
+
+    if (!($max > $min)) {
+        $min = 1.0;
+        $max = 5.0;
+    }
+
+    $step = isset($scale['step']) && is_numeric($scale['step']) && (float) $scale['step'] > 0
+        ? (float) $scale['step']
+        : 0.1;
+
+    return ['min' => $min, 'max' => $max, 'step' => $step];
+}
+
+// Clamp a raw score into a KPI's scale. Pure (offline-testable).
+function kpi_clamp_score($kpi, $value): float
+{
+    $scale = kpi_scale_for($kpi);
+    $value = is_numeric($value) ? (float) $value : $scale['min'];
+
+    return max($scale['min'], min($scale['max'], $value));
+}
+
+// Status against a target with a scale-relative warning band
+// (20% of the scale range). $scale accepts a KPI entry or a
+// kpi_scale_for() array; null means the default 1-5 scale, which
+// reproduces the legacy fixed 0.8 band exactly.
+function kpi_status_for_scale(float $current, float $target, $scale = null): array
+{
+    if (is_array($scale) && isset($scale['min'], $scale['max'])) {
+        $range = (float) $scale['max'] - (float) $scale['min'];
+    } else {
+        $range = 5.0 - 1.0;
+    }
+
+    $band = 0.2 * max($range, 0.000001);
+
+    if ($current >= $target) {
+        return ['status' => 'Exceeding', 'statusClass' => 'status-good'];
+    }
+    if ($current >= $target - $band) {
+        return ['status' => 'Warning', 'statusClass' => 'status-warning'];
+    }
+    return ['status' => 'Below Target', 'statusClass' => 'status-danger'];
+}
+
+// Find one template entry by key (for scale-aware validation in forms).
+function kpi_by_key(array $template, string $key): ?array
+{
+    foreach ($template['kpis'] ?? [] as $kpi) {
+        if (is_array($kpi) && (string) ($kpi['key'] ?? '') === $key) {
+            return $kpi;
+        }
+    }
+
+    return null;
+}
+
 // Dashboard review-queue dismissal (employer triage, NOT review).
 // Dismissing hides one card; it never alters the AI plan status,
 // assignedTraining, scores or Ratings docs, so the manuscript

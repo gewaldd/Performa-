@@ -100,3 +100,58 @@ function welcome_email_html(string $name, string $email, string $password, strin
 </div>
 HTML;
 }
+
+/**
+ * Password-reset email: same credential table as the welcome mail, but the
+ * copy says "reset" instead of "created" so recipients are not confused
+ * when an admin rotates their password outside onboarding.
+ */
+function password_reset_email_html(string $name, string $password, string $loginUrl): string
+{
+    $safeName = htmlspecialchars($name, ENT_QUOTES);
+    $safePassword = htmlspecialchars($password, ENT_QUOTES);
+    $safeUrl = htmlspecialchars($loginUrl, ENT_QUOTES);
+
+    return <<<HTML
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1f2940;">
+  <h2 style="margin:0 0 16px;">Password reset, {$safeName}</h2>
+  <p style="line-height:1.5;">Your Performa password was reset. Here is your new temporary password:</p>
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr>
+      <td style="padding:6px 0;color:#6f7c95;">Temporary password</td>
+      <td style="padding:6px 0;font-weight:600;font-family:'Courier New',monospace;">{$safePassword}</td>
+    </tr>
+  </table>
+  <p style="line-height:1.5;"><strong>For security, please sign in and change this password right away.</strong></p>
+  <p>
+    <a href="{$safeUrl}" style="display:inline-block;padding:10px 20px;background:#2f6df6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
+      Sign in to Performa
+    </a>
+  </p>
+  <p style="color:#6f7c95;font-size:13px;margin-top:24px;">If you didn't expect this reset, please contact your administrator immediately.</p>
+</div>
+HTML;
+}
+
+/**
+ * Self-service reset link email (forgot_password.php). Carries a link, never
+ * a password — the token is single-use and expires within the hour.
+ */
+function password_reset_link_email_html(string $name, string $resetUrl): string
+{
+    $safeName = htmlspecialchars($name, ENT_QUOTES);
+    $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES);
+
+    return <<<HTML
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1f2940;">
+  <h2 style="margin:0 0 16px;">Reset your password, {$safeName}</h2>
+  <p style="line-height:1.5;">We received a password reset request for your Performa account. This link works once and expires within the hour:</p>
+  <p>
+    <a href="{$safeUrl}" style="display:inline-block;padding:10px 20px;background:#2f6df6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
+      Choose a new password
+    </a>
+  </p>
+  <p style="color:#6f7c95;font-size:13px;margin-top:24px;">If you didn't ask for this, you can safely ignore this email — your password stays unchanged.</p>
+</div>
+HTML;
+}
