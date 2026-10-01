@@ -349,6 +349,64 @@ function add_custom_kpi_meta(string $industry, string $kpiKey, ?string $category
     kpi_template_invalidate($key);
 }
 
+// Only employer-added custom KPIs can be deleted. Base template entries
+// are hardcoded and permanent; their keys never carry the custom_ prefix.
+// Pure predicate so rows can hide the delete control without a round trip.
+function kpi_is_deletable(array $kpi): bool
+{
+    $key = (string) ($kpi['key'] ?? '');
+    return str_starts_with($key, 'custom_');
+}
+
+// Delete one custom KPI: drops its CustomKpis entry plus any target/weight
+// calibration overrides, so no orphan rows linger. Base keys are refused.
+// Returns true when an entry was actually removed.
+function delete_custom_kpi(string $industry, string $kpiKey): bool
+{
+    $key = strtolower(trim($industry));
+    $kpiKey = trim((string) $kpiKey);
+    if ($kpiKey === '' || !str_starts_with($kpiKey, 'custom_')) {
+        return false;
+    }
+    $removed = false;
+    $doc = firestore_get_document('CustomKpis', $key) ?? [];
+    $entries = (isset($doc['kpis']) && is_array($doc['kpis'])) ? $doc['kpis'] : [];
+    $kept = [];
+    foreach ($entries as $row) {
+        if (is_array($row) && ((string) ($row['key'] ?? '')) === $kpiKey) {
+            $removed = true;
+            continue;
+        }
+        $kept[] = $row;
+    }
+    if (!$removed) {
+        return false;
+    }
+    $doc['kpis'] = array_values($kept);
+    firestore_write_document('CustomKpis', $key, $doc);
+    try {
+        $over = firestore_get_document('KpiOverrides', $key) ?? [];
+        if (is_array($over) && array_key_exists($kpiKey, $over)) {
+            unset($over[$kpiKey]);
+            firestore_write_document('KpiOverrides', $key, $over);
+        }
+    } catch (\Throwable $e) {
+        // Best-effort orphan cleanup; the KPI itself is already gone.
+    }
+    try {
+        $wdoc = firestore_get_document('KpiWeights', $key) ?? [];
+        if (is_array($wdoc) && array_key_exists($kpiKey, $wdoc)) {
+            unset($wdoc[$kpiKey]);
+            firestore_write_document('KpiWeights', $key, $wdoc);
+        }
+    } catch (\Throwable $e) {
+        // Best-effort orphan cleanup; the KPI itself is already gone.
+    }
+    kpi_template_invalidate($key);
+    unset($GLOBALS['__kpi_weight_memo'][$key]);
+    return true;
+}
+
 function set_kpi_target_override(string $industry, string $kpiKey, float $target): void
 {
     $key = strtolower(trim($industry));

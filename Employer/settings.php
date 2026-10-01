@@ -207,237 +207,328 @@ $profileInitials = employer_avatar_initials($profileName);
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <?php employer_brand_head(); ?>
   <title>Settings · Performa</title>
-  <meta name="description" content="Manage your account preferences and system configurations." />
+  <meta name="description" content="Manage your account preferences and security." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-    rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body class="settings-page-body">
-
   <div class="app-shell">
-
     <?php employer_render_shell('Settings'); ?>
 
     <main class="main settings-page" id="settingsPage">
-
-      <?php
-      employer_page_header(
-        'settingsTitle',
-        'Settings',
-        '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Settings</span><span aria-hidden="true">/</span><span>Account</span></nav>',
-        'Manage your account preferences and security.',
-        '',
-        'settings-page-header',
-        'header'
-      );
-      ?>
-
-      <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>"
-          role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>" aria-live="polite">
-          <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
-          <?php if (!empty($showReLoginLink)): ?>
-            <a href="../login.php" style="color: inherit; font-weight: 700;">Sign in again</a>
-          <?php endif; ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if (!empty($_SESSION['must_change_password']) && !$message): ?>
-        <div class="alert alert-info" role="status" aria-live="polite">
-          Your account is using a temporary password. Please set your own password below to continue.
-        </div>
-      <?php endif; ?>
-
-      <section class="settings-panel settings-profile-panel">
-
-        <div class="settings-section-heading">
+      <div class="cq"><div class="wrap">
+        <header>
           <div>
-            <h2>Profile</h2>
-            <p>Update the information used for your employer account.</p>
+            <div class="crumb">Settings / <b>Account</b></div>
+            <h1>Settings</h1>
+            <p class="sub">Manage your account preferences and security.</p>
           </div>
-        </div>
+        </header>
 
-        <div class="profile-photo-row">
-          <div class="profile-photo-frame profile-photo-initials" role="img"
-            aria-label="Profile photo for <?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>">
-            <?php echo htmlspecialchars($profileInitials, ENT_QUOTES); ?>
+        <?php if ($message && $messageTone === 'error'): ?>
+          <div class="msg" style="padding: 12px 16px; border-radius: var(--r-ctl); background: rgba(201, 52, 42, 0.1); border: 1px solid var(--bad); color: var(--bad); margin-top: var(--s4);" role="alert">
+            <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
+            <?php if (!empty($showReLoginLink)): ?>
+              <a href="../login.php" style="color: inherit; font-weight: 700; text-decoration: underline; margin-left: 8px;">Sign in again</a>
+            <?php endif; ?>
           </div>
+        <?php endif; ?>
 
-          <div class="profile-photo-info">
-            <h3>Profile Photo</h3>
-            <p>Avatar generated automatically from your name.</p>
+        <?php if (!empty($_SESSION['must_change_password']) && !$message): ?>
+          <div class="msg" style="padding: 12px 16px; border-radius: var(--r-ctl); background: rgba(0, 113, 227, 0.1); border: 1px solid var(--accent); color: var(--accent); margin-top: var(--s4);" role="status" aria-live="polite">
+            Your account is using a temporary password. Please set your own password below to continue.
           </div>
-        </div>
+        <?php endif; ?>
 
-        <form method="post" class="settings-form">
-          <?php echo csrf_field(); ?>
-          <input type="hidden" name="action" value="save_profile" />
+        <div class="layout">
+          <nav class="side-nav" aria-label="Settings sections">
+            <a href="#profile">Profile</a><a href="#appearance">Appearance</a><a href="#security">Security</a><a href="#notifications">Notifications</a><a href="#account">Account</a>
+          </nav>
 
-          <div class="form-grid">
-
-            <div class="form-group">
-              <label for="fullName">Full Name</label>
-              <input id="fullName" name="fullName" type="text"
-                value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" autocomplete="name" maxlength="120"
-                required />
-            </div>
-
-            <div class="form-group">
-              <label for="email">Email Address</label>
-              <input id="email" name="email" type="email"
-                value="<?php echo htmlspecialchars($profileEmail, ENT_QUOTES); ?>" autocomplete="email" maxlength="254"
-                required />
-            </div>
-
-            <div class="form-group locked">
-              <label for="role">Role</label>
-              <input id="role" type="text" value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>"
-                disabled aria-disabled="true" />
-
-              <span class="lock-icon" aria-hidden="true">
-                <?php echo $icons['lock']; ?>
-              </span>
-            </div>
-
-            <div class="form-group">
-              <label for="department">Department</label>
-              <input id="department" name="department" type="text"
-                value="<?php echo htmlspecialchars($profileDepartment, ENT_QUOTES); ?>" autocomplete="organization"
-                maxlength="120" placeholder="e.g. Human Resources" />
-            </div>
-
-          </div>
-
-          <div class="form-actions">
-            <button class="btn-primary" type="submit">
-              Save Changes
-            </button>
-          </div>
-        </form>
-
-      </section>
-
-      <section class="settings-panel settings-security-panel">
-
-        <div class="settings-section-heading">
           <div>
-            <h2>Security</h2>
-            <p>Change the password used to access your account.</p>
+            <section class="s-sec" id="profile" aria-labelledby="h-profile">
+              <h2 id="h-profile">Profile</h2>
+              <p class="d">The information used for your employer account.</p>
+              <div class="who">
+                <div class="av" id="av"><?php echo htmlspecialchars($profileInitials, ENT_QUOTES); ?></div>
+                <div><b>Profile photo</b><span>Generated automatically from your name.</span></div>
+              </div>
+              <form method="post" id="profileForm">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="save_profile" />
+                <div class="fgrid">
+                  <div>
+                    <label for="fn">Full name</label>
+                    <input id="fn" name="fullName" class="in" value="<?php echo htmlspecialchars($profileName, ENT_QUOTES); ?>" autocomplete="name" required maxlength="120" />
+                  </div>
+                  <div>
+                    <label for="em">Email address</label>
+                    <input id="em" name="email" class="in" type="email" value="<?php echo htmlspecialchars($profileEmail, ENT_QUOTES); ?>" placeholder="name@company.com" autocomplete="email" required maxlength="254" />
+                  </div>
+                  <div class="fw">
+                    <label for="ro">Role</label>
+                    <input id="ro" class="in pad" value="<?php echo htmlspecialchars($profileRoleDisplay, ENT_QUOTES); ?>" disabled />
+                    <svg class="i ico"><use href="#i-lock"/></svg>
+                  </div>
+                  <div>
+                    <label for="dp">Department</label>
+                    <input id="dp" name="department" class="in" value="<?php echo htmlspecialchars($profileDepartment, ENT_QUOTES); ?>" placeholder="e.g. Human Resources" maxlength="120" />
+                  </div>
+                </div>
+                <div class="acts">
+                  <button class="btn" id="saveP" type="submit" disabled>Save changes</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="s-sec" id="appearance" aria-labelledby="h-ap">
+              <h2 id="h-ap">Appearance</h2>
+              <p class="d">Choose how Performa looks. Changes apply instantly. System follows your device.</p>
+              <div class="ap">
+                <div class="ap-item">
+                  <label class="eyebrow">Theme Mode</label>
+                  <div class="ap-row">
+                    <div class="seg" id="themeSeg" role="radiogroup" aria-label="Theme">
+                      <button class="tab" type="button" role="radio" data-v="light" aria-checked="false"><svg class="i"><use href="#i-sun"/></svg>Light</button>
+                      <button class="tab" type="button" role="radio" data-v="dark" aria-checked="false"><svg class="i"><use href="#i-moon"/></svg>Dark</button>
+                      <button class="tab" type="button" role="radio" data-v="system" aria-checked="true"><svg class="i"><use href="#i-mon"/></svg>System</button>
+                    </div>
+                    <small id="active" aria-live="polite"></small>
+                  </div>
+                </div>
+                <div class="ap-item">
+                  <label class="eyebrow">Color Palette</label>
+                  <div class="ap-row">
+                    <div class="pal-group" id="palGroup" role="group" aria-label="Color Palette">
+                      <button class="sw" type="button" data-p="midnight" aria-label="Midnight theme" title="Midnight" aria-pressed="false"><i style="background:#090b10"></i><i style="background:#3b82f6"></i></button>
+                      <button class="sw" type="button" data-p="dusk" aria-label="Dusk theme" title="Dusk" aria-pressed="false"><i style="background:#0c0a14"></i><i style="background:#8b5cf6"></i></button>
+                      <button class="sw" type="button" data-p="paper" aria-label="Paper theme" title="Paper" aria-pressed="false"><i style="background:#f6f3ed"></i><i style="background:#c04e22"></i></button>
+                      <button class="sw" type="button" data-p="mist" aria-label="Mist theme" title="Mist" aria-pressed="false"><i style="background:#f0f4f8"></i><i style="background:#0284c7"></i></button>
+                      <button class="sw" type="button" data-p="sage" aria-label="Sage theme" title="Sage" aria-pressed="false"><i style="background:#edf2ee"></i><i style="background:#0f766e"></i></button>
+                    </div>
+                    <small id="palName" aria-live="polite"></small>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="s-sec" id="security" aria-labelledby="h-sec">
+              <h2 id="h-sec">Security</h2>
+              <p class="d">Change the password used to access your account.</p>
+              <form method="post" id="securityForm">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="change_password" />
+                <div class="fgrid">
+                  <div class="fw">
+                    <label for="p1">New password</label>
+                    <input id="p1" name="newPassword" class="in pad" type="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required />
+                    <button class="ibtn plain" type="button" data-for="p1" aria-label="Show password"><svg class="i"><use href="#i-eye"/></svg></button>
+                  </div>
+                  <div class="fw">
+                    <label for="p2">Confirm new password</label>
+                    <input id="p2" name="confirmPassword" class="in pad" type="password" placeholder="Repeat password" autocomplete="new-password" minlength="8" required />
+                    <button class="ibtn plain" type="button" data-for="p2" aria-label="Show password"><svg class="i"><use href="#i-eye"/></svg></button>
+                  </div>
+                </div>
+                <p class="msg" id="pwmsg" hidden role="alert"></p>
+                <div class="acts">
+                  <button class="btn" id="updPw" type="submit" disabled>Update password</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="s-sec" id="notifications" aria-labelledby="h-no">
+              <h2 id="h-no">Notifications</h2>
+              <p class="d">Deadline alerts for your probationers.</p>
+              <form method="post" id="notifForm">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="save_notifications" />
+                <input type="hidden" name="notifyMilestones" id="notifyMilestonesInput" value="<?php echo $notifyMilestones ? '1' : ''; ?>" />
+                <div class="row">
+                  <div>
+                    <b id="ml">Milestone alerts</b>
+                    <span class="t">Notify me when a probationer reaches day <span class="mono">150</span>, <span class="mono">165</span> or <span class="mono">178</span>.</span>
+                  </div>
+                  <button class="sw-toggle" id="sw" type="button" role="switch" aria-checked="<?php echo $notifyMilestones ? 'true' : 'false'; ?>" aria-labelledby="ml"></button>
+                </div>
+              </form>
+            </section>
+
+            <section class="s-sec" id="account" aria-labelledby="h-ac">
+              <h2 id="h-ac">Account</h2>
+              <p class="d">Advanced security and account status.</p>
+              <div class="row mute">
+                <div>
+                  <b id="tf">Two-factor authentication</b>
+                  <span class="t">Not available yet.</span>
+                </div>
+                <button class="sw-toggle" role="switch" aria-checked="false" aria-labelledby="tf" disabled></button>
+              </div>
+              <div class="row">
+                <div>
+                  <b>Deactivate account</b>
+                  <span class="t">Disables your login. An admin can reactivate it later.</span>
+                </div>
+                <div>
+                  <button class="btn danger" id="deact" type="button">Deactivate...</button>
+                  <form method="post" id="deactForm" style="display:inline">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="action" value="deactivate_account" />
+                    <div class="cf" id="cf" hidden>
+                      <button class="btn ghost" id="cx" type="button">Cancel</button>
+                      <button class="btn danger fill" id="ok" type="submit">Deactivate</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
-
-        <form method="post" class="settings-form">
-          <?php echo csrf_field(); ?>
-          <input type="hidden" name="action" value="change_password" />
-
-          <div class="form-grid">
-
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8"
-                required placeholder="At least 8 characters" />
-            </div>
-
-            <div class="form-group">
-              <label for="confirmPassword">Confirm New Password</label>
-              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
-                minlength="8" required placeholder="Repeat password" />
-            </div>
-
-          </div>
-
-          <div class="form-actions">
-            <button class="btn-primary" type="submit">
-              Update Password
-            </button>
-          </div>
-        </form>
-
-      </section>
-
-      <section class="settings-panel settings-notifications-panel">
-
-        <div class="settings-section-heading">
-          <div>
-            <h2>Notifications</h2>
-            <p>Deadline milestone alerts for your probationers.</p>
-          </div>
-        </div>
-
-        <form method="post" class="settings-form">
-          <?php echo csrf_field(); ?>
-          <input type="hidden" name="action" value="save_notifications" />
-
-          <div class="form-group">
-            <label class="checkline" for="notifyMilestones">
-              <input id="notifyMilestones" name="notifyMilestones" type="checkbox" value="1" <?php echo $notifyMilestones ? 'checked' : ''; ?> />
-              <span>Milestone alerts — notify me when a probationer reaches day 150, 165 or 178.</span>
-            </label>
-          </div>
-
-          <div class="form-actions">
-            <button class="btn-primary" type="submit">
-              Save Preferences
-            </button>
-          </div>
-        </form>
-
-      </section>
-
-      <section class="settings-card-row settings-account-actions" aria-label="Account actions">
-
-        <article class="settings-card tone-blue settings-disabled-card">
-          <span class="settings-card-icon" aria-hidden="true">
-            <?php echo $icons['shield']; ?>
-          </span>
-
-          <div class="settings-card-text">
-            <strong>Two-Factor Authentication</strong>
-            <span>Not available yet.</span>
-          </div>
-
-          <span class="status-pill status-neutral">Off</span>
-        </article>
-
-        <article class="settings-card tone-red">
-          <span class="settings-card-icon" aria-hidden="true">
-            <?php echo $icons['trash']; ?>
-          </span>
-
-          <div class="settings-card-text">
-            <strong>Deactivate Account</strong>
-            <span>Disables your login. An admin can reactivate it later.</span>
-          </div>
-
-          <form method="post" class="settings-card-form"
-            data-confirm="Deactivate your account? You will be signed out immediately. An admin can reactivate it later."
-            data-confirm-danger>
-            <?php echo csrf_field(); ?>
-            <input type="hidden" name="action" value="deactivate_account" />
-
-            <button class="settings-card-action settings-card-action-danger" type="submit">
-              Deactivate
-            </button>
-          </form>
-        </article>
-
-      </section>
-
+      </div></div>
     </main>
-
   </div>
 
-  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <div class="toast" id="toast" role="status"></div>
 
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script>
+    var $ = function(i) { return document.getElementById(i); };
+    var I = function(n) { return '<svg class="i"><use href="#i-' + n + '"/></svg>'; };
+    var timer;
+    function toast(m) {
+      var t = $("toast");
+      if (!t) return;
+      t.textContent = m;
+      t.classList.add("on");
+      clearTimeout(timer);
+      timer = setTimeout(function() { t.classList.remove("on"); }, 2500);
+    }
+
+    <?php if ($message && $messageTone === 'success'): ?>
+      toast(<?php echo json_encode($message); ?>);
+    <?php endif; ?>
+
+    /* Theme controls are owned entirely by the shared engine in script.js
+       (delegated clicks, OS-change handling, initial paint). Nothing local. */
+
+    /* Profile: Save enables only when dirty; avatar follows name */
+    var init = {
+      fn: <?php echo json_encode($profileName); ?>,
+      em: <?php echo json_encode($profileEmail); ?>,
+      dp: <?php echo json_encode($profileDepartment); ?>
+    };
+
+    function ini(n) {
+      var w = (n || '').trim().split(/\s+/).filter(Boolean);
+      return w.length ? (w.length > 1 ? w[0][0] + w[w.length - 1][0] : w[0][0]).toUpperCase() : "?";
+    }
+
+    function chkP() {
+      var dirty = ["fn", "em", "dp"].some(function(k) {
+        var el = $(k);
+        return el && el.value !== init[k];
+      });
+      var fnEl = $("fn");
+      if ($("saveP")) $("saveP").disabled = !dirty || !(fnEl && fnEl.value.trim());
+      if ($("av") && fnEl) $("av").textContent = ini(fnEl.value);
+    }
+
+    ["fn", "em", "dp"].forEach(function(k) {
+      var el = $(k);
+      if (el) el.addEventListener("input", chkP);
+    });
+
+    /* Password: live validate, show/hide */
+    function chkPw() {
+      var p1 = $("p1"), p2 = $("p2"), msg = $("pwmsg"), upd = $("updPw");
+      if (!p1 || !p2 || !msg || !upd) return;
+      var a = p1.value, b = p2.value;
+      upd.disabled = !(a.length >= 8 && a === b);
+      if (a && a.length < 8) {
+        msg.textContent = "Use at least 8 characters.";
+        msg.hidden = false;
+      } else if (b && a !== b) {
+        msg.textContent = "Passwords don't match.";
+        msg.hidden = false;
+      } else {
+        msg.hidden = true;
+      }
+    }
+
+    ["p1", "p2"].forEach(function(k) {
+      var el = $(k);
+      if (el) el.addEventListener("input", chkPw);
+    });
+
+    document.querySelectorAll("[data-for]").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var f = $(btn.dataset.for);
+        if (!f) return;
+        var show = f.type === "password";
+        f.type = show ? "text" : "password";
+        btn.innerHTML = I(show ? "eyeoff" : "eye");
+        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      });
+    });
+
+    /* Notifications: instant toggle and submit */
+    if ($("sw")) {
+      $("sw").addEventListener("click", function() {
+        var on = this.getAttribute("aria-checked") !== "true";
+        this.setAttribute("aria-checked", on ? "true" : "false");
+        var inp = $("notifyMilestonesInput");
+        if (inp) inp.value = on ? "1" : "";
+        if ($("notifForm")) $("notifForm").submit();
+      });
+    }
+
+    /* Deactivate inline confirm */
+    if ($("deact")) {
+      $("deact").addEventListener("click", function() {
+        this.hidden = true;
+        if ($("cf")) $("cf").hidden = false;
+        if ($("cx")) $("cx").focus();
+      });
+    }
+
+    if ($("cx")) {
+      $("cx").addEventListener("click", function() {
+        if ($("cf")) $("cf").hidden = true;
+        if ($("deact")) {
+          $("deact").hidden = false;
+          $("deact").focus();
+        }
+      });
+    }
+
+    /* Side nav highlights the section in view */
+    var sideLinks = document.querySelectorAll("nav.side-nav a");
+    if (sideLinks.length && window.IntersectionObserver) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            sideLinks.forEach(function(a) {
+              a.setAttribute("aria-current", a.getAttribute("href") === "#" + entry.target.id ? "true" : "false");
+            });
+          }
+        });
+      }, { rootMargin: "-15% 0px -70% 0px" });
+
+      document.querySelectorAll("#settingsPage section.s-sec[id]").forEach(function(sec) {
+        io.observe(sec);
+      });
+      sideLinks[0].setAttribute("aria-current", "true");
+    }
+
+    chkP();
+  </script>
 </body>
 
 </html>

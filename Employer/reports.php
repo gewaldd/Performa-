@@ -809,7 +809,7 @@ foreach ($reportDocs as $index => $reportDoc) {
     'downloadTitle' =>
       (string) ($reportDoc['filePath'] ?? '') !== ''
       ? 'Download the archived PDF file'
-      : 'Opens the print dialog — choose Save as PDF',
+      : 'Opens the print dialog - choose Save as PDF',
 
     'viewHref' => 'report_view.php?id=' . urlencode($reportId),
 
@@ -945,252 +945,153 @@ foreach ($reports as $r) {
     $tabSignedOff++;
   }
 }
+
+$rRows = [];
+foreach ($reports as $index => $rep) {
+  $rRows[] = [
+    'id' => (string) ($rep['id'] ?? ''),
+    'idx' => $index,
+    'n' => (string) ($rep['employeeName'] ?? 'Unknown'),
+    'empUid' => (string) ($rep['employeeUid'] ?? ''),
+    't' => (string) ($rep['typeLabel'] ?? 'Performance Report'),
+    'by' => (string) ($rep['byline'] ?? 'Employer'),
+    'd' => substr((string) ($rep['generatedAt'] ?? ''), 0, 10),
+    's' => (string) ($rep['displayStatus']['label'] ?? 'Finalized'),
+    'pdf' => (string) ($rep['sizeLabel'] ?? ''),
+    'hasFile' => !empty($rep['hasFile']),
+    'sha' => (string) ($rep['fileSha'] ?? ''),
+    'dl' => (string) ($rep['downloadHref'] ?? ''),
+    'view' => (string) ($rep['viewHref'] ?? ''),
+    'showArchive' => !empty($rep['showArchive']),
+  ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <?php employer_brand_head(); ?>
-  <title>Employee reports | Performa</title>
+  <title>Employee reports · Performa</title>
   <meta name="description" content="Create and manage individual performance assessments." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
+  <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES); ?>" />
 </head>
 
 <body>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-arch" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  </svg>
+
   <div class="app-shell">
     <?php employer_render_shell('Reports'); ?>
 
     <main class="main reports-page" id="reports">
-      <div class="in">
-
-        <div class="top">
+      <div class="cq"><div class="wrap">
+        <header>
+          <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+            </svg>
+          </button>
           <div>
-            <h1 id="h1">Employee reports</h1>
+            <h1>Employee reports</h1>
             <p class="sub">Create and manage individual performance assessments.</p>
           </div>
-          <div class="tr">
-            <span class="sync">
-              <?php if ($lastAuditAt !== null): ?>
-                Synced <?php echo htmlspecialchars(date('M j, H:i', $lastAuditAt), ENT_QUOTES); ?>
-              <?php else: ?>
-                Audit log active
-              <?php endif; ?>
-            </span>
-            <a href="kpis.php" class="btn tint">Templates</a>
-            <form method="post" action="batch_download.php" style="display:inline;margin:0;">
+          <div class="hdr-r">
+            <span class="sync"><span class="dot"></span><span class="mono">Synced <?php echo $lastAuditAt !== null ? date('M j, H:i', $lastAuditAt) : date('M j, H:i'); ?></span></span>
+            <a href="kpis.php" class="link">Templates</a>
+            <form method="post" action="batch_download.php" style="display:inline-flex;align-items:center;margin:0;">
               <?php echo csrf_field(); ?>
-              <button type="submit" class="btn txt">Export all</button>
+              <button type="submit" class="link">Export all</button>
             </form>
           </div>
-        </div>
+        </header>
 
         <?php if ($genMessage !== ''): ?>
-          <div class="alert alert-<?php echo $genMessageType === 'success' ? 'success' : ($genMessageType === 'error' ? 'error' : 'info'); ?> reports-message" role="status" aria-live="polite" style="margin-bottom:20px;">
+          <div class="alert alert-<?php echo $genMessageType === 'error' ? 'error' : 'success'; ?>" role="status" style="margin-top:var(--s4);margin-bottom:var(--s2);">
             <?php echo htmlspecialchars($genMessage, ENT_QUOTES); ?>
           </div>
         <?php endif; ?>
 
         <?php if (isset($_GET['generated']) && $_GET['generated'] !== ''): ?>
-          <div class="alert alert-success reports-message" role="status" aria-live="polite" style="margin-bottom:20px;">
-            Report generated for
-            <strong><?php echo htmlspecialchars($_GET['name'] ?? 'employee', ENT_QUOTES); ?></strong>.
-            <a href="report_view.php?id=<?php echo urlencode($_GET['generated']); ?>" style="color:var(--brand);font-weight:600;">
-              View report
-            </a>
+          <div class="alert alert-success" role="status" style="margin-top:var(--s4);margin-bottom:var(--s2);">
+            Report generated for <strong><?php echo htmlspecialchars($_GET['name'] ?? 'employee', ENT_QUOTES); ?></strong>.
+            <a href="report_view.php?id=<?php echo urlencode($_GET['generated']); ?>" style="color:inherit;font-weight:600;margin-left:8px;">View report</a>
           </div>
         <?php endif; ?>
 
-        <section class="blk">
-          <div class="sh"><h2>Generate a report</h2></div>
-          <p class="help" id="help"
-            data-context='<?php echo htmlspecialchars(json_encode($employeeContextMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES); ?>'>
-            <?php if ($bannerEmployee !== null && $bannerRatings > 0): ?>
-              <?php echo (int) $bannerRatings; ?> ratings on file, latest <?php echo htmlspecialchars($bannerDate !== '' ? date('M j', strtotime($bannerDate)) : $bannerDate, ENT_QUOTES); ?>. AI synthesis and remarks compile automatically. <a href="employee_view.php?uid=<?php echo urlencode($bannerEmployee['uid']); ?>">View history</a>
-            <?php elseif ($bannerEmployee !== null): ?>
-              No ratings on file yet for <?php echo htmlspecialchars($bannerEmployee['name'], ENT_QUOTES); ?>. <a href="rate_employee.php?employee=<?php echo urlencode($bannerEmployee['uid']); ?>">Rate first</a>
-            <?php endif; ?>
-          </p>
-
-          <?php if (!$employeesList): ?>
-            <p class="reports-empty-note">
-              No probationary employees yet.
-              <a class="btn primary" href="employees.php">Go to Employees</a>
-            </p>
-          <?php else: ?>
-            <form method="post" class="frm">
-              <?php echo csrf_field(); ?>
-              <div>
-                <label class="l" for="emp">Employee</label>
-                <select id="emp" name="employee" required>
-                  <?php foreach ($employeesList as $emp): ?>
-                    <option value="<?php echo htmlspecialchars($emp['uid'], ENT_QUOTES); ?>">
-                      <?php echo htmlspecialchars($emp['name'], ENT_QUOTES); ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-
-              <div>
-                <label class="l" for="typ">Report type</label>
-                <select id="typ" name="report_type" required>
-                  <?php foreach ($reportTypes as $key => $label): ?>
-                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>">
-                      <?php echo htmlspecialchars($label, ENT_QUOTES); ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-
-              <input type="hidden" name="action" value="generate_report" />
-              <button class="btn primary" type="submit" id="gen">+ Generate</button>
-            </form>
-          <?php endif; ?>
-        </section>
-
-        <section>
-          <div class="sh"><h2>Reports</h2></div>
-          <div class="tb">
-            <div class="seg" role="tablist" id="tabs">
-              <button type="button" data-t="all" role="tab" aria-selected="true">All<span class="num"><?php echo (int) $tabAll; ?></span></button>
-              <button type="button" data-t="sent" role="tab" aria-selected="false">Sent<span class="num"><?php echo (int) $tabSent; ?></span></button>
-              <button type="button" data-t="signed" role="tab" aria-selected="false">Signed off<span class="num"><?php echo (int) $tabSignedOff; ?></span></button>
-            </div>
-            <div class="f">
-              <label class="chk"><input type="checkbox" id="nopdf">No PDF yet</label>
-              <input type="search" id="q" placeholder="Search" aria-label="Search reports" autocomplete="off">
-              <select id="sort" aria-label="Sort">
-                <option value="new">Newest first</option>
-                <option value="old">Oldest first</option>
+        <section class="gen" aria-labelledby="gh">
+          <h2 id="gh">Generate a report</h2>
+          <form method="post" action="reports.php" class="form" id="genForm">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="action" value="generate_report" />
+            <div>
+              <label for="emp">Employee</label>
+              <select id="emp" name="employee" class="sel">
+                <?php foreach ($employeesList as $empOpt): ?>
+                  <option value="<?php echo htmlspecialchars($empOpt['uid'], ENT_QUOTES); ?>">
+                    <?php echo htmlspecialchars($empOpt['name'], ENT_QUOTES); ?>
+                  </option>
+                <?php endforeach; ?>
               </select>
             </div>
-          </div>
-
-          <div class="rw rh">
-            <span>Report</span>
-            <span>Date</span>
-            <span>Status</span>
-            <span>PDF</span>
-            <span></span>
-          </div>
-
-          <div id="list">
-            <?php if (!$reports): ?>
-              <div class="empty">No reports generated yet. Use the form above to create one.</div>
-            <?php else: ?>
-              <?php foreach ($reports as $report): ?>
-                <?php
-                $rowStatus = strtolower((string) ($report['displayStatus']['label'] ?? ''));
-                $rowStatusKey = 'other';
-                $dotColor = 'var(--mut)';
-                if ($rowStatus === 'sent') {
-                  $rowStatusKey = 'sent';
-                  $dotColor = 'var(--brand)';
-                } elseif ($rowStatus === 'signed off' || $rowStatus === 'signed') {
-                  $rowStatusKey = 'signed';
-                  $dotColor = 'var(--ok)';
-                } elseif (strpos($rowStatus, 'review') !== false) {
-                  $rowStatusKey = 'review';
-                  $dotColor = 'var(--amber)';
-                }
-
-                $hasPdf = !empty($report['hasFile']);
-                ?>
-                <div class="row rw"
-                  data-id="<?php echo htmlspecialchars($report['id'], ENT_QUOTES); ?>"
-                  data-who="<?php echo htmlspecialchars($report['employeeName'], ENT_QUOTES); ?>"
-                  data-type="<?php echo htmlspecialchars($report['typeLabel'], ENT_QUOTES); ?>"
-                  data-tag="<?php echo htmlspecialchars($report['byline'], ENT_QUOTES); ?>"
-                  data-search="<?php echo htmlspecialchars($report['searchHaystack'], ENT_QUOTES); ?>"
-                  data-ts="<?php echo (int) $report['sortTs']; ?>"
-                  data-status="<?php echo htmlspecialchars($rowStatusKey, ENT_QUOTES); ?>"
-                  data-has-pdf="<?php echo $hasPdf ? '1' : '0'; ?>">
-
-                  <div class="nm">
-                    <b><?php echo htmlspecialchars($report['employeeName'], ENT_QUOTES); ?></b>
-                    <span class="sm2"><?php echo htmlspecialchars($report['typeLabel'] . ' · ' . $report['byline'], ENT_QUOTES); ?></span>
-                  </div>
-
-                  <span class="d num sm2"><?php echo htmlspecialchars($report['dateTable'], ENT_QUOTES); ?></span>
-
-                  <span class="s stt">
-                    <i style="background:<?php echo $dotColor; ?>"></i>
-                    <?php echo htmlspecialchars($report['displayStatus']['label'], ENT_QUOTES); ?>
-                  </span>
-
-                  <span class="p pdf">
-                    <?php if ($hasPdf): ?>
-                      <span class="num"><?php echo htmlspecialchars($report['sizeLabel'] !== '' ? $report['sizeLabel'] : 'PDF', ENT_QUOTES); ?></span>
-                      <?php if ($report['shortSha'] !== ''): ?>
-                        <button class="num" type="button" data-h="<?php echo htmlspecialchars($report['fileSha'], ENT_QUOTES); ?>" title="Copy SHA-256 fingerprint">
-                          <?php echo htmlspecialchars($report['shortSha'], ENT_QUOTES); ?>
-                        </button>
-                      <?php endif; ?>
-                    <?php else: ?>
-                      No PDF
-                    <?php endif; ?>
-                  </span>
-
-                  <div class="act">
-                    <?php if ($hasPdf): ?>
-                      <a href="<?php echo htmlspecialchars($report['downloadHref'], ENT_QUOTES); ?>" class="btn tint" title="<?php echo htmlspecialchars($report['downloadTitle'], ENT_QUOTES); ?>">
-                        Download
-                      </a>
-                    <?php else: ?>
-                      <form method="post" style="display:inline;margin:0;">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="action" value="build_pdf" />
-                        <input type="hidden" name="report_id" value="<?php echo htmlspecialchars($report['id'], ENT_QUOTES); ?>" />
-                        <button type="submit" class="btn tint" title="Render the PDF from this report's frozen snapshot">
-                          Build PDF
-                        </button>
-                      </form>
-                    <?php endif; ?>
-
-                    <a href="<?php echo htmlspecialchars($report['viewHref'], ENT_QUOTES); ?>" class="btn x" title="View report" aria-label="View <?php echo htmlspecialchars($report['title'], ENT_QUOTES); ?>">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </a>
-
-                    <?php if ($report['showArchive']): ?>
-                      <form method="post" style="display:inline;margin:0;">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="action" value="archive_report" />
-                        <input type="hidden" name="report_id" value="<?php echo htmlspecialchars($report['id'], ENT_QUOTES); ?>" />
-                        <button type="submit" class="btn x" title="Archive report" aria-label="Archive <?php echo htmlspecialchars($report['title'], ENT_QUOTES); ?>">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4"/></svg>
-                        </button>
-                      </form>
-                    <?php endif; ?>
-                  </div>
-
-                </div>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </div>
-
-          <div class="ft">
-            <span id="cap"></span>
             <div>
-              <button type="button" class="btn tint" id="prev" disabled>Previous</button>
-              <button type="button" class="btn tint" id="next" disabled>Next</button>
+              <label for="rt">Report type</label>
+              <select id="rt" name="report_type" class="sel">
+                <?php foreach ($reportTypes as $rKey => $rLabel): ?>
+                  <option value="<?php echo htmlspecialchars($rKey, ENT_QUOTES); ?>">
+                    <?php echo htmlspecialchars($rLabel, ENT_QUOTES); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
             </div>
+            <button type="submit" class="btn" id="gen"><svg class="i"><use href="#i-plus"/></svg>Generate</button>
+          </form>
+          <div class="note warn" id="dup" hidden><span class="dot"></span><span id="dupt"></span></div>
+          <div class="note" id="noteInfo">
+            <span class="dot" style="background:var(--good)"></span>
+            <span id="noteText"><span class="mono"><?php echo (int) $bannerRatings; ?></span> ratings on file<?php echo $bannerDate !== '' ? ', latest <span class="mono">' . htmlspecialchars($bannerDate, ENT_QUOTES) . '</span>' : ''; ?>.</span>
+            <a href="<?php echo $bannerEmployee ? 'employee_view.php?uid=' . urlencode($bannerEmployee['uid']) : '#'; ?>" class="link" id="noteLink">View history</a>
           </div>
-
-          <p class="note">Every PDF carries a SHA-256 fingerprint, verifiable on its report page.</p>
         </section>
 
-      </div>
+        <section aria-label="Reports">
+          <div class="bar">
+            <div class="tabs" role="tablist" id="tabs" aria-label="Status"></div>
+            <div class="tools">
+              <button type="button" class="chip" id="nopdf" aria-pressed="false">No PDF</button>
+              <div class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" class="f" type="search" placeholder="Search" aria-label="Search reports"></div>
+            </div>
+          </div>
+          <div class="head">
+            <button type="button" class="sort" data-k="name">Report<svg class="i"><use href="#i-up"/></svg></button>
+            <button type="button" class="sort" data-k="date">Date<svg class="i"><use href="#i-up"/></svg></button>
+            <button type="button" class="sort" data-k="status">Status<svg class="i"><use href="#i-up"/></svg></button>
+            <span class="hp">PDF</span><span></span>
+          </div>
+          <div id="rows"></div>
+          <div class="foot"><span id="count"></span><span>Click the shield on a PDF to copy its SHA-256 fingerprint.</span></div>
+        </section>
+      </div></div>
     </main>
-
-    <div class="toast" id="toast" hidden></div>
   </div>
+
+  <div class="toast" id="toast" role="status"></div>
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 
@@ -1199,144 +1100,185 @@ foreach ($reports as $r) {
   </script>
 
   <script>
-    (function () {
-      var list = document.getElementById('list');
-      if (!list) return;
-      var qInput = document.getElementById('q');
-      var sortSelect = document.getElementById('sort');
-      var noPdfCheck = document.getElementById('nopdf');
-      var cap = document.getElementById('cap');
-      var prevBtn = document.getElementById('prev');
-      var nextBtn = document.getElementById('next');
-      var tabBtns = Array.from(document.querySelectorAll('#tabs button'));
-      var empSelect = document.getElementById('emp');
-      var helpText = document.getElementById('help');
-      var toastEl = document.getElementById('toast');
-      var toastTimer;
+  var R = <?php echo json_encode($rRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var MONF = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var CLS = { "Needs review": "s-review", "Needs Review": "s-review", "Finalized": "s-final", "Sent": "s-sent", "Signed off": "s-signed", "Signed Off": "s-signed", "Archived": "s-arch" };
+  var ORD = { "Needs review": 0, "Needs Review": 0, "Finalized": 1, "Sent": 2, "Signed off": 3, "Signed Off": 3, "Archived": 4 };
+  var NEEDS_PDF = ["Finalized", "Sent", "Signed off", "Signed Off", "Needs review", "Needs Review"];
+  var st = { t: "all", q: "", nopdf: false, k: "date", dir: "desc" };
+  var $ = function(i) { return document.getElementById(i); };
+  var I = function(id) { return '<svg class="i"><use href="#i-' + id + '"/></svg>'; };
+  var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  var empCtx = <?php echo json_encode($employeeContextMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
-      function toast(msg) {
-        if (!toastEl) return;
-        clearTimeout(toastTimer);
-        toastEl.hidden = false;
-        toastEl.textContent = msg;
-        toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3500);
-      }
+  function cap(s) { return (s || '').replace(/\b\w/g, function(c) { return c.toUpperCase(); }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); }
+  function fd(s) {
+    if (!s) return '';
+    var p = s.split("-");
+    if (p.length < 3) return s;
+    return MON[+p[1] - 1] + " " + (+p[2]);
+  }
 
-      var PS = 6;
-      var tab = 'all';
-      var page = 1;
-      var ctxMap = {};
+  function dupCheck() {
+    var empSel = $("emp");
+    var rtSel = $("rt");
+    if (!empSel || !rtSel) return;
+    var eName = empSel.options[empSel.selectedIndex]?.text.trim().toLowerCase() || "";
+    var tLabel = rtSel.options[rtSel.selectedIndex]?.text.trim() || "";
+    var curMonth = new Date().toISOString().slice(0, 7);
+    var hit = R.filter(function(r) {
+      return r.n.toLowerCase() === eName && r.t === tLabel && r.s !== "Archived" && r.d.indexOf(curMonth) === 0;
+    })[0];
+    $("dup").hidden = !hit;
+    if (hit) {
+      $("dupt").textContent = cap(eName) + " already has a " + tLabel + " from " + fd(hit.d) + " this month. You can still generate another.";
+    }
+  }
 
-      try {
-        ctxMap = helpText ? JSON.parse(helpText.getAttribute('data-context') || '{}') : {};
-      } catch (e) { ctxMap = {}; }
+  function updateEmpContext() {
+    var empId = $("emp").value;
+    var ctx = empCtx[empId];
+    if (ctx) {
+      var datePart = ctx.date ? (', latest <span class="mono">' + ctx.date + '</span>') : '';
+      $("noteText").innerHTML = '<span class="mono">' + ctx.count + '</span> ratings on file' + datePart + '.';
+      $("noteLink").href = ctx.history || '#';
+      $("noteInfo").hidden = false;
+    }
+  }
 
-      function updateHelp() {
-        if (!empSelect || !helpText) return;
-        var entry = ctxMap[empSelect.value];
-        if (!entry) return;
-        if ((entry.count || 0) > 0) {
-          var latest = entry.date ? ', latest ' + entry.date : '';
-          helpText.innerHTML = entry.count + ' ratings on file' + latest + '. AI synthesis and remarks compile automatically. <a href="' + entry.history + '">View history</a>';
-        } else {
-          helpText.innerHTML = 'No ratings on file yet for ' + entry.name + '. <a href="rate_employee.php?employee=' + encodeURIComponent(empSelect.value) + '">Rate first</a>';
+  function renderTabs() {
+    var c = { all: R.length, Sent: 0, "Signed off": 0 };
+    R.forEach(function(r) {
+      var sNorm = (r.s === "Signed Off" ? "Signed off" : r.s);
+      if (c[sNorm] !== undefined) c[sNorm]++;
+    });
+    var defs = [["all", "All"], ["Sent", "Sent"], ["Signed off", "Signed off"]];
+    $("tabs").innerHTML = defs.map(function(d) {
+      return '<button type="button" class="tab" role="tab" aria-selected="' + (st.t === d[0]) + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + (c[d[0]] || 0) + '</span></button>';
+    }).join("");
+  }
+
+  function val(r, k) {
+    return k === "name" ? r.n.toLowerCase() : k === "date" ? r.d : (ORD[r.s] !== undefined ? ORD[r.s] : 99);
+  }
+
+  function render() {
+    var rows = R.filter(function(r) {
+      var sNorm = (r.s === "Signed Off" ? "Signed off" : r.s);
+      if (st.t !== "all" && sNorm !== st.t) return false;
+      if (st.nopdf && r.pdf) return false;
+      if (st.q && (r.n + " " + r.t + " " + r.by + " " + r.s).toLowerCase().indexOf(st.q) < 0) return false;
+      return true;
+    });
+    rows.sort(function(a, b) {
+      var x = val(a, st.k), y = val(b, st.k);
+      var c = x < y ? -1 : x > y ? 1 : 0;
+      if (!c) c = b.idx - a.idx;
+      return c * (st.dir === "asc" ? 1 : -1);
+    });
+    var prevM = "", cnt = {};
+    if (st.k === "date") rows.forEach(function(r) { var m = r.d.slice(0, 7); cnt[m] = (cnt[m] || 0) + 1; });
+    $("rows").innerHTML = rows.map(function(r) {
+      var arch = r.s === "Archived", g = "";
+      if (st.k === "date" && r.d.length >= 7) {
+        var m = r.d.slice(0, 7);
+        if (m !== prevM) {
+          prevM = m;
+          var monthIndex = +m.slice(5) - 1;
+          var monthName = MONF[monthIndex] || m;
+          g = '<div class="grp"><span>' + monthName + ' ' + m.slice(0, 4) + '</span><span class="mono">' + (cnt[m] || 0) + '</span></div>';
         }
       }
+      var pdf = r.pdf
+        ? '<span class="pdf"><span class="mono">' + esc(r.pdf) + '</span><button type="button" class="ibtn" data-sha="' + esc(r.sha) + '" data-tip="Copy SHA-256" aria-label="Copy SHA-256 fingerprint">' + I("shield") + '</button></span>'
+        : (NEEDS_PDF.indexOf(r.s) >= 0 ? '<span class="pdf warn">Not built</span>' : '<span class="pdf none">-</span>');
+      var main = r.pdf
+        ? '<a class="sbtn" href="' + esc(r.dl) + '" download>' + I("dl") + 'Download</a>'
+        : '<form method="post" action="reports.php" style="display:inline;margin:0;"><input type="hidden" name="csrf_token" value="' + esc(csrfToken) + '"><input type="hidden" name="action" value="build_pdf"><input type="hidden" name="report_id" value="' + esc(r.id) + '"><button type="submit" class="sbtn">Build PDF</button></form>';
+      var archBtn = (arch || !r.showArchive)
+        ? '<button type="button" class="ibtn" hidden-slot aria-hidden="true" tabindex="-1"></button>'
+        : '<form method="post" action="reports.php" style="display:inline;margin:0;"><input type="hidden" name="csrf_token" value="' + esc(csrfToken) + '"><input type="hidden" name="action" value="archive_report"><input type="hidden" name="report_id" value="' + esc(r.id) + '"><button type="submit" class="ibtn" data-tip="Archive" aria-label="Archive report">' + I("arch") + '</button></form>';
+      var dispStatus = r.s;
+      if (r.s === "Needs Review" || r.s === "Needs review") dispStatus = "Needs review";
+      else if (r.s === "Signed Off" || r.s === "Signed off") dispStatus = "Signed off";
+      return g + '<div class="row' + (arch ? ' arch' : '') + '"><div class="who"><b>' + esc(cap(r.n)) + '</b><span>' + esc(r.t) + ' · ' + esc(r.by) + '</span></div>'
+        + '<span class="date mono">' + esc(fd(r.d)) + '</span>'
+        + '<span class="status ' + (CLS[r.s] || 's-final') + '"><span class="dot"></span>' + esc(dispStatus) + '</span>'
+        + pdf
+        + '<div class="acts">' + main + '<a class="ibtn" href="' + esc(r.view) + '" data-tip="Preview" aria-label="Preview report">' + I("eye") + '</a>'
+        + archBtn + '</div></div>';
+    }).join("") || '<div class="empty"><b>No reports match</b><p>Try a different filter or search.</p></div>';
+    var f = st.q || st.nopdf || st.t !== "all";
+    $("count").textContent = f ? rows.length + " results" : "Showing " + rows.length + " of " + R.length;
+    document.querySelectorAll(".sort").forEach(function(b) {
+      var on = b.dataset.k === st.k;
+      b.toggleAttribute("data-on", on);
+      b.dataset.dir = on ? st.dir : "asc";
+    });
+  }
 
-      var rows = Array.from(list.querySelectorAll('.row'));
+  var timer;
+  function toast(m) {
+    var t = $("toast");
+    t.textContent = m;
+    t.classList.add("on");
+    clearTimeout(timer);
+    timer = setTimeout(function() { t.classList.remove("on"); }, 3500);
+  }
 
-      function render() {
-        var query = qInput ? qInput.value.trim().toLowerCase() : '';
-        var sortVal = sortSelect ? sortSelect.value : 'new';
-        var noPdfOnly = noPdfCheck ? noPdfCheck.checked : false;
+  $("tabs").addEventListener("click", function(e) {
+    var b = e.target.closest(".tab");
+    if (!b) return;
+    st.t = b.dataset.t;
+    renderTabs();
+    render();
+  });
 
-        var matched = rows.filter(function (r) {
-          if (tab !== 'all') {
-            var st = r.getAttribute('data-status') || '';
-            if (st !== tab) return false;
-          }
-          if (noPdfOnly) {
-            var hasPdf = r.getAttribute('data-has-pdf');
-            if (hasPdf !== '0') return false;
-          }
-          if (query) {
-            var searchTxt = r.getAttribute('data-search') || '';
-            if (searchTxt.indexOf(query) === -1) return false;
-          }
-          return true;
-        });
+  $("q").addEventListener("input", function(e) {
+    st.q = e.target.value.toLowerCase().trim();
+    render();
+  });
 
-        matched.sort(function (a, b) {
-          var ta = parseInt(a.getAttribute('data-ts') || '0', 10);
-          var tb = parseInt(b.getAttribute('data-ts') || '0', 10);
-          if (ta === tb) return 0;
-          return sortVal === 'new' ? tb - ta : ta - tb;
-        });
+  $("nopdf").addEventListener("click", function(e) {
+    st.nopdf = !st.nopdf;
+    e.currentTarget.setAttribute("aria-pressed", st.nopdf);
+    render();
+  });
 
-        var total = matched.length;
-        var pages = Math.max(1, Math.ceil(total / PS));
-        if (page > pages) page = pages;
+  document.querySelector(".head").addEventListener("click", function(e) {
+    var b = e.target.closest(".sort");
+    if (!b) return;
+    if (st.k === b.dataset.k) {
+      st.dir = st.dir === "asc" ? "desc" : "asc";
+    } else {
+      st.k = b.dataset.k;
+      st.dir = b.dataset.k === "date" ? "desc" : "asc";
+    }
+    render();
+  });
 
-        rows.forEach(function (r) { r.style.display = 'none'; });
+  $("emp").addEventListener("change", function() {
+    updateEmpContext();
+    dupCheck();
+  });
+  $("rt").addEventListener("change", dupCheck);
 
-        var start = (page - 1) * PS;
-        var end = Math.min(page * PS, total);
-        matched.slice(start, end).forEach(function (r) {
-          r.style.display = '';
-          list.appendChild(r);
-        });
-
-        if (cap) {
-          cap.textContent = total ? ('Showing ' + (total === 0 ? 0 : start + 1) + ' to ' + end + ' of ' + total) : 'No reports match this filter.';
-        }
-
-        if (prevBtn) prevBtn.disabled = page <= 1;
-        if (nextBtn) nextBtn.disabled = page >= pages || total === 0;
-
-        tabBtns.forEach(function (b) {
-          var isSel = b.getAttribute('data-t') === tab;
-          b.setAttribute('aria-selected', isSel ? 'true' : 'false');
-        });
+  document.addEventListener("click", function(e) {
+    var sBtn = e.target.closest("[data-sha]");
+    if (sBtn && sBtn.dataset.sha) {
+      var sha = sBtn.dataset.sha;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(sha);
       }
+      toast("SHA-256 fingerprint copied");
+    }
+  });
 
-      tabBtns.forEach(function (b) {
-        b.addEventListener('click', function () {
-          tab = b.getAttribute('data-t') || 'all';
-          page = 1;
-          render();
-        });
-      });
-
-      if (qInput) qInput.addEventListener('input', function () { page = 1; render(); });
-      if (sortSelect) sortSelect.addEventListener('change', function () { page = 1; render(); });
-      if (noPdfCheck) noPdfCheck.addEventListener('change', function () { page = 1; render(); });
-
-      if (prevBtn) {
-        prevBtn.addEventListener('click', function () {
-          if (page > 1) { page--; render(); }
-        });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', function () {
-          page++; render();
-        });
-      }
-
-      if (empSelect) empSelect.addEventListener('change', updateHelp);
-
-      document.addEventListener('click', function (e) {
-        var hBtn = e.target.closest('[data-h]');
-        if (hBtn) {
-          var hash = hBtn.getAttribute('data-h') || hBtn.textContent;
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(hash);
-          }
-          toast('Fingerprint copied');
-        }
-      });
-
-      render();
-    })();
+  renderTabs();
+  render();
+  dupCheck();
   </script>
 </body>
 </html>

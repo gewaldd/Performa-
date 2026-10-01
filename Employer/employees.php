@@ -690,11 +690,12 @@ foreach ($directory as $e) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <?php employer_brand_head(); ?>
   <title>Employees | Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
@@ -705,18 +706,23 @@ foreach ($directory as $e) {
     <?php employer_render_shell('Employees'); ?>
 
     <main class="main employees-page" id="employeesMain">
-      <div class="in">
+      <div class="cq"><div class="wrap">
 
-        <div class="top">
+        <header>
+          <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+            </svg>
+          </button>
           <div>
             <h1 id="h1">Employees</h1>
-            <p class="sub">Manage and organize your workforce directory.</p>
+            <p class="sub"><span class="mono"><?php echo (int) $statTotal; ?></span> employees &middot; <span class="mono"><?php echo (int) $statProb; ?></span> on probation &middot; <span class="mono"><?php echo (int) $statBelow; ?></span> below target</p>
           </div>
-          <div class="tr">
-            <button type="button" class="btn txt" id="exp">Export list</button>
-            <a href="register_employee.php" class="btn primary" style="text-decoration:none;">+ Add employee</a>
+          <div class="hdr-r">
+            <button type="button" class="link" id="exp">Export</button>
+            <a href="add_employee.php" class="btn"><svg class="i"><use href="#i-plus"/></svg>Add employee</a>
           </div>
-        </div>
+        </header>
 
         <?php if (!empty($resendError)): ?>
           <div class="alert alert-error" role="status" aria-live="polite" style="margin-bottom:20px;">
@@ -724,86 +730,64 @@ foreach ($directory as $e) {
           </div>
         <?php endif; ?>
 
-        <?php if (!empty($flashEmail)): ?>
-          <div class="alert alert-success" role="status" aria-live="polite" style="margin-bottom:20px;">
-            Fresh credentials generated and emailed to <strong><?php echo htmlspecialchars($flashEmail, ENT_QUOTES); ?></strong>.
-          </div>
-        <?php endif; ?>
-
-        <section class="stats" id="stats">
-          <div class="st">
-            <div class="l">Employees</div>
-            <div class="v num"><?php echo (int) $statTotal; ?></div>
-            <div class="n"><?php echo (int) $statReg; ?> regular</div>
-          </div>
-          <div class="st">
-            <div class="l">On probation</div>
-            <div class="v num"><?php echo (int) $statProb; ?></div>
-            <div class="n"><?php echo (int) $statDue30; ?> due within 30 days</div>
-          </div>
-          <div class="st">
-            <div class="l">Below target</div>
-            <div class="v num" style="color:var(--bad)"><?php echo (int) $statBelow; ?></div>
-            <div class="n">Latest score under target</div>
-          </div>
-          <div class="st">
-            <div class="l">Exceeding target</div>
-            <div class="v num" style="color:var(--ok)"><?php echo (int) $statExceed; ?></div>
-            <div class="n">Score at or above target</div>
-          </div>
-        </section>
-
-        <section class="cd tbl">
-          <div class="tb">
-            <div class="seg" role="tablist" id="tabs">
-              <button type="button" data-t="all" role="tab" aria-selected="true">All<span class="num"><?php echo (int) $statTotal; ?></span></button>
-              <button type="button" data-t="prob" role="tab" aria-selected="false">Probationary<span class="num"><?php echo (int) $statProb; ?></span></button>
-              <button type="button" data-t="reg" role="tab" aria-selected="false">Regular<span class="num"><?php echo (int) $statReg; ?></span></button>
+          <?php if (isset($_GET['resent']) && ($_GET['emailed'] ?? '') === '1'): ?>
+            <div class="alert alert-success" role="status" aria-live="polite" style="margin-bottom:20px;">
+              Fresh credentials generated and emailed to <strong><?php echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES); ?></strong>.
             </div>
-            <div class="f">
-              <input type="search" id="q" placeholder="Search name, email, department" aria-label="Search employees" autocomplete="off" />
-              <select id="dept" aria-label="Department">
-                <option value="all">All departments</option>
-                <?php foreach ($departments as $d): ?>
-                  <option value="<?php echo htmlspecialchars($d, ENT_QUOTES); ?>">
-                    <?php echo htmlspecialchars(ucfirst($d), ENT_QUOTES); ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-              <select id="perf" aria-label="Performance">
-                <option value="all">All performance</option>
-                <option value="below">Below target</option>
-                <option value="exceed">Exceeding</option>
-                <option value="none">Not yet rated</option>
-              </select>
-              <select id="sort" aria-label="Sort">
-                <option value="def">Default order</option>
-                <option value="name">Name A to Z</option>
-                <option value="left">Fewest days left</option>
-                <option value="score">Lowest score</option>
-              </select>
-              <button type="button" class="btn txt" id="clr" hidden>Clear filters</button>
+          <?php elseif (isset($_GET['resent'])): ?>
+            <div class="alert alert-error" role="status" aria-live="polite" style="margin-bottom:20px;">
+              Password rotated for <strong><?php echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES); ?></strong>,
+              but the email could not be delivered. Check the Brevo configuration, then resend again.
             </div>
-          </div>
+          <?php endif; ?>
 
-          <div class="rw rh">
-            <span>Employee</span>
-            <span>Department</span>
-            <span>Probation timeline</span>
-            <span>Performance</span>
-            <span></span>
+        <div class="bar">
+          <div class="tabs" role="tablist" id="tabs" aria-label="Employment type">
+            <button type="button" class="tab" data-t="all" role="tab" aria-selected="true">All<span class="n"><?php echo (int) $statTotal; ?></span></button>
+            <button type="button" class="tab" data-t="prob" role="tab" aria-selected="false">Probationary<span class="n"><?php echo (int) $statProb; ?></span></button>
+            <button type="button" class="tab" data-t="reg" role="tab" aria-selected="false">Regular<span class="n"><?php echo (int) $statReg; ?></span></button>
           </div>
+          <div class="tools">
+            <div class="search">
+              <svg class="i"><use href="#i-search"/></svg>
+              <input type="search" id="q" class="f" placeholder="Search name or email" aria-label="Search employees" autocomplete="off" />
+            </div>
+            <select id="dept" class="f" aria-label="Department">
+              <option value="all">All departments</option>
+              <?php foreach ($departments as $d): ?>
+                <option value="<?php echo htmlspecialchars($d, ENT_QUOTES); ?>">
+                  <?php echo htmlspecialchars(ucfirst($d), ENT_QUOTES); ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <select id="perf" class="f" aria-label="Performance">
+              <option value="all">All performance</option>
+              <option value="below">Below target</option>
+              <option value="exceed">Exceeding</option>
+              <option value="none">Not rated</option>
+            </select>
+            <button type="button" class="clear" id="clr" hidden>Clear</button>
+          </div>
+        </div>
 
-          <div id="list">
+        <div class="head">
+          <button type="button" class="sort" data-k="name">Employee<svg class="i"><use href="#i-up"/></svg></button>
+          <span>Department</span>
+          <button type="button" class="sort" data-k="day">Probation<svg class="i"><use href="#i-up"/></svg></button>
+          <button type="button" class="sort" data-k="score">Performance<svg class="i"><use href="#i-up"/></svg></button>
+          <span></span>
+        </div>
+
+        <div id="rows">
             <?php if (!$directory): ?>
-              <div class="empty">No employees found.</div>
+              <div class="empty"><b>No employees match</b>Try a different search or clear the filters.</div>
             <?php else: ?>
               <?php foreach ($directory as $idx => $row): ?>
                 <?php
                 $isProb = ($row['type'] ?? '') === 'Probationary';
                 $perfFilterSlug = 'none';
-                $perfDotColor = 'var(--mut)';
-                $perfDisplayLabel = 'Not yet rated';
+                $perfDotColor = 'var(--ink-3)';
+                $perfDisplayLabel = 'Not rated';
 
                 if ($row['scoreValue'] !== null) {
                   $sc = (float) $row['scoreValue'];
@@ -830,7 +814,17 @@ foreach ($directory as $e) {
                   }
                 }
                 ?>
-                <div class="row rw"
+                <?php
+                $perfLevel = 'none';
+                if ($perfFilterSlug === 'below') {
+                  $perfLevel = 'bad';
+                } elseif ($perfFilterSlug === 'exceed') {
+                  $perfLevel = 'good';
+                }
+                ?>
+                <a class="row"
+                  href="employee_view.php?uid=<?php echo urlencode($row['uid']); ?>"
+                  aria-label="Open <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>"
                   data-idx="<?php echo (int) $idx; ?>"
                   data-id="<?php echo htmlspecialchars($row['uid'], ENT_QUOTES); ?>"
                   data-n="<?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>"
@@ -842,81 +836,52 @@ foreach ($directory as $e) {
                   data-sc="<?php echo $row['scoreValue'] !== null ? (float)$row['scoreValue'] : -1; ?>"
                   data-pf="<?php echo htmlspecialchars($perfFilterSlug, ENT_QUOTES); ?>">
 
-                  <div class="e" data-a="view" data-uid="<?php echo htmlspecialchars($row['uid'], ENT_QUOTES); ?>" style="cursor:pointer;">
+                  <div class="who">
                     <span class="av"><?php echo htmlspecialchars($row['initials'], ENT_QUOTES); ?></span>
-                    <div class="nm">
-                      <b>
-                        <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>
-                        <?php if ($isProb): ?>
-                          <span class="ty" style="display:inline">Probationary</span>
-                        <?php endif; ?>
-                      </b>
+                    <div>
+                      <b><?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?></b>
                       <?php if (!empty($row['email'])): ?>
-                        <span class="sm2"><?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?></span>
+                        <span><?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?></span>
                       <?php endif; ?>
                     </div>
                   </div>
 
-                  <span class="dp sm2" style="font-size:13.5px"><?php echo htmlspecialchars(!empty($row['dept']) ? ucfirst($row['dept']) : '-', ENT_QUOTES); ?></span>
+                  <?php
+                  $deptDisplay = !empty($row['dept']) ? ucfirst($row['dept']) : (!empty($row['role']) ? ucfirst($row['role']) : '-');
+                  ?>
+                  <span class="dept"><?php echo htmlspecialchars($deptDisplay, ENT_QUOTES); ?></span>
 
-                  <div class="tm">
+                  <div class="prob">
                     <?php if ($isProb && $row['daySinceValue'] !== null && $row['daysLeftValue'] !== null): ?>
                       <?php
                       $probPeriod = $row['probationPeriod'] ?? 180;
                       $dayVal = (int) $row['daySinceValue'];
                       $leftVal = (int) $row['daysLeftValue'];
                       $pctVal = (float) ($probPeriod > 0 ? min(100, max(0, round($dayVal / $probPeriod * 100))) : 0);
-                      $isLate = $leftVal <= 30;
                       ?>
-                      <span class="num" style="font-size:12.5px">Day <?php echo $dayVal; ?></span>
-                      <span class="sm2 num"> · <?php echo $leftVal; ?> left</span>
-                      <div class="track">
-                        <div class="fill <?php echo $isLate ? 'late' : ''; ?>" style="width:<?php echo $pctVal; ?>%"></div>
-                      </div>
+                      <div class="t"><span><b class="mono">Day <?php echo $dayVal; ?></b> of <?php echo (int) $probPeriod; ?></span><span class="mono"><?php echo $leftVal; ?> left</span></div>
+                      <div class="track"><i style="width:<?php echo $pctVal; ?>%"></i></div>
                     <?php else: ?>
-                      <span class="sm2">-</span>
+                      <span class="reg">Regular</span>
                     <?php endif; ?>
                   </div>
 
-                  <span class="ps stt">
-                    <i style="background:<?php echo $perfDotColor; ?>"></i>
-                    <?php echo htmlspecialchars($perfDisplayLabel, ENT_QUOTES); ?>
-                    <?php if ($row['scoreValue'] !== null && $perfFilterSlug !== 'none'): ?>
-                      <span class="num sm2"><?php echo number_format((float)$row['scoreValue'], 1); ?></span>
-                    <?php endif; ?>
-                  </span>
-
-                  <div class="act">
-                    <a href="employee_view.php?uid=<?php echo urlencode($row['uid']); ?>" class="btn tint" style="text-decoration:none;">View</a>
-                    <?php if (!empty($row['email'])): ?>
-                      <a href="mailto:<?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?>" class="btn x" title="Email <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>" aria-label="Email <?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                      </a>
-                    <?php else: ?>
-                      <button type="button" class="btn x" disabled title="No email on file">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-                      </button>
-                    <?php endif; ?>
+                  <div class="perf <?php echo $perfLevel; ?>">
+                    <span class="dot"></span><?php echo htmlspecialchars($perfDisplayLabel, ENT_QUOTES); ?><?php if ($row['scoreValue'] !== null && $perfFilterSlug !== 'none'): ?><span class="mono"><?php echo number_format((float)$row['scoreValue'], 1); ?></span><?php endif; ?>
                   </div>
+                  <svg class="i go"><use href="#i-go"/></svg>
 
-                </div>
+                </a>
               <?php endforeach; ?>
             <?php endif; ?>
           </div>
 
-          <div class="ft">
-            <span id="cap"></span>
-            <div>
-              <button type="button" class="btn tint" id="prev" disabled>Previous</button>
-              <button type="button" class="btn tint" id="next" disabled>Next</button>
-            </div>
-          </div>
-        </section>
+          <div class="foot" id="foot"></div>
 
-      </div>
+      </div></div>
     </main>
 
-    <div class="toast" id="toast" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
   </div>
 
   <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
@@ -925,19 +890,16 @@ foreach ($directory as $e) {
     window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
   </script>
 
-  <script>
+    <script>
     (function () {
-      var list = document.getElementById('list');
+      var list = document.getElementById('rows');
       if (!list) return;
       var qInput = document.getElementById('q');
       var deptSelect = document.getElementById('dept');
       var perfSelect = document.getElementById('perf');
-      var sortSelect = document.getElementById('sort');
       var clrBtn = document.getElementById('clr');
-      var cap = document.getElementById('cap');
-      var prevBtn = document.getElementById('prev');
-      var nextBtn = document.getElementById('next');
-      var tabBtns = Array.from(document.querySelectorAll('#tabs button'));
+      var foot = document.getElementById('foot');
+      var tabBtns = Array.from(document.querySelectorAll('#tabs .tab'));
       var expBtn = document.getElementById('exp');
       var toastEl = document.getElementById('toast');
       var toastTimer;
@@ -946,28 +908,47 @@ foreach ($directory as $e) {
         if (!toastEl) return;
         clearTimeout(toastTimer);
         toastEl.hidden = false;
+        toastEl.classList.add('on');
         toastEl.textContent = msg;
-        toastTimer = setTimeout(function () { toastEl.hidden = true; }, 3500);
+        toastTimer = setTimeout(function () {
+          toastEl.classList.remove('on');
+          toastEl.hidden = true;
+        }, 3500);
       }
 
-      var PS = 8;
       var tab = 'all';
-      var page = 1;
+      var sortK = null;
+      var sortDir = 'asc';
+      var totals = { all: 0, prob: 0, reg: 0 };
       var rows = Array.from(list.querySelectorAll('.row'));
+      rows.forEach(function (r) {
+        var t = r.getAttribute('data-t');
+        totals.all++;
+        if (t === 'prob') totals.prob++;
+        if (t === 'reg') totals.reg++;
+      });
 
       function isDirty() {
         return (qInput && qInput.value.trim() !== '') ||
                (deptSelect && deptSelect.value !== 'all') ||
                (perfSelect && perfSelect.value !== 'all') ||
-               (sortSelect && sortSelect.value !== 'def') ||
                tab !== 'all';
+      }
+
+      function sortVal(r, k) {
+        if (k === 'name') return (r.getAttribute('data-n') || '').toLowerCase();
+        if (k === 'day') {
+          var d = parseInt(r.getAttribute('data-day') || '-1', 10);
+          return d === -1 ? 9999 : d;
+        }
+        var s = parseFloat(r.getAttribute('data-sc') || '-1');
+        return s === -1 ? -1 : s;
       }
 
       function getMatched() {
         var query = qInput ? qInput.value.trim().toLowerCase() : '';
         var dVal = deptSelect ? deptSelect.value : 'all';
         var pVal = perfSelect ? perfSelect.value : 'all';
-        var sVal = sortSelect ? sortSelect.value : 'def';
 
         var filtered = rows.filter(function (r) {
           if (tab !== 'all') {
@@ -993,109 +974,87 @@ foreach ($directory as $e) {
           return true;
         });
 
-        filtered.sort(function (a, b) {
-          if (sVal === 'name') {
-            var na = (a.getAttribute('data-n') || '').toLowerCase();
-            var nb = (b.getAttribute('data-n') || '').toLowerCase();
-            return na.localeCompare(nb);
-          } else if (sVal === 'left') {
-            var la = parseInt(a.getAttribute('data-left') || '-1', 10);
-            var lb = parseInt(b.getAttribute('data-left') || '-1', 10);
-            if (la === -1 && lb === -1) return 0;
-            if (la === -1) return 1;
-            if (lb === -1) return -1;
-            return la - lb;
-          } else if (sVal === 'score') {
-            var sa = parseFloat(a.getAttribute('data-sc') || '-1');
-            var sb = parseFloat(b.getAttribute('data-sc') || '-1');
-            if (sa === -1 && sb === -1) return 0;
-            if (sa === -1) return 1;
-            if (sb === -1) return -1;
-            return sa - sb;
-          } else {
-            var ia = parseInt(a.getAttribute('data-idx') || '0', 10);
-            var ib = parseInt(b.getAttribute('data-idx') || '0', 10);
-            return ia - ib;
-          }
-        });
+        if (sortK) {
+          filtered.sort(function (a, b) {
+            var x = sortVal(a, sortK), y = sortVal(b, sortK);
+            return (x < y ? -1 : x > y ? 1 : 0) * (sortDir === 'asc' ? 1 : -1);
+          });
+        }
 
         return filtered;
       }
 
       function render() {
         var matched = getMatched();
-        var total = matched.length;
-        var pages = Math.max(1, Math.ceil(total / PS));
-        if (page > pages) page = pages;
 
         rows.forEach(function (r) { r.style.display = 'none'; });
 
-        var start = (page - 1) * PS;
-        var end = Math.min(page * PS, total);
-        matched.slice(start, end).forEach(function (r) {
-          r.style.display = '';
-          list.appendChild(r);
-        });
+        var emptyDyn = list.querySelector('.empty-dyn');
+        if (emptyDyn) emptyDyn.remove();
 
-        if (cap) {
-          cap.textContent = total ? ('Showing ' + (total === 0 ? 0 : start + 1) + ' to ' + end + ' of ' + total) : 'No employees match.';
+        if (!matched.length) {
+          var el = document.createElement('div');
+          el.className = 'empty empty-dyn';
+          el.innerHTML = '<b>No employees match</b>Try a different search or clear the filters.';
+          list.appendChild(el);
+        } else {
+          matched.forEach(function (r) {
+            r.style.display = '';
+            list.appendChild(r);
+          });
         }
 
-        if (prevBtn) prevBtn.disabled = page <= 1;
-        if (nextBtn) nextBtn.disabled = page >= pages || total === 0;
-        if (clrBtn) clrBtn.hidden = !isDirty();
+        var f = isDirty();
+        if (foot) {
+          foot.textContent = f ? matched.length + ' results' : 'Showing ' + matched.length + ' of ' + (totals[tab] !== undefined ? totals[tab] : totals.all);
+        }
+        if (clrBtn) clrBtn.hidden = !f;
 
         tabBtns.forEach(function (b) {
           var isSel = b.getAttribute('data-t') === tab;
           b.setAttribute('aria-selected', isSel ? 'true' : 'false');
+        });
+
+        document.querySelectorAll('#employeesMain .sort').forEach(function (b) {
+          var on = b.dataset.k === sortK;
+          b.toggleAttribute('data-on', on);
+          b.dataset.dir = on ? sortDir : 'asc';
         });
       }
 
       tabBtns.forEach(function (b) {
         b.addEventListener('click', function () {
           tab = b.getAttribute('data-t') || 'all';
-          page = 1;
           render();
         });
       });
 
-      if (qInput) qInput.addEventListener('input', function () { page = 1; render(); });
-      if (deptSelect) deptSelect.addEventListener('change', function () { page = 1; render(); });
-      if (perfSelect) perfSelect.addEventListener('change', function () { page = 1; render(); });
-      if (sortSelect) sortSelect.addEventListener('change', function () { page = 1; render(); });
+      if (qInput) qInput.addEventListener('input', function () { render(); });
+      if (deptSelect) deptSelect.addEventListener('change', function () { render(); });
+      if (perfSelect) perfSelect.addEventListener('change', function () { render(); });
+
+      document.querySelector('#employeesMain .head').addEventListener('click', function (e) {
+        var b = e.target.closest('.sort');
+        if (!b) return;
+        if (sortK === b.dataset.k) {
+          sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortK = b.dataset.k;
+          sortDir = sortK === 'score' ? 'desc' : 'asc';
+        }
+        render();
+      });
 
       if (clrBtn) {
         clrBtn.addEventListener('click', function () {
           if (qInput) qInput.value = '';
           if (deptSelect) deptSelect.value = 'all';
           if (perfSelect) perfSelect.value = 'all';
-          if (sortSelect) sortSelect.value = 'def';
           tab = 'all';
-          page = 1;
+          sortK = null;
           render();
         });
       }
-
-      if (prevBtn) {
-        prevBtn.addEventListener('click', function () {
-          if (page > 1) { page--; render(); }
-        });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', function () {
-          page++; render();
-        });
-      }
-
-      document.addEventListener('click', function (e) {
-        var viewEl = e.target.closest('.e[data-a="view"]');
-        if (viewEl) {
-          var uid = viewEl.getAttribute('data-uid');
-          if (uid) {
-            window.location.href = 'employee_view.php?uid=' + encodeURIComponent(uid);
-          }
-        }
-      });
 
       if (expBtn) {
         expBtn.addEventListener('click', function () {
