@@ -61,7 +61,7 @@ function employer_brand_head(): void
   echo '<meta name="theme-color" content="#142236" />' . "\n";
   echo '<link rel="preconnect" href="https://fonts.googleapis.com" />' . "\n";
   echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' . "\n";
-  echo '<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />' . "\n";
+  echo '<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />' . "\n";
 }
 
 /**

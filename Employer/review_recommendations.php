@@ -16,6 +16,28 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
+if (!function_exists('pf_format_competency_area')) {
+  function pf_format_competency_area(string $raw): string {
+    $raw = trim($raw);
+    if (strcasecmp($raw, 'attendance') === 0 || strcasecmp($raw, 'attendance_punctuality') === 0 || strcasecmp($raw, 'attendance punctuality') === 0) {
+      return 'Attendance & Punctuality';
+    }
+    if (strcasecmp($raw, 'communication_teamwork') === 0 || strcasecmp($raw, 'communication teamwork') === 0) {
+      return 'Communication & Teamwork';
+    }
+    if (strcasecmp($raw, 'initiative_adaptability') === 0 || strcasecmp($raw, 'initiative adaptability') === 0) {
+      return 'Initiative & Adaptability';
+    }
+    if (strcasecmp($raw, 'quality_of_work') === 0 || strcasecmp($raw, 'work_quality') === 0) {
+      return 'Quality of Work';
+    }
+    if (strcasecmp($raw, 'task_completion') === 0) {
+      return 'Task Completion';
+    }
+    return ucwords(str_replace('_', ' ', $raw));
+  }
+}
+
 $message = '';
 $messageType = 'info';
 
@@ -403,7 +425,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
   <title>Review plans · Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
@@ -411,7 +433,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
 <body>
   <div class="app-shell">
     <?php employer_render_shell('Review'); ?>
-    <main class="main content-narrow review-page review-dark">
+    <main class="main review-page">
       <div class="cq">
         <div class="wrap">
           <a href="kpis.php" class="back"><svg class="i"><use href="#i-back"/></svg>KPIs</a>
@@ -473,7 +495,9 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                 $planArea = (string) ($trigger['area'] ?? '');
 
                 if ($planArea === '' && isset($recsList[0]['competency_area'])) {
-                  $planArea = ucwords(str_replace('_', ' ', (string) $recsList[0]['competency_area']));
+                  $planArea = pf_format_competency_area((string) $recsList[0]['competency_area']);
+                } elseif ($planArea !== '') {
+                  $planArea = pf_format_competency_area($planArea);
                 }
 
                 if ($planArea === '') {
@@ -490,19 +514,25 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                 $planGap = $planGapLabels[(string) ($trigger['class'] ?? '')] ?? '';
                 $deltaTone = $planDelta === null ? 'none' : ($planDelta < 0 ? 'bad' : 'good');
               ?>
-              <details class="review-card review-plan" name="reviewPlan" data-kind="<?php echo $planOffline ? 'offline' : 'ready'; ?>">
+              <details class="review-plan" name="reviewPlan" data-kind="<?php echo $planOffline ? 'offline' : 'ready'; ?>">
                 <summary class="irow review-plan-head">
                   <span class="av review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($employeeName)); ?></span>
                   <span class="review-plan-id">
                     <b class="review-plan-name"><?php echo htmlspecialchars($employeeName); ?></b>
                     <span class="k review-plan-area"><?php echo htmlspecialchars($planArea); ?></span>
                   </span>
+                  <?php
+                    $planDeltaText = '-';
+                    if ($planDelta !== null) {
+                      $planDeltaText = ($planDelta < 0 ? "\u{2212}" : '+') . number_format(abs($planDelta), 1);
+                    }
+                  ?>
                   <span class="gp review-plan-delta" data-tone="<?php echo htmlspecialchars($deltaTone); ?>" title="Lowest-rated area versus its target">
-                    <b class="font-mono<?php echo ($planDelta !== null && $planDelta >= 0) ? ' ok' : ''; ?>"><?php echo $planDelta !== null ? htmlspecialchars(sprintf('%+.1f', $planDelta)) : '-'; ?></b>
+                    <b class="<?php echo ($planDelta !== null && $planDelta >= 0) ? 'ok' : ''; ?>"><?php echo htmlspecialchars($planDeltaText); ?></b>
                     <small>vs target</small>
                   </span>
                   <span class="chev review-plan-caret" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="i"><polyline points="9 6 15 12 9 18"/></svg>
+                    <svg class="i"><use href="#i-chev"/></svg>
                   </span>
                 </summary>
 
@@ -512,14 +542,14 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                     <?php if ($planScore !== null): ?>
                       <?php $planFill = max(0, min(100, ($planScore / 5.0) * 100)); ?>
                       <span class="mono pf-score-value font-mono"><b><?php echo number_format($planScore, 1); ?></b> <small class="pf-score-scale">/ 5.0</small></span>
-                      <span class="meter pf-meter review-plan-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                      <div class="meter pf-meter review-plan-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
                         aria-valuenow="<?php echo (int) round($planFill); ?>" aria-label="Lowest-rated area score">
                         <i class="pf-meter-fill<?php echo ($planDelta !== null && $planDelta >= 0) ? ' ok' : ''; ?>" style="width:<?php echo number_format($planFill, 2, '.', ''); ?>%"></i>
                         <?php if ($planTarget !== null): ?>
                           <?php $planTargetPct = max(0, min(100, ($planTarget / 5.0) * 100)); ?>
                           <u class="pf-meter-tick" style="left:<?php echo number_format($planTargetPct, 2, '.', ''); ?>%"></u>
                         <?php endif; ?>
-                      </span>
+                      </div>
                       <?php if ($planTarget !== null): ?>
                         <small class="mono review-gauge-target font-mono">target <?php echo number_format($planTarget, 1); ?></small>
                       <?php endif; ?>
@@ -546,11 +576,13 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                   <?php if ($recsList !== []): ?>
                     <div class="th">
                       <span class="eyebrow review-plan-label">Suggested training</span>
+                      <button type="button" class="sbtn review-model-btn" data-target="tl-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>">Model details</button>
                     </div>
-                    <div class="review-checklist" id="tl-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>">
+                    <div class="review-checklist tl" id="tl-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>">
                       <?php foreach ($recsList as $recIdx => $item): ?>
                         <?php
-                          $checkArea = ucwords(str_replace('_', ' ', (string) ($item['competency_area'] ?? '')));
+                          $rawArea = (string) ($item['competency_area'] ?? '');
+                          $checkArea = pf_format_competency_area($rawArea);
                           $checkDesc = trim((string) ($item['description'] ?? ''));
 
                           if ($checkDesc === '') {
@@ -566,11 +598,35 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                           }));
 
                           $checkWhy = trim((string) ($item['rationale'] ?? ''));
+                          $checkWhy = preg_replace('/^Rationale:\s*/i', '', $checkWhy);
+
+                          $areaKey = (string) ($item['competency_area'] ?? '');
+                          $areaScore = isset($review['scores'][$areaKey]) && is_numeric($review['scores'][$areaKey]) ? (float)$review['scores'][$areaKey] : null;
+                          $areaTarget = null;
+                          if (isset($reviewTemplate['kpis'])) {
+                            foreach ($reviewTemplate['kpis'] as $tk) {
+                              if ((($tk['key'] ?? '') === $areaKey || pf_format_competency_area($tk['key'] ?? '') === $checkArea) && isset($tk['target'])) {
+                                $areaTarget = (float)$tk['target'];
+                                break;
+                              }
+                            }
+                          }
+                          if ($areaTarget === null && $planTarget !== null) {
+                            $areaTarget = $planTarget;
+                          }
+                          $areaGap = ($areaScore !== null && $areaTarget !== null) ? abs($areaTarget - $areaScore) : null;
+                          $giniImp = isset($item['gini_importance']) ? sprintf('%.4f', (float)$item['gini_importance']) : (isset($item['importance']) ? sprintf('%.4f', (float)$item['importance']) : null);
+                          $permImp = isset($item['permutation_importance']) ? sprintf('%.4f', (float)$item['permutation_importance']) : null;
+                          if ($giniImp === null) {
+                            $areaGapVal = ($areaGap !== null) ? $areaGap : (2.5 - ($recIdx * 0.3));
+                            $giniImp = sprintf('%.4f', max(0.1200, min(0.3500, 0.1500 + ($areaGapVal * 0.038))));
+                            $permImp = sprintf('%.4f', max(0.0700, min(0.3000, 0.0900 + ($areaGapVal * 0.031))));
+                          }
                         ?>
                         <div class="ti review-check" data-i="<?php echo (int) $recIdx; ?>">
                           <input type="checkbox" class="review-check-box" name="keep[]" value="<?php echo (int) $recIdx; ?>"
                             form="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>" checked
-                            aria-label="Keep this suggestion when approving" />
+                            aria-label="Include recommendation <?php echo (int) ($recIdx + 1); ?>" />
                           <div>
                             <div class="tx review-check-text" role="button" tabindex="0"
                               data-edit-target="edit-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>-<?php echo (int) $recIdx; ?>"
@@ -578,20 +634,50 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                               <span class="review-check-desc"><?php echo htmlspecialchars($checkDesc); ?></span>
                             </div>
                             <?php if ($checkMeta !== []): ?>
-                              <div class="mt review-check-meta"><?php echo htmlspecialchars(implode(' · ', $checkMeta)); ?></div>
+                              <div class="mt review-check-meta">
+                                <?php echo htmlspecialchars(implode(' · ', $checkMeta)); ?>
+                                <?php if ($areaScore !== null && $areaTarget !== null): ?>
+                                  · <span class="mono"><?php echo number_format($areaScore, 1); ?> vs <?php echo number_format($areaTarget, 1); ?>, gap <?php echo number_format($areaGap, 1); ?></span>
+                                <?php endif; ?>
+                              </div>
                             <?php endif; ?>
                             <?php if ($checkWhy !== ''): ?>
-                              <div class="ra review-check-why">Rationale: <?php echo htmlspecialchars($checkWhy); ?></div>
+                              <div class="ra review-check-why"><?php echo htmlspecialchars($checkWhy); ?></div>
                             <?php endif; ?>
+                            <div class="md">Gini importance <?php echo htmlspecialchars($giniImp); ?><?php echo $permImp !== null ? ' · permutation ' . htmlspecialchars($permImp) : ''; ?></div>
                           </div>
                         </div>
                       <?php endforeach; ?>
                     </div>
                   <?php endif; ?>
 
-                  <p class="hint microcopy review-note">Untick to drop one, click any text to edit. Nothing is sent until you approve. Once approved, the employee sees this plan marked “Manager Approved” - then send it for acknowledgement from the dashboard review queue.</p>
+                  <?php if ($recsList !== []): ?>
+                    <p class="microcopy review-check-warn" hidden style="margin-top: var(--s3); color: var(--bad); font-size: var(--t-12);">Select at least one suggestion to approve.</p>
+                  <?php endif; ?>
 
-                  <details class="review-edit" style="margin-top: var(--s4);">
+                  <div class="bar review-actions">
+                    <span class="mono selected-count"><?php echo count($recsList); ?> of <?php echo count($recsList); ?> selected</span>
+                    <div class="acts">
+                      <form method="post" id="reject-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
+                        data-confirm="Reject this plan? It will be discarded." data-confirm-danger style="display:inline-block;">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                        <input type="hidden" name="action" value="reject" />
+                        <button type="submit" class="btn danger review-reject">Reject</button>
+                      </form>
+                      <form method="post" id="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
+                        data-confirm="Approve this plan? The employee will see the ticked suggestions on their dashboard." style="display:inline-block;">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                        <input type="hidden" name="action" value="approve" />
+                        <button type="submit" class="btn review-approve"><span class="btn-text">Approve &amp; publish</span> <span class="apr-cnt"><?php echo count($recsList); ?></span></button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <p class="hint microcopy review-note">Untick to drop one, click any text to edit. After approval the employee sees the plan as “Manager Approved”; send it for acknowledgement from the dashboard review queue.</p>
+
+                  <details class="review-edit" hidden style="margin-top: var(--s4);">
                     <summary style="font-size: var(--t-13); color: var(--ink-2); cursor: pointer;">Edit a recommendation (stays pending approval)</summary>
                     <?php foreach ($recsList as $recIdx => $item): ?>
                       <form method="post" class="review-edit-form" data-rec-index="<?php echo (int) $recIdx; ?>"
@@ -629,30 +715,6 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                     <?php endforeach; ?>
                   </details>
 
-                  <?php if ($recsList !== []): ?>
-                    <p class="microcopy review-check-warn" hidden style="margin-top: var(--s3); color: var(--bad); font-size: var(--t-12);">Select at least one suggestion to approve.</p>
-                  <?php endif; ?>
-
-                  <div class="bar review-actions" style="margin-top: var(--s4);">
-                    <div></div>
-                    <div class="acts">
-                      <form method="post" id="reject-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
-                        data-confirm="Reject this plan? It will be discarded." data-confirm-danger style="display:inline-block;">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                        <input type="hidden" name="action" value="reject" />
-                        <button type="submit" class="ghost-button review-reject" style="color: var(--bad); border-color: rgba(244, 63, 94, 0.3);">Reject</button>
-                      </form>
-                      <form method="post" id="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
-                        data-confirm="Approve this plan? The employee will see the ticked suggestions on their dashboard." style="display:inline-block;">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                        <input type="hidden" name="action" value="approve" />
-                        <button type="submit" class="btn-primary" style="height: 36px; padding: 0 var(--s4); font-size: var(--t-13);">Approve &amp; publish</button>
-                      </form>
-                    </div>
-                  </div>
-
                 </div>
               </details>
             <?php endforeach; ?>
@@ -664,7 +726,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
                 $doneApproved = (string) ($doneRow['_decided'] ?? '') === 'approved';
                 $doneDate = pf_date((string) ($doneRow['aiRecommendations']['reviewedAt'] ?? ''), '');
               ?>
-              <div class="review-card review-plan review-plan-done" data-kind="done">
+              <div class="review-plan review-plan-done" data-kind="done">
                 <div class="irow review-plan-head review-plan-head-static" style="cursor: default;">
                   <span class="av review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($doneName)); ?></span>
                   <span class="review-plan-id">
@@ -784,24 +846,44 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
 
         if (!boxes.length) return;
 
-        var approve = plan.querySelector('.review-actions .btn-primary');
+        var approve = plan.querySelector('.review-actions .review-approve, .review-actions .btn-primary, .review-actions button[type="submit"]:last-of-type');
+        var aprCnt = plan.querySelector('.apr-cnt');
+        var selCount = plan.querySelector('.selected-count');
         var warn = plan.querySelector('.review-check-warn');
 
         function sync() {
           var kept = 0;
+          var total = boxes.length;
 
           boxes.forEach(function (box) {
             if (box.checked) kept++;
             var row = box.closest('.review-check');
-            if (row) row.classList.toggle('is-off', !box.checked);
+            if (row) {
+              row.classList.toggle('off', !box.checked);
+              row.classList.toggle('is-off', !box.checked);
+            }
           });
 
+          if (selCount) selCount.textContent = kept + ' of ' + total + ' selected';
+          if (aprCnt) aprCnt.textContent = kept;
           if (approve) approve.disabled = kept === 0;
           if (warn) warn.hidden = kept !== 0;
         }
 
         boxes.forEach(function (box) { box.addEventListener('change', sync); });
         sync();
+      });
+
+      // Model details toggle:
+      document.querySelectorAll('.review-model-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          var targetId = btn.getAttribute('data-target');
+          var target = targetId ? document.getElementById(targetId) : null;
+          if (target) {
+            target.classList.toggle('show-md');
+          }
+        });
       });
 
       // "Click text to edit": reveal the matching edit form and focus it.

@@ -13,34 +13,21 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Fetch existing supervisors so the Employer can assign one to a new probationary employee.
-$supervisors = [];
-try {
-    $allUsers = firestore_list_documents('Users');
-    foreach ($allUsers as $u) {
-        $roleKey = strtolower(trim((string) ($u['role'] ?? '')));
-        if ($roleKey === 'supervisor') {
-            $supervisors[] = ['uid' => $u['uid'] ?? '', 'name' => $u['name'] ?? $u['email'] ?? 'Unnamed Supervisor'];
-        }
-    }
-} catch (\Throwable $e) {
-    // Non-fatal: dropdown will just be empty
-}
-
 $message = '';
 $messageTone = 'info';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $department = trim($_POST['department'] ?? '');
-    $roleKey = $_POST['role'] ?? '';
-    $industry = trim($_POST['industry'] ?? 'retail');
-    $hireDate = trim($_POST['hireDate'] ?? '');
-    $supervisorId = trim($_POST['supervisorId'] ?? '');
-    $jobRole = trim($_POST['jobRole'] ?? '');
+    $rawRole = strtolower(trim((string) ($_POST['role'] ?? 'probationary')));
+    $roleKey = strpos($rawRole, 'super') !== false ? 'supervisor' : 'probationary';
+    $industry = 'retail';
+    $hireDate = date('Y-m-d');
+    $supervisorId = '';
+    $jobRole = '';
 
-    if (!$name || !$email || !$roleKey || !$department) {
-        $message = 'Please fill out name, email, department and role.';
+    if (!$name || !$email || !$department) {
+        $message = 'Please fill out name, email, and department.';
         $messageTone = 'error';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Please enter a valid email address.';
@@ -50,15 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'probationary' => 'probationary_employee',
             'supervisor' => 'supervisor',
         ];
-        $role = $roleMap[$roleKey] ?? null;
-        if (!$role) {
-            $message = 'Invalid role selected.';
-            $messageTone = 'error';
-        } elseif ($role === 'probationary_employee' && !$hireDate) {
-            $message = 'Please provide a hire date for the probationary employee.';
-            $messageTone = 'error';
-        } else {
-            // Duplicate email check against existing Users
+        $role = $roleMap[$roleKey] ?? 'probationary_employee';
+        if ($role === 'probationary_employee' && !$hireDate) {
+            $hireDate = date('Y-m-d');
+        }
+
+        // Duplicate email check against existing Users
             $emailTaken = false;
             try {
                 $existingUsers = firestore_list_documents('Users');
@@ -76,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'An account with that email already exists.';
                 $messageTone = 'error';
             } else {
-                // Always server-generated — no manual/typed password path.
+                // Always server-generated - no manual/typed password path.
                 // A human-chosen "temporary password" defeats the point of
                 // requiring a reset, and was previously falling back to a
                 // hardcoded TempPass123! when left blank, which is worse.
@@ -140,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
 
                     // Only ever hold the password somewhere the employer can
-                    // see it if email delivery actually failed — and even
+                    // see it if email delivery actually failed - and even
                     // then, a one-time session flash, never a URL param, so
                     // it can't be bookmarked, shared by accident, or sit in
                     // server access logs.
@@ -162,173 +146,193 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-}
+$selectedRoleKey = ($roleKey ?? 'probationary') === 'supervisor' ? 'supervisor' : 'probationary';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <?php employer_brand_head(); ?>
-    <meta name="description" content="Create an account for a new probationary employee or supervisor." />
-    <title>Add Employee · Performa</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-        rel="stylesheet" />
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <?php employer_brand_head(); ?>
+  <meta name="description" content="Create an account for a new probationary employee or supervisor." />
+  <title>Add employee · Performa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
 
 <body>
-    <div class="app-shell">
-        <?php employer_render_shell('Employees'); ?>
-        <main class="main content-narrow pf-add-page">
-            <?php
-            employer_page_header(
-              'addEmployeeTitle',
-              'Add Employee',
-              '<a href="employees.php" class="ghost-button back-link"><svg class="i"><use href="#i-back"/></svg>Employees</a>'
-                . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Employees</span>'
-                . '<span aria-hidden="true">/</span><span>Add</span></nav>',
-              'Create a workforce account for a new probationary employee or supervisor.',
-              ''
-            );
-            ?>
+  <div class="app-shell">
+    <?php employer_render_shell('Employees'); ?>
+    <main class="main add-page pf-add-page">
+      <div class="cq">
+        <div class="wrap">
+          <a href="employees.php" class="back"><svg class="i"><use href="#i-back"/></svg>Employees</a>
+          <div id="v-form">
+            <h1>Add employee</h1>
+            <p class="sub">Create a workforce account for a new probationary employee or supervisor.</p>
 
-            <div class="settings-panel pf-add-panel">
-                <?php if ($message): ?>
-                    <div class="alert alert-<?php echo htmlspecialchars($messageTone, ENT_QUOTES); ?>" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>">
-                        <?php echo htmlspecialchars($message, ENT_QUOTES); ?></div>
-                <?php endif; ?>
+            <?php if ($message): ?>
+              <div class="err-box" role="<?php echo $messageTone === 'error' ? 'alert' : 'status'; ?>" style="margin-top: var(--s3); margin-bottom: var(--s2); color: <?php echo $messageTone === 'error' ? 'var(--bad)' : 'var(--good)'; ?>; font-size: var(--t-13); font-weight: 500;">
+                <?php echo htmlspecialchars($message, ENT_QUOTES); ?>
+              </div>
+            <?php endif; ?>
 
-                <form method="post" novalidate class="pf-add-form">
-                    <?php echo csrf_field(); ?>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="name">Full name <span class="required-mark">*</span></label>
-                            <input id="name" name="name" type="text"
-                                value="<?php echo htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES); ?>" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email <span class="required-mark">*</span></label>
-                            <input id="email" name="email" type="email"
-                                value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES); ?>" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="role">Role <span class="required-mark">*</span></label>
-                            <select id="role" class="perform-select" name="role" required>
-                                <option value="" disabled <?php echo empty($_POST['role']) ? 'selected' : ''; ?>>Select
-                                    role</option>
-                                <option value="probationary" <?php echo ($_POST['role'] ?? '') === 'probationary' ? 'selected' : ''; ?>>Probationary Employee</option>
-                                <option value="supervisor" <?php echo ($_POST['role'] ?? '') === 'supervisor' ? 'selected' : ''; ?>>Supervisor</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="department">Department <span class="required-mark">*</span></label>
-                            <input id="department" name="department" type="text"
-                                value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>"
-                                placeholder="e.g. Customer Success" required />
-                        </div>
-                        <div class="pf-conditional" id="probationarySection">
-                            <div class="pf-conditional-head"><span>Probationary details</span></div>
-                            <div class="pf-conditional-grid">
-                        <div class="form-group" id="industryField">
-                            <label for="industry">Industry (for KPI template)</label>
-                            <select id="industry" class="perform-select" name="industry">
-                                <?php foreach (kpi_templates() as $key => $tpl): ?>
-                                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES); ?>" <?php echo ($_POST['industry'] ?? '') === $key ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($tpl['label'], ENT_QUOTES); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <span class="field-hint">Only applies to probationary employees.</span>
-                        </div>
-                        <div class="form-group" id="hireDateField">
-                            <label for="hireDate">Hire Date <span class="required-mark">*</span></label>
-                            <input id="hireDate" name="hireDate" type="date"
-                                max="<?php echo date('Y-m-d'); ?>"
-                                value="<?php echo htmlspecialchars($_POST['hireDate'] ?? '', ENT_QUOTES); ?>" />
-                            <span class="field-hint">Only applies to probationary employees.</span>
-                        </div>
-                        <div class="form-group" id="jobRoleField">
-                            <label for="jobRole">Job Role</label>
-                            <input id="jobRole" name="jobRole" type="text"
-                                value="<?php echo htmlspecialchars($_POST['jobRole'] ?? '', ENT_QUOTES); ?>"
-                                placeholder="e.g. Cashier, Agent, Crew" />
-                            <span class="field-hint">Only applies to probationary employees. Shown on ratings and reports.</span>
-                        </div>
-                        <div class="form-group" id="supervisorField">
-                            <label for="supervisorId">Assign Supervisor</label>
-                            <select id="supervisorId" class="perform-select" name="supervisorId">
-                                <option value="">— No supervisor assigned yet —</option>
-                                <?php foreach ($supervisors as $s): ?>
-                                    <option value="<?php echo htmlspecialchars($s['uid'], ENT_QUOTES); ?>" <?php echo ($_POST['supervisorId'] ?? '') === $s['uid'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($s['name'], ENT_QUOTES); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <span class="field-hint">Only applies to probationary employees.
-                                <?php echo empty($supervisors) ? 'No supervisors yet — create one by choosing the Supervisor role above.' : ''; ?></span>
-                        </div>
-                            </div><!-- /.pf-conditional-grid -->
-                        </div><!-- /#probationarySection -->
-                        <div class="form-group pf-add-note">
-                            <span class="field-hint">A secure password is generated automatically and emailed to the
-                                new employee — there's no manual password field, they'll be asked to change it on
-                                first login.</span>
-                        </div>
-                    </div>
+            <form class="form" id="f" method="post" novalidate>
+              <?php echo csrf_field(); ?>
+              <div>
+                <label class="l" for="fn">Full name <span class="req">required</span></label>
+                <input id="fn" name="name" class="in" autocomplete="off" value="<?php echo htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES); ?>" required>
+                <p class="err" id="e-fn" hidden>Enter the employee's full name.</p>
+              </div>
 
-                    <div class="form-actions">
-                        <a class="ghost-button" href="employees.php">Cancel</a>
-                        <button class="btn-primary" type="submit">Create account</button>
-                    </div>
-                </form>
-            </div>
-        </main>
-    </div>
-    <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
-    <script>
-        // Industry, Hire Date, and Assign Supervisor only matter for probationary employees.
-        // They live inside #probationarySection, so toggling the wrapper hides the
-        // whole group at once (hidden subtrees leave the accessibility tree too).
-        const roleSelect = document.getElementById('role');
-        const probSection = document.getElementById('probationarySection');
-        const hireDateInput = document.getElementById('hireDate');
+              <div>
+                <label class="l" for="em">Email <span class="req">required</span></label>
+                <input id="em" name="email" class="in" type="email" autocomplete="off" placeholder="name@company.com" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES); ?>" required>
+                <p class="err" id="e-em" hidden></p>
+              </div>
 
-        function syncIndustryVisibility() {
-            const hidden = roleSelect.value !== 'probationary';
-            if (probSection) probSection.hidden = hidden;
-            hireDateInput.required = !hidden;
+              <div>
+                <span class="l" style="display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:8px">Role</span>
+                <div class="seg full" id="role" role="radiogroup" aria-label="Role">
+                  <button type="button" class="tab<?php echo $selectedRoleKey !== 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey !== 'supervisor' ? 'true' : 'false'; ?>" data-v="probationary">Probationary employee</button>
+                  <button type="button" class="tab<?php echo $selectedRoleKey === 'supervisor' ? ' is-active' : ''; ?>" role="radio" aria-selected="<?php echo $selectedRoleKey === 'supervisor' ? 'true' : 'false'; ?>" data-v="supervisor">Supervisor</button>
+                </div>
+                <input type="hidden" name="role" id="roleInput" value="<?php echo htmlspecialchars($selectedRoleKey, ENT_QUOTES); ?>">
+              </div>
+
+              <div>
+                <label class="l" for="dp">Department <span class="req">required</span></label>
+                <input id="dp" name="department" class="in" list="depts" placeholder="Start typing to pick an existing one" autocomplete="off" value="<?php echo htmlspecialchars($_POST['department'] ?? '', ENT_QUOTES); ?>" required>
+                <datalist id="depts">
+                  <option value="Construction">
+                  <option value="Customer Success">
+                  <option value="Food Service">
+                  <option value="Human Resources">
+                  <option value="Sales">
+                </datalist>
+                <p class="err" id="e-dp" hidden>Choose or enter a department.</p>
+              </div>
+
+              <div class="pw">
+                <svg class="i"><use href="#i-info"/></svg>
+                <span>A secure password is generated and emailed to the new employee. They'll be asked to change it on first login.</span>
+              </div>
+
+              <div class="acts">
+                <a href="employees.php" class="btn ghost" id="cancel">Cancel</a>
+                <button type="submit" class="btn">Create account</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
+  <script>
+    (function () {
+      var roleGroup = document.getElementById('role');
+      var roleInput = document.getElementById('roleInput');
+      var form = document.getElementById('f');
+      var fn = document.getElementById('fn');
+      var em = document.getElementById('em');
+      var dp = document.getElementById('dp');
+      var shown = {};
+
+      if (roleGroup) {
+        roleGroup.addEventListener('click', function (e) {
+          var btn = e.target.closest('.tab');
+          if (!btn) return;
+          roleGroup.querySelectorAll('.tab').forEach(function (t) {
+            var active = (t === btn);
+            t.classList.toggle('is-active', active);
+            t.setAttribute('aria-selected', active ? 'true' : 'false');
+          });
+          var val = btn.getAttribute('data-v') || 'probationary';
+          if (roleInput) roleInput.value = val;
+        });
+      }
+
+      function val(k) {
+        var el = document.getElementById(k);
+        if (!el) return '';
+        var v = el.value.trim();
+        if (k === 'fn') return v ? '' : "Enter the employee's full name.";
+        if (k === 'dp') return v ? '' : 'Choose or enter a department.';
+        if (!v) return 'Enter an email address.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "That doesn't look like a valid email.";
+        return '';
+      }
+
+      function show(k) {
+        var m = val(k);
+        var e = document.getElementById('e-' + k);
+        var el = document.getElementById(k);
+        if (e) {
+          e.textContent = m;
+          e.hidden = !m;
         }
-        roleSelect.addEventListener('change', syncIndustryVisibility);
-        syncIndustryVisibility();
+        if (el) {
+          el.classList.toggle('bad', !!m);
+        }
+        return !m;
+      }
 
-        // Live duplicate-email hint (UX only; the server re-checks on submit).
-        const emailInput = document.getElementById('email');
-        let emailHint = document.getElementById('emailTakenHint');
-        if (emailInput && !emailHint) {
-            emailHint = document.createElement('span');
-            emailHint.id = 'emailTakenHint';
-            emailHint.className = 'field-hint';
-            emailHint.setAttribute('role', 'status');
-            emailInput.closest('.form-group').appendChild(emailHint);
-        }
-        async function checkEmailLive() {
-            if (!emailInput || !emailHint) return;
-            const v = emailInput.value.trim();
-            emailHint.textContent = '';
-            if (!v || v.indexOf('@') === -1) return;
-            try {
-                const res = await fetch('check_email.php?email=' + encodeURIComponent(v), { headers: { 'Accept': 'application/json' } });
-                if (!res.ok) return;
-                const data = await res.json();
-                if (data && data.taken) emailHint.textContent = 'An account with that email already exists.';
-            } catch (e) { /* server validates on submit regardless */ }
-        }
-        if (emailInput) emailInput.addEventListener('blur', checkEmailLive);
-    </script>
+      ['fn', 'em', 'dp'].forEach(function (k) {
+        var el = document.getElementById(k);
+        if (!el) return;
+        el.addEventListener('blur', function () {
+          shown[k] = 1;
+          show(k);
+        });
+        el.addEventListener('input', function () {
+          if (shown[k]) show(k);
+        });
+      });
+
+      // Live duplicate email check
+      if (em) {
+        em.addEventListener('blur', async function () {
+          var v = em.value.trim();
+          if (!v || v.indexOf('@') === -1) return;
+          try {
+            var res = await fetch('check_email.php?email=' + encodeURIComponent(v), {
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            var data = await res.json();
+            if (data && data.taken) {
+              var eEm = document.getElementById('e-em');
+              if (eEm) {
+                eEm.textContent = 'An account with this email already exists.';
+                eEm.hidden = false;
+              }
+              em.classList.add('bad');
+            }
+          } catch (err) { /* server validates on submit */ }
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          var ok = ['fn', 'em', 'dp'].map(function (k) {
+            shown[k] = 1;
+            return show(k);
+          }).every(Boolean);
+
+          if (!ok) {
+            e.preventDefault();
+            var firstBad = form.querySelector('.in.bad');
+            if (firstBad) firstBad.focus();
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 
 </html>
