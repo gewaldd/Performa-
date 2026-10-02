@@ -1124,6 +1124,85 @@ foreach ($liveUsers as $u) {
         $tabCounts['due-soon']++;
     }
 }
+
+$ivData = [];
+foreach ($insightQueue as $item) {
+    $u = $item['user'];
+    $uScore = (float) ($u['score'] ?? 0);
+    $uTarget = (float) ($u['targetAvg'] ?? 4.2);
+    $uGap = $uScore - $uTarget;
+    $queueAi = $u['aiPlan'] ?? null;
+    $queueAssigned = !empty($u['assignedTraining']);
+    $queuePending = !$queueAssigned
+        && is_array($queueAi)
+        && ($queueAi['status'] ?? '') === 'pending_approval'
+        && !empty($queueAi['hasRecs']);
+    $queueApproved = !$queueAssigned
+        && is_array($queueAi)
+        && ($queueAi['status'] ?? '') === 'approved';
+
+    $actLabel = 'Rate to refresh';
+    $actHref = 'rate_employee.php?employee=' . urlencode($u['uid']);
+    if ($queuePending) {
+        $actLabel = 'Review plan';
+        $actHref = 'review_recommendations.php';
+    } elseif ($queueAssigned) {
+        $actLabel = 'Assigned';
+        $actHref = 'employee_view.php?uid=' . urlencode($u['uid']);
+    } elseif ($queueApproved) {
+        $actLabel = 'Published';
+        $actHref = 'employee_view.php?uid=' . urlencode($u['uid']);
+    }
+
+    $ivData[] = [
+        'n' => (string) ($u['name'] ?? 'Unknown'),
+        'uid' => (string) ($u['uid'] ?? ''),
+        's' => round($uScore, 1),
+        't' => round($uTarget, 1),
+        'g' => round($uGap, 1),
+        'a' => $actLabel,
+        'href' => 'employee_view.php?uid=' . urlencode($u['uid']),
+        'actHref' => $actHref,
+    ];
+}
+
+$eData = [];
+foreach ($liveUsers as $u) {
+    $uScore = (float) ($u['score'] ?? 0);
+    $hasScore = !empty($u['hasScore']);
+    $sk = (string) ($u['statusKey'] ?? '');
+    $st = 'good';
+    if (!$hasScore) {
+        $st = 'unrated';
+    } elseif ($sk === 'needs-review') {
+        $st = 'review';
+    } elseif ($sk === 'ready-for-reg') {
+        $st = 'ready';
+    } else {
+        $st = 'good';
+    }
+
+    $period = max(1, (int) ($u['periodDays'] ?? 180));
+    $day = (int) ($u['daysSince'] ?? 0);
+    $left = (int) ($u['daysLeftValue'] ?? max(0, $period - $day));
+
+    $eData[] = [
+        'n' => (string) ($u['name'] ?? 'Unknown'),
+        'uid' => (string) ($u['uid'] ?? ''),
+        'day' => $day,
+        'left' => $left,
+        's' => round($uScore, 1),
+        'hasScore' => $hasScore,
+        'st' => $st,
+    ];
+}
+
+$dismissedUids = [];
+foreach ($dismissedQueue as $du) {
+    if (!empty($du['uid'])) {
+        $dismissedUids[] = (string) $du['uid'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -1133,13 +1212,13 @@ foreach ($liveUsers as $u) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php employer_brand_head(); ?>
-    <title>Dashboard · Performa</title>
+    <title>Probationary · Performa</title>
     <meta name="description"
         content="Employer KPI dashboard for probationary employee evaluation and training recommendations." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
     <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
@@ -1148,338 +1227,236 @@ foreach ($liveUsers as $u) {
 
 <body>
 
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+        <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    </svg>
+
     <div class="app-shell">
 
         <?php employer_render_shell('Dashboard'); ?>
 
         <main class="main dashboard-page" id="dashboard">
-            <div class="in">
+            <div class="cq"><div class="wrap">
 
-                <div class="top">
+                <header>
+                    <button class="icon-button pf-menu-btn" type="button" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false">
+                        <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+                        </svg>
+                    </button>
                     <div>
-                        <h1 id="h1">Probationary overview</h1>
-                        <p class="sub">Track and evaluate employees approaching regularization.</p>
+                        <h1>Probationary</h1>
+                        <p class="sub"><span class="mono"><?php echo (int) $probationaryCount; ?></span> on probation · <span class="mono"><?php echo count($insightQueue); ?></span> need intervention · average <span class="mono"><?php echo $overallPerformance !== null ? number_format($overallPerformance, 1) : 'N/A'; ?></span> / 5.0 · <span class="mono"><?php echo (int) $unratedCount; ?></span> unrated</p>
                     </div>
-                    <div class="tr">
-                        <button type="button" class="btn txt" id="exportEvaluationsBtn">Export CSV</button>
-                        <a class="btn primary" href="add_employee.php" style="text-decoration:none;">
-                            + Add employee
-                        </a>
+                    <div class="hdr-r">
+                        <button type="button" class="link" id="exportEvaluationsBtn">Export CSV</button>
+                        <a href="add_employee.php" class="btn" style="text-decoration:none;"><svg class="i"><use href="#i-plus"/></svg>Add employee</a>
                     </div>
-                </div>
+                </header>
 
                 <?php if ($dashMessage !== ''): ?>
-                    <div class="alert alert-<?php echo $dashMessageType === 'error' ? 'error' : 'success'; ?>" role="status" style="margin-bottom:20px;">
+                    <div class="alert alert-<?php echo $dashMessageType === 'error' ? 'error' : 'success'; ?>" role="status" style="margin-top:var(--s4);margin-bottom:var(--s2);">
                         <?php echo htmlspecialchars($dashMessage, ENT_QUOTES); ?>
                     </div>
                 <?php endif; ?>
 
-                <!-- 1. 4 Square Stat Cards -->
-                <section class="stats" id="stats" aria-label="Key probationary metrics">
-                    <div class="st">
-                        <div class="l">Probationary</div>
-                        <div class="v num"><?php echo (int) $probationaryCount; ?></div>
-                        <div class="n">
-                            <?php echo $unratedCount > 0 ? (int) $unratedCount . ' without ratings' : 'All employees rated'; ?>
-                        </div>
-                    </div>
-
-                    <div class="st">
-                        <div class="l">Due within 30 days</div>
-                        <div class="v num"><?php echo (int) $nearDeadlineCount; ?></div>
-                        <div class="n">
-                            <?php if ($nearestDeadlineDays !== null): ?>
-                                Next: <?php echo htmlspecialchars($nearestDeadlineName, ENT_QUOTES); ?>, <?php echo (int) $nearestDeadlineDays; ?> days
-                            <?php else: ?>
-                                None nearing deadline
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="st">
-                        <div class="l">Needs attention</div>
-                        <div class="v num" style="color:var(--bad)"><?php echo count($insightQueue); ?></div>
-                        <div class="n">
-                            <?php echo count($insightQueue) > 0 ? 'Intervention suggested' : 'All on track'; ?>
-                        </div>
-                    </div>
-
-                    <div class="st">
-                        <div class="l">Average score</div>
-                        <div class="v num" style="color:var(--ok)">
-                            <?php echo $overallPerformance !== null ? number_format($overallPerformance, 1) : '-'; ?><small style="font-size:14px;color:var(--mut);font-weight:400;margin-left:4px;">/ 5.0</small>
-                        </div>
-                        <div class="n">
-                            <?php echo (int) $scoredCount; ?> rated of <?php echo (int) $probationaryCount; ?>
-                        </div>
-                    </div>
+                <section class="iv" id="iv" aria-labelledby="iv-h" <?php if (empty($ivData)) echo 'hidden'; ?>>
+                    <h2 id="iv-h">Intervention suggested <span class="mono" id="ivn"><?php echo count($ivData); ?></span></h2>
+                    <p class="hint">Scores furthest below target, worst first.</p>
+                    <div class="ivl" id="ivl"></div>
                 </section>
 
-                <!-- 2. Needs Your Attention Queue (Square Card) -->
-                <?php if (!empty($insightQueue) || !empty($dismissedQueue)): ?>
-                    <section class="cd" style="padding:20px;margin-bottom:24px;" aria-labelledby="queueHeading">
-                        <div class="sh" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <h2 id="queueHeading" style="font-size:18px;font-weight:600;margin:0;">Needs your attention</h2>
-                                <span class="pill status-pill-needs-review" style="font-weight:600;"><?php echo count($insightQueue); ?></span>
-                            </div>
-                        </div>
+                <div class="bar">
+                    <div class="tabs" role="tablist" id="tabs" aria-label="Status"></div>
+                    <div class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" class="f" type="search" placeholder="Search employees" aria-label="Search employees"></div>
+                </div>
 
-                        <?php if (!empty($insightQueue)): ?>
-                            <div class="attention-list" role="list">
-                                <?php foreach ($insightQueue as $queueEntry): ?>
-                                    <?php
-                                    $queueUser = $queueEntry['user'];
-                                    $gap = (float) $queueEntry['gap'];
-                                    $score = (float) $queueUser['score'];
-                                    $target = (float) ($queueUser['targetAvg'] ?? 4.2);
-                                    $queueAi = $queueUser['aiPlan'] ?? null;
-                                    $queueTop = is_array($queueAi) && is_array($queueAi['top'] ?? null)
-                                        ? $queueAi['top']
-                                        : null;
-                                    $queueAssigned = !empty($queueUser['assignedTraining']);
-                                    $queuePending = !$queueAssigned
-                                        && is_array($queueAi)
-                                        && ($queueAi['status'] ?? '') === 'pending_approval'
-                                        && !empty($queueAi['hasRecs']);
-                                    $queueApproved = !$queueAssigned
-                                        && is_array($queueAi)
-                                        && ($queueAi['status'] ?? '') === 'approved';
-                                    ?>
-                                    <div class="attention-row" role="listitem" data-uid="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>">
-                                        <div class="attention-row-main">
-                                            <div class="attention-info">
-                                                <div class="av" aria-hidden="true"><?php echo htmlspecialchars($queueUser['initials'], ENT_QUOTES); ?></div>
-                                                <a href="employee_view.php?uid=<?php echo urlencode($queueUser['uid']); ?>" class="attention-name">
-                                                    <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?>
-                                                </a>
-                                                <div class="attention-metrics">
-                                                    <span class="score-vs-target num">
-                                                        <?php echo number_format($score, 1); ?> vs <?php echo number_format($target, 1); ?> target
-                                                    </span>
-                                                    <span class="metric-separator" aria-hidden="true">·</span>
-                                                    <span class="gap-danger num">-<?php echo number_format(abs($gap), 1); ?></span>
-                                                </div>
-                                            </div>
+                <div class="head">
+                    <button type="button" class="sort" data-k="name">Employee<svg class="i"><use href="#i-up"/></svg></button>
+                    <button type="button" class="sort" data-k="day">Timeline · 180 days<svg class="i"><use href="#i-up"/></svg></button>
+                    <button type="button" class="sort" data-k="score">KPI<svg class="i"><use href="#i-up"/></svg></button>
+                    <button type="button" class="sort" data-k="status">Status<svg class="i"><use href="#i-up"/></svg></button>
+                    <span></span>
+                </div>
 
-                                            <div class="attention-actions">
-                                                <?php if ($queuePending): ?>
-                                                    <a href="review_recommendations.php" class="btn primary btn-sm" style="font-size:12.5px;padding:5px 12px;text-decoration:none;">
-                                                        Review plan
-                                                    </a>
-                                                <?php elseif ($queueAssigned): ?>
-                                                    <button type="button" class="btn txt btn-sm" disabled style="opacity:.6;">
-                                                        Assigned
-                                                    </button>
-                                                <?php elseif ($queueApproved): ?>
-                                                    <button type="button" class="btn txt btn-sm" disabled style="opacity:.6;">
-                                                        Published
-                                                    </button>
-                                                <?php else: ?>
-                                                    <a href="rate_employee.php?employee=<?php echo urlencode($queueUser['uid']); ?>" class="btn tint btn-sm" style="font-size:12.5px;padding:5px 12px;">
-                                                        Rate to refresh
-                                                    </a>
-                                                <?php endif; ?>
+                <div id="rows"></div>
+                <div class="foot" id="foot"></div>
 
-                                                <form method="post" class="queue-dismiss-inline-form" style="margin:0;display:inline;">
-                                                    <?php echo csrf_field(); ?>
-                                                    <input type="hidden" name="action" value="queue_dismiss" />
-                                                    <input type="hidden" name="uid" value="<?php echo htmlspecialchars($queueUser['uid'], ENT_QUOTES); ?>" />
-                                                    <button type="submit" class="btn x" aria-label="Dismiss <?php echo htmlspecialchars($queueUser['name'], ENT_QUOTES); ?> from attention queue" title="Dismiss">&times;</button>
-                                                </form>
-                                            </div>
-                                        </div>
-
-                                        <details class="attention-rec-disclosure">
-                                            <summary style="font-weight:500;">Recommendation</summary>
-                                            <div class="attention-rec-box">
-                                                <?php if ($queueTop): ?>
-                                                    <div class="rec-title">
-                                                        <strong>
-                                                            <?php
-                                                            echo htmlspecialchars(
-                                                                ucwords(str_replace('_', ' ', (string) ($queueTop['competency_area'] ?? ''))) .
-                                                                ' - ' . (string) ($queueTop['training_type'] ?? ''),
-                                                                ENT_QUOTES
-                                                            );
-                                                            ?>
-                                                        </strong>
-                                                    </div>
-                                                    <?php if (!empty($queueTop['description'])): ?>
-                                                        <p style="margin:4px 0 6px;color:var(--mut);font-size:12.5px;"><?php echo htmlspecialchars($queueTop['description'], ENT_QUOTES); ?></p>
-                                                    <?php endif; ?>
-                                                    <div style="font-size:11.5px;color:var(--mut);">
-                                                        <?php if (!empty($queueTop['timeline'])): ?>
-                                                            Timeline: <?php echo htmlspecialchars($queueTop['timeline'], ENT_QUOTES); ?> ·
-                                                        <?php endif; ?>
-                                                        Source: <?php echo htmlspecialchars(($queueAi['generated_by'] ?? '') === 'gemini_api' ? 'RF + Gemini' : (($queueAi['generated_by'] ?? '') === 'rf_only' ? 'RF only' : 'System'), ENT_QUOTES); ?>
-                                                        <?php echo htmlspecialchars($queueAi['model_version'] ?? '', ENT_QUOTES); ?>
-                                                    </div>
-                                                <?php else: ?>
-                                                    <p style="margin:0;color:var(--mut);font-size:12.5px;">No AI plan on file yet. An employer rating generates one.</p>
-                                                <?php endif; ?>
-                                            </div>
-                                        </details>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($dismissedQueue)): ?>
-                            <details class="queue-dismissed-toggle" style="margin-top:12px;">
-                                <summary style="font-size:12.5px;color:var(--mut);cursor:pointer;">Show dismissed (<?php echo count($dismissedQueue); ?>)</summary>
-                                <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
-                                    <?php foreach ($dismissedQueue as $dismissedUser): ?>
-                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--hov);border-radius:4px;">
-                                            <span style="font-size:13px;"><?php echo htmlspecialchars($dismissedUser['name'], ENT_QUOTES); ?></span>
-                                            <form method="post" style="margin:0;">
-                                                <?php echo csrf_field(); ?>
-                                                <input type="hidden" name="action" value="queue_restore" />
-                                                <input type="hidden" name="uid" value="<?php echo htmlspecialchars($dismissedUser['uid'], ENT_QUOTES); ?>" />
-                                                <button type="submit" class="btn txt" style="font-size:12px;padding:2px 6px;">Restore</button>
-                                            </form>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </details>
-                        <?php endif; ?>
-                    </section>
-                <?php endif; ?>
-
-                <!-- 3. Probationers Table Section (Square Card .cd.tbl) -->
-                <section class="cd tbl" aria-labelledby="probationersTitle">
-                    <div class="tb">
-                        <div class="seg" role="tablist" id="dashboardTabs" aria-label="Filter probationers by status">
-                            <button type="button" class="tab-chip" data-filter="all" role="tab" aria-selected="true">
-                                All <span class="num"><?php echo (int) $tabCounts['all']; ?></span>
-                            </button>
-                            <button type="button" class="tab-chip" data-filter="needs-review" role="tab" aria-selected="false">
-                                Needs review <span class="num"><?php echo (int) $tabCounts['needs-review']; ?></span>
-                            </button>
-                            <button type="button" class="tab-chip" data-filter="on-track" role="tab" aria-selected="false">
-                                On track <span class="num"><?php echo (int) $tabCounts['on-track']; ?></span>
-                            </button>
-                            <button type="button" class="tab-chip" data-filter="ready-for-reg" role="tab" aria-selected="false">
-                                Ready <span class="num"><?php echo (int) $tabCounts['ready-for-reg']; ?></span>
-                            </button>
-                            <button type="button" class="tab-chip" data-filter="due-soon" role="tab" aria-selected="false">
-                                Due soon <span class="num"><?php echo (int) $tabCounts['due-soon']; ?></span>
-                            </button>
-                        </div>
-
-                        <div class="f">
-                            <input type="search" id="dashboardSearch" placeholder="Search name or status..." autocomplete="off" aria-label="Search probationers" />
-                            <select id="dashboardSort" aria-label="Sort probationers">
-                                <option value="attention">Needs attention first</option>
-                                <option value="days-left">Fewest days left</option>
-                                <option value="score-asc">Lowest score</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="rw rh">
-                        <span>Employee</span>
-                        <span>Timeline (180 days)</span>
-                        <span>KPI score</span>
-                        <span>Status</span>
-                        <span style="text-align:right;">Action</span>
-                    </div>
-
-                    <div id="evaluationRows">
-                        <?php if (empty($evaluations)): ?>
-                            <div class="empty">
-                                No probationary employees found.
-                                <div style="margin-top:12px;">
-                                    <a class="btn primary" href="add_employee.php" style="text-decoration:none;">Add Employee</a>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($evaluations as $employee): ?>
-                                <?php
-                                $dueDays = (int) ($employee['daysLeftValue'] ?? 0);
-                                $isDueSoon = ($dueDays > 0 && $dueDays <= 30);
-                                ?>
-                                <div class="row rw table-data-row" role="row"
-                                     data-uid="<?php echo htmlspecialchars($employee['uid'] ?? '', ENT_QUOTES); ?>"
-                                     data-search="<?php echo htmlspecialchars(strtolower($employee['name'] . ' ' . $employee['status']), ENT_QUOTES); ?>"
-                                     data-filter="<?php echo htmlspecialchars($employee['statusKey'], ENT_QUOTES); ?>"
-                                     data-due-soon="<?php echo $isDueSoon ? '1' : '0'; ?>"
-                                     data-days-left="<?php echo $dueDays; ?>"
-                                     data-score="<?php echo $employee['hasScore'] ? (float) $employee['score'] : -1; ?>">
-
-                                    <div class="e">
-                                        <div class="av" aria-hidden="true"><?php echo htmlspecialchars($employee['initials'], ENT_QUOTES); ?></div>
-                                        <div class="nm">
-                                            <b>
-                                                <a href="employee_view.php?uid=<?php echo urlencode($employee['uid']); ?>" class="employee-name-single">
-                                                    <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>
-                                                </a>
-                                            </b>
-                                            <span class="sm2"><?php echo htmlspecialchars($employee['role'] ?? 'Probationary', ENT_QUOTES); ?></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="tm">
-                                        <div style="display:flex;justify-content:space-between;align-items:baseline;">
-                                            <span class="timeline-day num sm2"><?php echo htmlspecialchars($employee['day'], ENT_QUOTES); ?></span>
-                                            <span class="timeline-left num sm2"><?php echo htmlspecialchars($employee['daysLeft'], ENT_QUOTES); ?></span>
-                                        </div>
-                                        <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo (int) $employee['progress']; ?>" aria-label="<?php echo (int) $employee['progress']; ?>% probation completed">
-                                            <div class="fill <?php echo $isDueSoon ? 'late' : ''; ?>" style="width: <?php echo (int) $employee['progress']; ?>%;"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="sc">
-                                        <?php if ($employee['hasScore']): ?>
-                                            <div style="display:flex;align-items:baseline;gap:4px;">
-                                                <strong class="score-num num" style="font-size:16px;"><?php echo number_format((float) $employee['score'], 1); ?></strong>
-                                                <span class="sm2 num">/ 5.0</span>
-                                            </div>
-                                            <div class="track" style="margin-top:4px;">
-                                                <div class="fill" style="width: <?php echo min(100, max(0, (int) round(((float)$employee['score'] / 5.0) * 100))); ?>%;"></div>
-                                            </div>
-                                        <?php else: ?>
-                                            <span class="sm2">No ratings yet</span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <div class="stt">
-                                        <span class="pill status-pill status-pill-<?php echo htmlspecialchars($employee['statusKey'], ENT_QUOTES); ?>">
-                                            <?php echo htmlspecialchars($employee['status'], ENT_QUOTES); ?>
-                                        </span>
-                                    </div>
-
-                                    <div class="act">
-                                        <a href="rate_employee.php?employee=<?php echo urlencode($employee['uid']); ?>" class="btn tint btn-rate-row" aria-label="Rate <?php echo htmlspecialchars($employee['name'], ENT_QUOTES); ?>">
-                                            Rate
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="empty" id="noFilterMatches" hidden>
-                        No employees match this filter combination.
-                        <div style="margin-top: 10px;">
-                            <button class="btn txt" type="button" id="clearDashboardFilters">Clear filters</button>
-                        </div>
-                    </div>
-
-                    <div class="ft">
-                        <a class="btn txt" href="employees.php" style="text-decoration:none;">View all probationary staff &rarr;</a>
-                    </div>
-                </section>
-
-            </div>
+            </div></div>
         </main>
 
     </div>
 
+    <div class="toast" id="toast" role="status"><span id="tmsg"></span><button type="button" id="undo">Undo</button></div>
+
     <script src="<?php echo htmlspecialchars(employer_asset('script.js'), ENT_QUOTES); ?>"></script>
 
     <script>
-        window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
+    window.__pfIndex = <?php echo $pfPaletteJson !== false ? $pfPaletteJson : '[]'; ?>;
+
+    var IV = <?php echo json_encode($ivData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    var E = <?php echo json_encode($eData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    var LAB = { review: "Needs review", good: "On track", ready: "Ready for reg", unrated: "Unrated" };
+    var COL = { review: "var(--warn)", good: "var(--good)", ready: "var(--accent)", unrated: "var(--ink-3)" };
+    var st = { t: "all", q: "", k: "score", dir: "asc" };
+    var dismissed = <?php echo json_encode($dismissedUids, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    var last = null, timer;
+    var $ = function(i) { return document.getElementById(i); };
+    var I = function(id) { return '<svg class="i"><use href="#i-' + id + '"/></svg>'; };
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    function ini(n) {
+      var w = (n || '').trim().split(/\s+/);
+      return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] ? w[0][0] : '?')).toUpperCase();
+    }
+
+    function renderIV() {
+      var list = IV.filter(function(r) { return dismissed.indexOf(r.uid) < 0; });
+      $("iv").hidden = !list.length;
+      $("ivn").textContent = list.length;
+      $("ivl").innerHTML = list.map(function(r) {
+        var sPct = Math.min(100, Math.max(0, (r.s / 5 * 100)));
+        var tPct = Math.min(100, Math.max(0, (r.t / 5 * 100)));
+        var gapStr = r.g < 0 ? ("−" + Math.abs(r.g).toFixed(1)) : ("+" + r.g.toFixed(1));
+        return '<div class="ir"><div class="who"><span class="av">' + ini(r.n) + '</span><a class="nm" href="' + r.href + '">' + r.n + '</a></div>'
+          + '<div class="meter" aria-hidden="true"><i style="width:' + sPct + '%"></i><u style="left:' + tPct + '%"></u></div>'
+          + '<span class="vs">' + r.s.toFixed(1) + ' vs ' + r.t.toFixed(1) + ' target</span><span class="gap">' + gapStr + '</span>'
+          + '<a class="sbtn" href="' + r.actHref + '" style="text-decoration:none;">' + r.a + '</a>'
+          + '<button type="button" class="ibtn" data-dis="' + r.uid + '" data-name="' + r.n + '" data-tip="Dismiss" aria-label="Dismiss suggestion for ' + r.n + '">' + I("x") + '</button></div>';
+      }).join("");
+    }
+
+    function renderTabs() {
+      var c = { all: E.length, review: 0, good: 0, ready: 0, unrated: 0 };
+      E.forEach(function(r) { if (c[r.st] !== undefined) c[r.st]++; });
+      var defs = [["all", "All"], ["review", "Needs review"], ["good", "On track"], ["ready", "Ready for reg"], ["unrated", "Unrated"]];
+      $("tabs").innerHTML = defs.filter(function(d) { return d[0] === "all" || c[d[0]] > 0; }).map(function(d) {
+        var on = st.t === d[0];
+        return '<button type="button" class="tab' + (on ? ' is-active' : '') + '" role="tab" aria-selected="' + on + '" aria-checked="' + on + '" data-t="' + d[0] + '">' + d[1] + '<span class="n">' + c[d[0]] + '</span></button>';
+      }).join("");
+    }
+
+    function val(r, k) {
+      return k === "name" ? r.n.toLowerCase() : k === "day" ? r.day : k === "score" ? (r.hasScore ? r.s : -1) : r.st;
+    }
+
+    function render() {
+      var rows = E.filter(function(r) {
+        if (st.t !== "all" && r.st !== st.t) return false;
+        if (st.q && (r.n + " " + (LAB[r.st] || "")).toLowerCase().indexOf(st.q) < 0) return false;
+        return true;
+      });
+      rows.sort(function(a, b) {
+        var x = val(a, st.k), y = val(b, st.k);
+        return (x < y ? -1 : x > y ? 1 : 0) * (st.dir === "asc" ? 1 : -1);
+      });
+      $("rows").innerHTML = rows.map(function(r) {
+        var totalDays = r.day + r.left;
+        var pct = totalDays > 0 ? Math.min(100, Math.round(r.day / totalDays * 100)) : 0;
+        return '<div class="row" data-uid="' + r.uid + '"><div class="who"><span class="av">' + ini(r.n) + '</span><a class="nm" href="employee_view.php?uid=' + encodeURIComponent(r.uid) + '">' + r.n + '</a></div>'
+          + '<div class="prob"><div class="t"><span><b class="mono">Day ' + r.day + '</b>&nbsp;of ' + totalDays + '</span><span class="mono">' + r.left + ' left</span></div><div class="track"><i style="width:' + pct + '%"></i></div></div>'
+          + '<span class="score">' + (r.hasScore ? (r.s.toFixed(1) + ' <small>/ 5.0</small>') : '<small style="color:var(--ink-3)">Unrated</small>') + '</span>'
+          + '<span class="status"><span class="dot" style="background:' + COL[r.st] + '"></span>' + LAB[r.st] + '</span>'
+          + '<a class="rate" href="rate_employee.php?employee=' + encodeURIComponent(r.uid) + '">Rate</a></div>';
+      }).join("") || '<div class="empty"><b>No employees match</b>Try a different search or status.</div>';
+      $("foot").textContent = (st.q ? rows.length + " results" : "Showing " + rows.length + " of " + (st.t === "all" ? E.length : rows.length));
+      document.querySelectorAll(".sort").forEach(function(b) {
+        var on = b.dataset.k === st.k;
+        b.toggleAttribute("data-on", on);
+        b.dataset.dir = on ? st.dir : "asc";
+      });
+    }
+
+    function toast(msg) {
+      $("tmsg").textContent = msg;
+      $("toast").classList.add("on");
+      clearTimeout(timer);
+      timer = setTimeout(function() { $("toast").classList.remove("on"); }, 6000);
+    }
+
+    $("tabs").addEventListener("click", function(e) {
+      var b = e.target.closest(".tab");
+      if (!b) return;
+      st.t = b.dataset.t;
+      renderTabs();
+      render();
+    });
+
+    $("q").addEventListener("input", function(e) {
+      st.q = e.target.value.toLowerCase().trim();
+      render();
+    });
+
+    document.querySelector(".head").addEventListener("click", function(e) {
+      var b = e.target.closest(".sort");
+      if (!b) return;
+      if (st.k === b.dataset.k) {
+        st.dir = st.dir === "asc" ? "desc" : "asc";
+      } else {
+        st.k = b.dataset.k;
+        st.dir = "asc";
+      }
+      render();
+    });
+
+    $("ivl").addEventListener("click", function(e) {
+      var b = e.target.closest("[data-dis]");
+      if (!b) return;
+      var uid = b.dataset.dis;
+      var name = b.dataset.name;
+      last = { uid: uid, name: name };
+      dismissed.push(uid);
+      renderIV();
+      toast("Dismissed suggestion for " + name);
+
+      var fd = new FormData();
+      fd.append("action", "queue_dismiss");
+      fd.append("uid", uid);
+      fd.append("csrf_token", csrfToken);
+      fetch("employer_dashboard.php", { method: "POST", body: fd });
+    });
+
+    $("undo").addEventListener("click", function() {
+      if (!last) return;
+      var restoredUid = last.uid;
+      dismissed = dismissed.filter(function(u) { return u !== restoredUid; });
+      renderIV();
+      $("toast").classList.remove("on");
+
+      var fd = new FormData();
+      fd.append("action", "queue_restore");
+      fd.append("uid", restoredUid);
+      fd.append("csrf_token", csrfToken);
+      fetch("employer_dashboard.php", { method: "POST", body: fd });
+      last = null;
+    });
+
+    $("exportEvaluationsBtn").addEventListener("click", function() {
+      var lines = [["Employee", "Timeline", "Days Left", "KPI Score", "Status"]];
+      E.forEach(function(r) {
+        var scoreStr = r.hasScore ? r.s.toFixed(1) : "Unrated";
+        var statusStr = LAB[r.st] || r.st;
+        lines.push([r.n, "Day " + r.day + " of " + (r.day + r.left), r.left + " left", scoreStr, statusStr].map(function(v) {
+          return '"' + String(v).replace(/"/g, '""') + '"';
+        }).join(","));
+      });
+      var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "probationary_employees.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    renderIV();
+    renderTabs();
+    render();
     </script>
 
 </body>

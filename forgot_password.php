@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23245fba'/%3E%3Cpath d='M16 53.3v-18.7M32 53.3V24M49.3 53.3V13.3' stroke='white' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "IBM Plex Sans", "Segoe UI", sans-serif; color: #1f2940; background: #f3f5f8; line-height: 1.5; }
+        body { margin: 0; font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2940; background: #f3f5f8; line-height: 1.5; }
         .wrap { max-width: 460px; margin: 8vh auto; padding: 0 16px; }
         .card { background: #fff; border: 1px solid #edf0f4; border-radius: 14px; box-shadow: 0 4px 16px rgba(20, 34, 54, .05); padding: 28px 26px; }
         h1 { margin: 0 0 6px; font-size: 22px; }

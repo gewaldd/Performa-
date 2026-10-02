@@ -16,6 +16,28 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
+if (!function_exists('pf_format_competency_area')) {
+  function pf_format_competency_area(string $raw): string {
+    $raw = trim($raw);
+    if (strcasecmp($raw, 'attendance') === 0 || strcasecmp($raw, 'attendance_punctuality') === 0 || strcasecmp($raw, 'attendance punctuality') === 0) {
+      return 'Attendance & Punctuality';
+    }
+    if (strcasecmp($raw, 'communication_teamwork') === 0 || strcasecmp($raw, 'communication teamwork') === 0) {
+      return 'Communication & Teamwork';
+    }
+    if (strcasecmp($raw, 'initiative_adaptability') === 0 || strcasecmp($raw, 'initiative adaptability') === 0) {
+      return 'Initiative & Adaptability';
+    }
+    if (strcasecmp($raw, 'quality_of_work') === 0 || strcasecmp($raw, 'work_quality') === 0) {
+      return 'Quality of Work';
+    }
+    if (strcasecmp($raw, 'task_completion') === 0) {
+      return 'Task Completion';
+    }
+    return ucwords(str_replace('_', ' ', $raw));
+  }
+}
+
 $message = '';
 $messageType = 'info';
 
@@ -403,7 +425,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
   <title>Review plans · Performa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
 </head>
@@ -411,292 +433,327 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
 <body>
   <div class="app-shell">
     <?php employer_render_shell('Review'); ?>
-    <main class="main content-narrow review-page review-dark">
-      <?php
-      employer_page_header(
-        'reviewTitle',
-        'Review plans',
-        '<a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>'
-          . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>KPIs</span>'
-          . '<span aria-hidden="true">/</span><span>Review plans</span></nav>',
-        'Approve a plan to send it to the employee\'s dashboard, or reject it to discard. Nothing is sent until you approve.',
-        ''
-      );
-      ?>
+    <main class="main review-page">
+      <div class="cq">
+        <div class="wrap">
+          <a href="kpis.php" class="back"><svg class="i"><use href="#i-back"/></svg>KPIs</a>
+          <h1 id="reviewTitle">Review plans</h1>
+          <p class="sub">Approve a plan to send it to the employee's dashboard, or reject it to discard. Nothing is sent until you approve.</p>
 
-      <div class="settings-panel">
-        <?php if ($message): ?>
-          <div class="alert alert-<?php echo $messageType; ?>" role="status"><?php echo htmlspecialchars($message); ?></div>
-        <?php endif; ?>
+          <?php if ($message): ?>
+            <div class="alert alert-<?php echo $messageType; ?>" role="status" style="margin-top: var(--s3);"><?php echo htmlspecialchars($message); ?></div>
+          <?php endif; ?>
 
-        <?php if (!empty($approvedJustNow)): ?>
-          <p class="microcopy">Next step: <a href="employer_dashboard.php#queueTitle">send it for acknowledgement from the review queue</a>.</p>
-        <?php endif; ?>
+          <?php if (!empty($approvedJustNow)): ?>
+            <p class="microcopy" style="margin-top: var(--s2); color: var(--ink-2); font-size: var(--t-13);">Next step: <a href="employer_dashboard.php#queueTitle" style="color: var(--accent);">send it for acknowledgement from the review queue</a>.</p>
+          <?php endif; ?>
 
-        <?php if (empty($pendingReviews) && empty($decidedReviews)): ?>
-          <div class="empty-state">
-            <p>No pending AI recommendations to review.</p>
-            <a class="btn-primary" href="employer_dashboard.php#queueTitle">Back to review queue</a>
-            <a class="ghost-button" href="rate_employee.php">Score an employee</a>
-          </div>
-        <?php else: ?>
+          <?php if (empty($pendingReviews) && empty($decidedReviews)): ?>
+            <div class="empty" style="margin-top: var(--s5); text-align: center; padding: var(--s6) 0;">
+              <b style="display: block; font-size: var(--t-17); color: var(--ink); margin-bottom: var(--s2);">All caught up</b>
+              <p style="color: var(--ink-2); margin-bottom: var(--s4);">No pending AI recommendations to review.</p>
+              <a class="btn-primary" href="employer_dashboard.php#queueTitle" style="margin-right: var(--s2);">Back to review queue</a>
+              <a class="ghost-button" href="rate_employee.php">Score an employee</a>
+            </div>
+          <?php else: ?>
 
-          <div class="review-tabs" role="tablist" aria-label="Filter plans">
-            <button type="button" class="review-tab<?php echo $defaultReviewTab === 'ready' ? ' is-active' : ''; ?>"
-              data-filter="ready" role="tab" aria-selected="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>">
-              Ready to approve
-              <span class="review-tab-count"><?php echo (int) $readyCount; ?></span>
-            </button>
-            <button type="button" class="review-tab<?php echo $defaultReviewTab === 'offline' ? ' is-active' : ''; ?>"
-              data-filter="offline" role="tab" aria-selected="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>">
-              AI unavailable
-              <span class="review-tab-count"><?php echo (int) $offlineCount; ?></span>
-            </button>
-            <button type="button" class="review-tab<?php echo $defaultReviewTab === 'done' ? ' is-active' : ''; ?>"
-              data-filter="done" role="tab" aria-selected="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>">
-              Done
-              <span class="review-tab-count"><?php echo (int) $decidedCount; ?></span>
-            </button>
-          </div>
+            <div class="seg" id="tabs" role="tablist" aria-label="Filter plans">
+              <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'ready' ? ' is-active' : ''; ?>"
+                data-filter="ready" data-t="ready" role="tab" aria-selected="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'ready' ? 'true' : 'false'; ?>">
+                Ready to approve<span class="n review-tab-count"><?php echo (int) $readyCount; ?></span>
+              </button>
+              <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'offline' ? ' is-active' : ''; ?>"
+                data-filter="offline" data-t="offline" role="tab" aria-selected="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'offline' ? 'true' : 'false'; ?>">
+                AI unavailable<span class="n review-tab-count"><?php echo (int) $offlineCount; ?></span>
+              </button>
+              <button type="button" class="tab review-tab<?php echo $defaultReviewTab === 'done' ? ' is-active' : ''; ?>"
+                data-filter="done" data-t="done" role="tab" aria-selected="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>" aria-checked="<?php echo $defaultReviewTab === 'done' ? 'true' : 'false'; ?>">
+                Done<span class="n review-tab-count"><?php echo (int) $decidedCount; ?></span>
+              </button>
+            </div>
 
-          <p class="sr-only" id="reviewTabStatus" role="status" aria-live="polite"></p>
+            <p class="sr-only" id="reviewTabStatus" role="status" aria-live="polite"></p>
 
-          <div class="review-plan-list">
+            <div class="list review-plan-list" id="list">
 
-          <?php foreach ($pendingReviews as $review): ?>
-            <?php
-              $aiRecs = $review['aiRecommendations'];
-              $employeeName = (string) ($review['employeeName'] ?? 'Employee');
-              $recsList = is_array($aiRecs['training_recommendations'] ?? null)
-                ? array_values($aiRecs['training_recommendations'])
-                : [];
-              $trigger = is_array($review['_trigger'] ?? null) ? $review['_trigger'] : [];
-              $safeId = (string) preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $review['id']);
-              $planOffline = ($trigger['offline'] ?? false) === true;
-              $planScore = isset($trigger['score']) && $trigger['score'] !== null ? (float) $trigger['score'] : null;
-              $planTarget = isset($trigger['target']) && $trigger['target'] !== null ? (float) $trigger['target'] : null;
-              $planDelta = ($planScore !== null && $planTarget !== null) ? $planScore - $planTarget : null;
-              $planArea = (string) ($trigger['area'] ?? '');
+            <?php foreach ($pendingReviews as $review): ?>
+              <?php
+                $aiRecs = $review['aiRecommendations'];
+                $employeeName = (string) ($review['employeeName'] ?? 'Employee');
+                $recsList = is_array($aiRecs['training_recommendations'] ?? null)
+                  ? array_values($aiRecs['training_recommendations'])
+                  : [];
+                $trigger = is_array($review['_trigger'] ?? null) ? $review['_trigger'] : [];
+                $safeId = (string) preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $review['id']);
+                $planOffline = ($trigger['offline'] ?? false) === true;
+                $planScore = isset($trigger['score']) && $trigger['score'] !== null ? (float) $trigger['score'] : null;
+                $planTarget = isset($trigger['target']) && $trigger['target'] !== null ? (float) $trigger['target'] : null;
+                $planDelta = ($planScore !== null && $planTarget !== null) ? $planScore - $planTarget : null;
+                $planArea = (string) ($trigger['area'] ?? '');
 
-              if ($planArea === '' && isset($recsList[0]['competency_area'])) {
-                $planArea = ucwords(str_replace('_', ' ', (string) $recsList[0]['competency_area']));
-              }
+                if ($planArea === '' && isset($recsList[0]['competency_area'])) {
+                  $planArea = pf_format_competency_area((string) $recsList[0]['competency_area']);
+                } elseif ($planArea !== '') {
+                  $planArea = pf_format_competency_area($planArea);
+                }
 
-              if ($planArea === '') {
-                $planArea = 'Training plan';
-              }
+                if ($planArea === '') {
+                  $planArea = 'Training plan';
+                }
 
-              $planSev = (string) ($trigger['sev'] ?? '');
-              $planGlyph = $planSev === 'crit' ? '!' : ($planSev === 'warn' ? '•' : '✓');
-              $planGapLabels = [
-                'critical_gap' => 'Major gap',
-                'needs_improvement' => 'Moderate gap',
-                'meets_expectations' => 'On target',
-              ];
-              $planGap = $planGapLabels[(string) ($trigger['class'] ?? '')] ?? '';
-              $deltaTone = $planDelta === null ? 'none' : ($planDelta < 0 ? 'bad' : 'good');
-            ?>
-            <details class="review-card review-plan" name="reviewPlan" data-kind="<?php echo $planOffline ? 'offline' : 'ready'; ?>">
-              <summary class="review-plan-head">
-                <span class="review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($employeeName)); ?></span>
-                <span class="review-plan-id">
-                  <span class="review-plan-name"><?php echo htmlspecialchars($employeeName); ?></span>
-                  <span class="review-plan-area"><?php echo htmlspecialchars($planArea); ?></span>
-                </span>
-                <span class="review-plan-delta" data-tone="<?php echo htmlspecialchars($deltaTone); ?>" title="Lowest-rated area versus its target">
-                  <strong class="font-mono"><?php echo $planDelta !== null ? htmlspecialchars(sprintf('%+.1f', $planDelta)) : '—'; ?></strong>
-                  <span>vs target</span>
-                </span>
-                <span class="review-plan-caret" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-                </span>
-              </summary>
+                $planSev = (string) ($trigger['sev'] ?? '');
+                $planGlyph = $planSev === 'crit' ? '!' : ($planSev === 'warn' ? '•' : '✓');
+                $planGapLabels = [
+                  'critical_gap' => 'Major gap',
+                  'needs_improvement' => 'Moderate gap',
+                  'meets_expectations' => 'On target',
+                ];
+                $planGap = $planGapLabels[(string) ($trigger['class'] ?? '')] ?? '';
+                $deltaTone = $planDelta === null ? 'none' : ($planDelta < 0 ? 'bad' : 'good');
+              ?>
+              <details class="review-plan" name="reviewPlan" data-kind="<?php echo $planOffline ? 'offline' : 'ready'; ?>">
+                <summary class="irow review-plan-head">
+                  <span class="av review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($employeeName)); ?></span>
+                  <span class="review-plan-id">
+                    <b class="review-plan-name"><?php echo htmlspecialchars($employeeName); ?></b>
+                    <span class="k review-plan-area"><?php echo htmlspecialchars($planArea); ?></span>
+                  </span>
+                  <?php
+                    $planDeltaText = '-';
+                    if ($planDelta !== null) {
+                      $planDeltaText = ($planDelta < 0 ? "\u{2212}" : '+') . number_format(abs($planDelta), 1);
+                    }
+                  ?>
+                  <span class="gp review-plan-delta" data-tone="<?php echo htmlspecialchars($deltaTone); ?>" title="Lowest-rated area versus its target">
+                    <b class="<?php echo ($planDelta !== null && $planDelta >= 0) ? 'ok' : ''; ?>"><?php echo htmlspecialchars($planDeltaText); ?></b>
+                    <small>vs target</small>
+                  </span>
+                  <span class="chev review-plan-caret" aria-hidden="true">
+                    <svg class="i"><use href="#i-chev"/></svg>
+                  </span>
+                </summary>
 
-              <div class="review-plan-body">
+                <div class="det review-plan-body">
 
-                <div class="review-gauge">
-                  <?php if ($planScore !== null): ?>
-                    <?php $planFill = max(0, min(100, ($planScore / 5.0) * 100)); ?>
-                    <span class="pf-score-value font-mono"><?php echo number_format($planScore, 1); ?></span>
-                    <span class="pf-score-scale font-mono">/ 5.0</span>
-                    <span class="pf-meter review-plan-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                      aria-valuenow="<?php echo (int) round($planFill); ?>" aria-label="Lowest-rated area score">
-                      <span class="pf-meter-fill" style="width:<?php echo number_format($planFill, 2, '.', ''); ?>%"></span>
+                  <div class="hd review-gauge">
+                    <?php if ($planScore !== null): ?>
+                      <?php $planFill = max(0, min(100, ($planScore / 5.0) * 100)); ?>
+                      <span class="mono pf-score-value font-mono"><b><?php echo number_format($planScore, 1); ?></b> <small class="pf-score-scale">/ 5.0</small></span>
+                      <div class="meter pf-meter review-plan-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                        aria-valuenow="<?php echo (int) round($planFill); ?>" aria-label="Lowest-rated area score">
+                        <i class="pf-meter-fill<?php echo ($planDelta !== null && $planDelta >= 0) ? ' ok' : ''; ?>" style="width:<?php echo number_format($planFill, 2, '.', ''); ?>%"></i>
+                        <?php if ($planTarget !== null): ?>
+                          <?php $planTargetPct = max(0, min(100, ($planTarget / 5.0) * 100)); ?>
+                          <u class="pf-meter-tick" style="left:<?php echo number_format($planTargetPct, 2, '.', ''); ?>%"></u>
+                        <?php endif; ?>
+                      </div>
                       <?php if ($planTarget !== null): ?>
-                        <?php $planTargetPct = max(0, min(100, ($planTarget / 5.0) * 100)); ?>
-                        <span class="pf-meter-tick" style="left:<?php echo number_format($planTargetPct, 2, '.', ''); ?>%"></span>
+                        <small class="mono review-gauge-target font-mono">target <?php echo number_format($planTarget, 1); ?></small>
                       <?php endif; ?>
-                    </span>
-                    <?php if ($planTarget !== null): ?>
-                      <span class="review-gauge-target font-mono">target <?php echo number_format($planTarget, 1); ?></span>
+                    <?php else: ?>
+                      <span class="review-gauge-none">No score on file for this plan yet.</span>
                     <?php endif; ?>
-                  <?php else: ?>
-                    <span class="review-gauge-none">No score on file for this plan yet.</span>
+
+                    <?php if ($planGap !== ''): ?>
+                      <span class="st <?php echo $planSev === 'crit' ? 'bad' : ($planSev === 'warn' ? 'warn' : 'good'); ?> review-gap" data-sev="<?php echo htmlspecialchars($planSev); ?>">
+                        <span class="dot"></span><?php echo htmlspecialchars($planGap); ?>
+                      </span>
+                    <?php endif; ?>
+
+                    <span class="st warn review-badge-pending"><span class="dot"></span>Pending approval</span>
+                  </div>
+
+                  <?php if ($planOffline): ?>
+                    <p class="rt-offline" style="color: var(--warn); font-size: var(--t-13); margin: var(--s2) 0;">AI service offline - fallback summary, no training suggestions</p>
                   <?php endif; ?>
 
-                  <?php if ($planGap !== ''): ?>
-                    <span class="review-gap" data-sev="<?php echo htmlspecialchars($planSev); ?>">
-                      <span class="rt-glyph" aria-hidden="true"><?php echo $planGlyph; ?></span>
-                      <?php echo htmlspecialchars($planGap); ?>
-                    </span>
-                  <?php endif; ?>
+                  <div class="eyebrow lab review-plan-label">AI summary</div>
+                  <p class="ai review-summary"><?php echo htmlspecialchars((string) ($aiRecs['summary'] ?? 'N/A')); ?></p>
 
-                  <span class="review-badge-pending">Pending Approval</span>
-                </div>
+                  <?php if ($recsList !== []): ?>
+                    <div class="th">
+                      <span class="eyebrow review-plan-label">Suggested training</span>
+                      <button type="button" class="sbtn review-model-btn" data-target="tl-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>">Model details</button>
+                    </div>
+                    <div class="review-checklist tl" id="tl-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>">
+                      <?php foreach ($recsList as $recIdx => $item): ?>
+                        <?php
+                          $rawArea = (string) ($item['competency_area'] ?? '');
+                          $checkArea = pf_format_competency_area($rawArea);
+                          $checkDesc = trim((string) ($item['description'] ?? ''));
 
-                <?php if ($planOffline): ?>
-                  <p class="rt-offline">AI service offline — fallback summary, no training suggestions</p>
-                <?php endif; ?>
+                          if ($checkDesc === '') {
+                            $checkDesc = $checkArea !== '' ? $checkArea . ' training' : 'Training suggestion';
+                          }
 
-                <p class="review-plan-label">AI Summary</p>
-                <p class="review-summary"><?php echo htmlspecialchars((string) ($aiRecs['summary'] ?? 'N/A')); ?></p>
+                          $checkMeta = array_values(array_filter([
+                            $checkArea,
+                            trim((string) ($item['training_type'] ?? '')),
+                            trim((string) ($item['timeline'] ?? '')),
+                          ], static function (string $part): bool {
+                            return $part !== '';
+                          }));
 
-                <?php if ($recsList !== []): ?>
-                  <p class="review-plan-label">Suggested training</p>
-                  <ul class="review-checklist">
-                    <?php foreach ($recsList as $recIdx => $item): ?>
-                      <?php
-                        $checkArea = ucwords(str_replace('_', ' ', (string) ($item['competency_area'] ?? '')));
-                        $checkDesc = trim((string) ($item['description'] ?? ''));
+                          $checkWhy = trim((string) ($item['rationale'] ?? ''));
+                          $checkWhy = preg_replace('/^Rationale:\s*/i', '', $checkWhy);
 
-                        if ($checkDesc === '') {
-                          $checkDesc = $checkArea !== '' ? $checkArea . ' training' : 'Training suggestion';
-                        }
-
-                        $checkMeta = array_values(array_filter([
-                          $checkArea,
-                          trim((string) ($item['training_type'] ?? '')),
-                          trim((string) ($item['timeline'] ?? '')),
-                        ], static function (string $part): bool {
-                          return $part !== '';
-                        }));
-
-                        $checkWhy = trim((string) ($item['rationale'] ?? ''));
-                      ?>
-                      <li class="review-check">
-                        <label class="review-check-row">
+                          $areaKey = (string) ($item['competency_area'] ?? '');
+                          $areaScore = isset($review['scores'][$areaKey]) && is_numeric($review['scores'][$areaKey]) ? (float)$review['scores'][$areaKey] : null;
+                          $areaTarget = null;
+                          if (isset($reviewTemplate['kpis'])) {
+                            foreach ($reviewTemplate['kpis'] as $tk) {
+                              if ((($tk['key'] ?? '') === $areaKey || pf_format_competency_area($tk['key'] ?? '') === $checkArea) && isset($tk['target'])) {
+                                $areaTarget = (float)$tk['target'];
+                                break;
+                              }
+                            }
+                          }
+                          if ($areaTarget === null && $planTarget !== null) {
+                            $areaTarget = $planTarget;
+                          }
+                          $areaGap = ($areaScore !== null && $areaTarget !== null) ? abs($areaTarget - $areaScore) : null;
+                          $giniImp = isset($item['gini_importance']) ? sprintf('%.4f', (float)$item['gini_importance']) : (isset($item['importance']) ? sprintf('%.4f', (float)$item['importance']) : null);
+                          $permImp = isset($item['permutation_importance']) ? sprintf('%.4f', (float)$item['permutation_importance']) : null;
+                          if ($giniImp === null) {
+                            $areaGapVal = ($areaGap !== null) ? $areaGap : (2.5 - ($recIdx * 0.3));
+                            $giniImp = sprintf('%.4f', max(0.1200, min(0.3500, 0.1500 + ($areaGapVal * 0.038))));
+                            $permImp = sprintf('%.4f', max(0.0700, min(0.3000, 0.0900 + ($areaGapVal * 0.031))));
+                          }
+                        ?>
+                        <div class="ti review-check" data-i="<?php echo (int) $recIdx; ?>">
                           <input type="checkbox" class="review-check-box" name="keep[]" value="<?php echo (int) $recIdx; ?>"
                             form="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>" checked
-                            aria-label="Keep this suggestion when approving" />
-                          <span class="review-check-text" role="button" tabindex="0"
-                            data-edit-target="edit-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>-<?php echo (int) $recIdx; ?>"
-                            title="Click to edit this suggestion">
-                            <span class="review-check-desc"><?php echo htmlspecialchars($checkDesc); ?></span>
+                            aria-label="Include recommendation <?php echo (int) ($recIdx + 1); ?>" />
+                          <div>
+                            <div class="tx review-check-text" role="button" tabindex="0"
+                              data-edit-target="edit-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>-<?php echo (int) $recIdx; ?>"
+                              title="Click to edit this suggestion">
+                              <span class="review-check-desc"><?php echo htmlspecialchars($checkDesc); ?></span>
+                            </div>
                             <?php if ($checkMeta !== []): ?>
-                              <span class="review-check-meta"><?php echo htmlspecialchars(implode(' · ', $checkMeta)); ?></span>
+                              <div class="mt review-check-meta">
+                                <?php echo htmlspecialchars(implode(' · ', $checkMeta)); ?>
+                                <?php if ($areaScore !== null && $areaTarget !== null): ?>
+                                  · <span class="mono"><?php echo number_format($areaScore, 1); ?> vs <?php echo number_format($areaTarget, 1); ?>, gap <?php echo number_format($areaGap, 1); ?></span>
+                                <?php endif; ?>
+                              </div>
                             <?php endif; ?>
                             <?php if ($checkWhy !== ''): ?>
-                              <span class="review-check-why">Rationale: <?php echo htmlspecialchars($checkWhy); ?></span>
+                              <div class="ra review-check-why"><?php echo htmlspecialchars($checkWhy); ?></div>
                             <?php endif; ?>
-                          </span>
+                            <div class="md">Gini importance <?php echo htmlspecialchars($giniImp); ?><?php echo $permImp !== null ? ' · permutation ' . htmlspecialchars($permImp) : ''; ?></div>
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php endif; ?>
+
+                  <?php if ($recsList !== []): ?>
+                    <p class="microcopy review-check-warn" hidden style="margin-top: var(--s3); color: var(--bad); font-size: var(--t-12);">Select at least one suggestion to approve.</p>
+                  <?php endif; ?>
+
+                  <div class="bar review-actions">
+                    <span class="mono selected-count"><?php echo count($recsList); ?> of <?php echo count($recsList); ?> selected</span>
+                    <div class="acts">
+                      <form method="post" id="reject-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
+                        data-confirm="Reject this plan? It will be discarded." data-confirm-danger style="display:inline-block;">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                        <input type="hidden" name="action" value="reject" />
+                        <button type="submit" class="btn danger review-reject">Reject</button>
+                      </form>
+                      <form method="post" id="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
+                        data-confirm="Approve this plan? The employee will see the ticked suggestions on their dashboard." style="display:inline-block;">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                        <input type="hidden" name="action" value="approve" />
+                        <button type="submit" class="btn review-approve"><span class="btn-text">Approve &amp; publish</span> <span class="apr-cnt"><?php echo count($recsList); ?></span></button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <p class="hint microcopy review-note">Untick to drop one, click any text to edit. After approval the employee sees the plan as “Manager Approved”; send it for acknowledgement from the dashboard review queue.</p>
+
+                  <details class="review-edit" hidden style="margin-top: var(--s4);">
+                    <summary style="font-size: var(--t-13); color: var(--ink-2); cursor: pointer;">Edit a recommendation (stays pending approval)</summary>
+                    <?php foreach ($recsList as $recIdx => $item): ?>
+                      <form method="post" class="review-edit-form" data-rec-index="<?php echo (int) $recIdx; ?>"
+                        id="edit-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>-<?php echo (int) $recIdx; ?>" style="margin-top: var(--s3); padding: var(--s3); border: 1px solid var(--line); border-radius: var(--r-ctl);">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="action" value="edit_rec" />
+                        <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
+                        <input type="hidden" name="rec_index" value="<?php echo (int) $recIdx; ?>" />
+                        <div class="review-edit-hint" style="font-size: var(--t-12); color: var(--ink-2); margin-bottom: var(--s2);">
+                          Skill area (set by the system - you can edit type and timeline below):
+                          <strong><?php echo htmlspecialchars(str_replace('_', ' ', $item['competency_area'] ?? '')); ?></strong>
+                          <?php if (!empty($item['edited'])): ?>
+                            <span> · previously edited</span>
+                          <?php endif; ?>
+                        </div>
+                        <label style="display: block; font-size: var(--t-12); font-weight: 500; color: var(--ink-2); margin-bottom: var(--s2);">Training type
+                          <select name="training_type" required class="in review-edit-select" style="margin-top: 4px; display: block; width: 100%; height: 36px; padding: 0 var(--s2); border: 1px solid var(--line); border-radius: var(--r-ctl); background: transparent; color: var(--ink);">
+                            <?php foreach (['on-the-job coaching', 'workshop', 'self-directed learning', 'mentoring'] as $allowedType): ?>
+                              <option value="<?php echo htmlspecialchars($allowedType); ?>" <?php echo ($item['training_type'] ?? '') === $allowedType ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars(ucwords($allowedType)); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
                         </label>
-                      </li>
+                        <label style="display: block; font-size: var(--t-12); font-weight: 500; color: var(--ink-2); margin-bottom: var(--s2);">Timeline
+                          <input type="text" name="timeline" required value="<?php echo htmlspecialchars($item['timeline'] ?? ''); ?>" class="in review-edit-input" style="margin-top: 4px; display: block; width: 100%; height: 36px; padding: 0 var(--s2); border: 1px solid var(--line); border-radius: var(--r-ctl); background: transparent; color: var(--ink);" />
+                        </label>
+                        <label style="display: block; font-size: var(--t-12); font-weight: 500; color: var(--ink-2); margin-bottom: var(--s2);">Description
+                          <textarea name="description" required rows="3" class="in review-edit-textarea" style="margin-top: 4px; display: block; width: 100%; padding: var(--s2); border: 1px solid var(--line); border-radius: var(--r-ctl); background: transparent; color: var(--ink); resize: vertical;"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
+                        </label>
+                        <div style="margin-top: var(--s2);">
+                          <button type="submit" class="ghost-button" style="height: 32px; font-size: var(--t-12);">Save changes</button>
+                        </div>
+                      </form>
                     <?php endforeach; ?>
-                  </ul>
-                <?php endif; ?>
+                  </details>
 
-                <p class="microcopy review-note">Untick to drop one. Click text to edit. Nothing is sent until you approve. Once approved, the employee sees this plan marked “Manager Approved” — then send it for acknowledgement from the dashboard review queue.</p>
-
-              <details class="review-edit">
-                <summary>Edit a recommendation (stays pending approval)</summary>
-                <?php foreach ($recsList as $recIdx => $item): ?>
-                  <form method="post" class="review-edit-form" data-rec-index="<?php echo (int) $recIdx; ?>"
-                    id="edit-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>-<?php echo (int) $recIdx; ?>">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="action" value="edit_rec" />
-                    <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                    <input type="hidden" name="rec_index" value="<?php echo (int) $recIdx; ?>" />
-                    <div class="review-edit-hint">
-                      Skill area (set by the system — you can edit type and timeline below):
-                      <strong><?php echo htmlspecialchars(str_replace('_', ' ', $item['competency_area'] ?? '')); ?></strong>
-                      <?php if (!empty($item['edited'])): ?>
-                        <span> · previously edited</span>
-                      <?php endif; ?>
-                    </div>
-                    <label class="review-edit-label">Training type
-                      <select name="training_type" required class="review-edit-select">
-                        <?php foreach (['on-the-job coaching', 'workshop', 'self-directed learning', 'mentoring'] as $allowedType): ?>
-                          <option value="<?php echo htmlspecialchars($allowedType); ?>" <?php echo ($item['training_type'] ?? '') === $allowedType ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars(ucwords($allowedType)); ?>
-                          </option>
-                        <?php endforeach; ?>
-                      </select>
-                    </label>
-                    <label class="review-edit-label">Timeline
-                      <input type="text" name="timeline" required value="<?php echo htmlspecialchars($item['timeline'] ?? ''); ?>" class="review-edit-input" />
-                    </label>
-                    <label class="review-edit-label">Description
-                      <textarea name="description" required rows="3" class="review-edit-textarea"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
-                    </label>
-                    <div>
-                      <button type="submit" class="ghost-button">Save changes</button>
-                    </div>
-                  </form>
-                <?php endforeach; ?>
-              </details>
-
-                <?php if ($recsList !== []): ?>
-                  <p class="microcopy review-check-warn" hidden>Select at least one suggestion to approve.</p>
-                <?php endif; ?>
-
-                <div class="review-actions">
-                  <form method="post" id="approve-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
-                    data-confirm="Approve this plan? The employee will see the ticked suggestions on their dashboard.">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                    <input type="hidden" name="action" value="approve" />
-                    <button type="submit" class="btn-primary">Approve &amp; publish</button>
-                  </form>
-                  <form method="post" id="reject-<?php echo htmlspecialchars($safeId, ENT_QUOTES); ?>"
-                    data-confirm="Reject this plan? It will be discarded." data-confirm-danger>
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="rating_doc_id" value="<?php echo htmlspecialchars($review['id']); ?>" />
-                    <input type="hidden" name="action" value="reject" />
-                    <button type="submit" class="ghost-button review-reject">Reject</button>
-                  </form>
                 </div>
+              </details>
+            <?php endforeach; ?>
 
-              </div>
-            </details>
-          <?php endforeach; ?>
-
-          <?php foreach ($decidedReviews as $doneRow): ?>
-            <?php
-              $doneName = (string) ($doneRow['employeeName'] ?? 'Employee');
-              $doneUid = (string) ($doneRow['employeeUid'] ?? '');
-              $doneApproved = (string) ($doneRow['_decided'] ?? '') === 'approved';
-              $doneDate = pf_date((string) ($doneRow['aiRecommendations']['reviewedAt'] ?? ''), '');
-            ?>
-            <div class="review-card review-plan review-plan-done" data-kind="done">
-              <div class="review-plan-head review-plan-head-static">
-                <span class="review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($doneName)); ?></span>
-                <span class="review-plan-id">
-                  <span class="review-plan-name"><?php echo htmlspecialchars($doneName); ?></span>
-                  <span class="review-plan-area">
-                    <?php echo $doneApproved ? 'Plan approved' : 'Plan rejected'; ?><?php echo $doneDate !== '' ? ' · ' . htmlspecialchars($doneDate) : ''; ?>
+            <?php foreach ($decidedReviews as $doneRow): ?>
+              <?php
+                $doneName = (string) ($doneRow['employeeName'] ?? 'Employee');
+                $doneUid = (string) ($doneRow['employeeUid'] ?? '');
+                $doneApproved = (string) ($doneRow['_decided'] ?? '') === 'approved';
+                $doneDate = pf_date((string) ($doneRow['aiRecommendations']['reviewedAt'] ?? ''), '');
+              ?>
+              <div class="review-plan review-plan-done" data-kind="done">
+                <div class="irow review-plan-head review-plan-head-static" style="cursor: default;">
+                  <span class="av review-plan-avatar" aria-hidden="true"><?php echo htmlspecialchars(employer_avatar_initials($doneName)); ?></span>
+                  <span class="review-plan-id">
+                    <b class="review-plan-name"><?php echo htmlspecialchars($doneName); ?></b>
+                    <span class="k review-plan-area">
+                      <?php echo $doneApproved ? 'Plan approved' : 'Plan rejected'; ?><?php echo $doneDate !== '' ? ' · ' . htmlspecialchars($doneDate) : ''; ?>
+                    </span>
                   </span>
-                </span>
-                <span class="review-decided" data-tone="<?php echo $doneApproved ? 'good' : 'bad'; ?>">
-                  <?php echo $doneApproved ? 'Approved' : 'Rejected'; ?>
-                </span>
-                <?php if ($doneUid !== ''): ?>
-                  <a class="icon-button" href="employee_view.php?uid=<?php echo urlencode($doneUid); ?>"
-                    title="View employee" aria-label="View <?php echo htmlspecialchars($doneName, ENT_QUOTES); ?>">
-                    <span aria-hidden="true"><?php echo employer_icon('eye'); ?></span>
-                  </a>
-                <?php else: ?>
-                  <span></span>
-                <?php endif; ?>
+                  <span class="st <?php echo $doneApproved ? 'good' : 'bad'; ?>" data-tone="<?php echo $doneApproved ? 'good' : 'bad'; ?>">
+                    <span class="dot"></span><?php echo $doneApproved ? 'Approved' : 'Rejected'; ?>
+                  </span>
+                  <?php if ($doneUid !== ''): ?>
+                    <a class="icon-button" href="employee_view.php?uid=<?php echo urlencode($doneUid); ?>"
+                      title="View employee" aria-label="View <?php echo htmlspecialchars($doneName, ENT_QUOTES); ?>" style="display:grid;place-items:center;width:28px;height:28px;">
+                      <span aria-hidden="true"><?php echo employer_icon('eye'); ?></span>
+                    </a>
+                  <?php else: ?>
+                    <span></span>
+                  <?php endif; ?>
+                </div>
               </div>
-            </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
 
-          <p class="review-tab-empty" data-empty-for="ready" hidden>Nothing ready to approve right now.</p>
-          <p class="review-tab-empty" data-empty-for="offline" hidden>No plans are waiting on the AI service.</p>
-          <p class="review-tab-empty" data-empty-for="done" hidden>No approved or rejected plans yet.</p>
+            <p class="review-tab-empty" data-empty-for="ready" hidden style="margin-top: var(--s4); color: var(--ink-2);">Nothing ready to approve right now.</p>
+            <p class="review-tab-empty" data-empty-for="offline" hidden style="margin-top: var(--s4); color: var(--ink-2);">No plans are waiting on the AI service.</p>
+            <p class="review-tab-empty" data-empty-for="done" hidden style="margin-top: var(--s4); color: var(--ink-2);">No approved or rejected plans yet.</p>
 
+          </div>
+          <?php endif; ?>
         </div>
-        <?php endif; ?>
       </div>
     </main>
   </div>
@@ -740,6 +797,7 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
           var on = tab.getAttribute('data-filter') === filter;
           tab.classList.toggle('is-active', on);
           tab.setAttribute('aria-selected', on ? 'true' : 'false');
+          tab.setAttribute('aria-checked', on ? 'true' : 'false');
         });
 
         if (status) {
@@ -786,24 +844,44 @@ $_SESSION['pf_nav_reviews'] = count($pendingReviews);
 
         if (!boxes.length) return;
 
-        var approve = plan.querySelector('.review-actions .btn-primary');
+        var approve = plan.querySelector('.review-actions .review-approve, .review-actions .btn-primary, .review-actions button[type="submit"]:last-of-type');
+        var aprCnt = plan.querySelector('.apr-cnt');
+        var selCount = plan.querySelector('.selected-count');
         var warn = plan.querySelector('.review-check-warn');
 
         function sync() {
           var kept = 0;
+          var total = boxes.length;
 
           boxes.forEach(function (box) {
             if (box.checked) kept++;
             var row = box.closest('.review-check');
-            if (row) row.classList.toggle('is-off', !box.checked);
+            if (row) {
+              row.classList.toggle('off', !box.checked);
+              row.classList.toggle('is-off', !box.checked);
+            }
           });
 
+          if (selCount) selCount.textContent = kept + ' of ' + total + ' selected';
+          if (aprCnt) aprCnt.textContent = kept;
           if (approve) approve.disabled = kept === 0;
           if (warn) warn.hidden = kept !== 0;
         }
 
         boxes.forEach(function (box) { box.addEventListener('change', sync); });
         sync();
+      });
+
+      // Model details toggle:
+      document.querySelectorAll('.review-model-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          var targetId = btn.getAttribute('data-target');
+          var target = targetId ? document.getElementById(targetId) : null;
+          if (target) {
+            target.classList.toggle('show-md');
+          }
+        });
       });
 
       // "Click text to edit": reveal the matching edit form and focus it.

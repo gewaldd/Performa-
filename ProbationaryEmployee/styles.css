@@ -1028,7 +1028,7 @@ body::before {
 }
 
 body {
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-family: "Geist", "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
 }

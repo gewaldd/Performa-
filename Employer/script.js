@@ -143,11 +143,14 @@ if (clearFiltersBtn) {
   const KEY = "pf-sidebar-collapsed";
   const mq = window.matchMedia("(min-width: 1101px)");
   const apply = (collapsed) => {
-    document.body.classList.toggle("sidebar-collapsed", collapsed && mq.matches);
-    document.querySelectorAll("[data-sidebar-collapse]").forEach((b) => {
+    const isCol = collapsed && mq.matches;
+    document.body.classList.toggle("sidebar-collapsed", isCol);
+    const app = document.getElementById("app") || document.querySelector(".app-shell");
+    if (app) app.classList.toggle("collapsed", isCol);
+    document.querySelectorAll("[data-sidebar-collapse], #col").forEach((b) => {
       b.setAttribute("aria-expanded", String(!collapsed));
       b.setAttribute("aria-label", collapsed ? "Expand navigation" : "Collapse navigation");
-      b.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+      b.title = collapsed ? "Expand sidebar" : "Collapse ( [ )";
     });
   };
   let initial = false;
@@ -161,33 +164,146 @@ if (clearFiltersBtn) {
     });
   }
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-sidebar-collapse]");
+    const btn = e.target.closest("[data-sidebar-collapse], #col");
     if (!btn) return;
-    const next = !document.body.classList.contains("sidebar-collapsed");
+    const isCollapsed = document.body.classList.contains("sidebar-collapsed") ||
+      (document.querySelector(".app-shell") && document.querySelector(".app-shell").classList.contains("collapsed"));
+    const next = !isCollapsed;
     try { window.localStorage.setItem(KEY, next ? "1" : "0"); } catch (err) { /* expanded next load */ }
     apply(next);
   });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "[" && !e.ctrlKey && !e.altKey && !e.metaKey
+        && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "")
+        && !document.activeElement?.isContentEditable
+        && !document.querySelector("#cmd:not([hidden]), .modal-backdrop, .pf-palette-backdrop")) {
+      const btn = document.getElementById("col") || document.querySelector("[data-sidebar-collapse]");
+      if (btn) btn.click();
+    }
+  });
 })();
 
-// Command palette - Ctrl/Cmd+K or the sidebar Search row. Dialog DOM is
-// built here (no-JS means no palette; pages keep working). Targets come
-// from window.__pfIndex, which each page seeds from data it already loaded
-// (zero new reads), plus the five static module destinations.
+// Command palette - Ctrl/Cmd+K or the sidebar Search row. Uses #cmd embedded
+// markup if present, with graceful fallback to dynamic backdrop.
 (function initPfPalette() {
   if (window.__pfPaletteBound) return;
   window.__pfPaletteBound = true;
   const STATIC_TARGETS = [
-    { label: "Dashboard", sub: "Go to page", href: "employer_dashboard.php" },
-    { label: "Employees", sub: "Go to page", href: "employees.php" },
-    { label: "Add Employee", sub: "Go to page", href: "add_employee.php" },
-    { label: "KPIs", sub: "Go to page", href: "kpis.php" },
-    { label: "Reports", sub: "Go to page", href: "reports.php" },
-    { label: "Settings", sub: "Go to page", href: "settings.php" },
+    { label: "Dashboard", sub: "Page", href: "employer_dashboard.php" },
+    { label: "Employees", sub: "Page", href: "employees.php" },
+    { label: "Add Employee", sub: "Action", href: "add_employee.php" },
+    { label: "KPIs", sub: "Page", href: "kpis.php" },
+    { label: "Review plans", sub: "Page", href: "review_recommendations.php" },
+    { label: "Reports", sub: "Page", href: "reports.php" },
+    { label: "Settings", sub: "Page", href: "settings.php" },
   ];
   let lastTrigger = null;
   const targets = () => STATIC_TARGETS.concat(
     Array.isArray(window.__pfIndex) ? window.__pfIndex : []
   );
+
+  const cmdEl = document.getElementById("cmd");
+  const ciEl = document.getElementById("ci");
+  const clEl = document.getElementById("cl");
+
+  if (cmdEl && ciEl && clEl) {
+    let sel = 0;
+    let shown = [];
+
+    const render = () => {
+      const q = ciEl.value.trim().toLowerCase();
+      const all = targets();
+      shown = !q ? all.slice(0, 10) : all.filter((x) =>
+        (x.label + " " + (x.sub || "")).toLowerCase().includes(q)
+      );
+      if (sel >= shown.length) sel = 0;
+      if (!shown.length) {
+        clEl.innerHTML = '<div class="none">No results</div>';
+        return;
+      }
+      clEl.innerHTML = shown.map((x, i) =>
+        '<div class="ci" role="option" data-i="' + i + '" aria-selected="' + (i === sel) + '">' +
+        '<span>' + (x.label || "") + '</span>' +
+        '<span>' + (x.sub || "") + '</span>' +
+        '</div>'
+      ).join("");
+    };
+
+    const openCmd = (trigger) => {
+      lastTrigger = trigger || null;
+      cmdEl.hidden = false;
+      ciEl.value = "";
+      sel = 0;
+      render();
+      ciEl.focus();
+    };
+
+    const closeCmd = () => {
+      cmdEl.hidden = true;
+      if (lastTrigger && document.contains(lastTrigger)) {
+        lastTrigger.focus({ preventScroll: true });
+      }
+      lastTrigger = null;
+    };
+
+    const run = (i) => {
+      const x = shown[i];
+      if (!x) return;
+      closeCmd();
+      if (x.href) window.location.href = x.href;
+    };
+
+    ciEl.addEventListener("input", () => {
+      sel = 0;
+      render();
+    });
+
+    clEl.addEventListener("click", (e) => {
+      const r = e.target.closest(".ci");
+      if (r && r.dataset.i !== undefined) run(+r.dataset.i);
+    });
+
+    cmdEl.addEventListener("mousedown", (e) => {
+      if (e.target === cmdEl) closeCmd();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        cmdEl.hidden ? openCmd() : closeCmd();
+        return;
+      }
+      if (!cmdEl.hidden) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeCmd();
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          sel = Math.min(sel + 1, shown.length - 1);
+          render();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          sel = Math.max(sel - 1, 0);
+          render();
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          run(sel);
+        }
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-palette-open], #srch");
+      if (t) {
+        e.preventDefault();
+        openCmd(t);
+      }
+    });
+
+    return;
+  }
+
+  // Fallback for pages without embedded #cmd markup
   const close = () => {
     const bd = document.querySelector(".pf-palette-backdrop");
     if (bd) bd.remove();
@@ -196,7 +312,7 @@ if (clearFiltersBtn) {
     lastTrigger = null;
   };
   const go = (href) => { window.location.href = href; };
-  const render = (backdrop, list, items, activeIdx) => {
+  const renderFallback = (backdrop, list, items, activeIdx) => {
     list.innerHTML = "";
     if (!items.length) {
       const li = document.createElement("li");
@@ -233,7 +349,7 @@ if (clearFiltersBtn) {
       if (idx < 0) idx = Math.min(items.length, 8) - 1;
       if (idx >= Math.min(items.length, 8)) idx = 0;
       backdrop._pfActive = idx;
-      render(backdrop, backdrop.querySelector(".pf-palette-list"), items, idx);
+      renderFallback(backdrop, backdrop.querySelector(".pf-palette-list"), items, idx);
       const sel = backdrop.querySelector('[aria-selected="true"]');
       if (input && sel) input.setAttribute("aria-activedescendant", sel.id);
       return;
@@ -277,7 +393,7 @@ if (clearFiltersBtn) {
       );
       backdrop._pfItems = items;
       backdrop._pfActive = 0;
-      render(backdrop, list, items, 0);
+      renderFallback(backdrop, list, items, 0);
       input.removeAttribute("aria-activedescendant");
     };
     input.addEventListener("input", update);
@@ -288,12 +404,12 @@ if (clearFiltersBtn) {
   };
   document.addEventListener("click", (e) => {
     const t = e.target.closest("[data-palette-open]");
-    if (t) open(t);
+    if (t) { e.preventDefault(); open(t); }
   });
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
-      open(null);
+      document.querySelector(".pf-palette-backdrop") ? close() : open(null);
     }
   });
 })();
@@ -375,12 +491,8 @@ if (clearFiltersBtn) {
   window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, 6000);
 })();
 
-document.querySelectorAll(".nav-item").forEach((item) => {
-  item.addEventListener("click", (event) => {
-    document.querySelectorAll(".nav-item").forEach((navItem) => navItem.classList.remove("active"));
-    event.currentTarget.classList.add("active");
-  });
-});
+// Active nav state is set server-side in employer_render_nav_item().
+// No client-side active-state switcher needed (MPA, not SPA).
 
 // Row click-through to profiles (links, buttons and form controls inside
 // the row keep their own behavior).
@@ -393,30 +505,9 @@ if (rowsContainer) {
   });
 }
 
-if (exportBtn) {
-  exportBtn.addEventListener("click", () => {
-    const visibleRows = rows.filter((row) => !row.hidden);
-    const lines = [["Name", "Day", "Days Left", "Score", "Status"].join(",")];
-    visibleRows.forEach((row) => {
-      const name = (row.querySelector(".employee-name-single") || row.querySelector(".employee-name"))?.textContent.trim() || "";
-      const day = row.querySelector(".timeline-day")?.textContent.trim() || "";
-      const daysLeft = row.querySelector(".timeline-left")?.textContent.trim() || "";
-      const score = (row.querySelector(".score-num") || row.querySelector(".pf-score-value"))?.textContent.trim() || "Unrated";
-      const status = row.querySelector(".status-pill")?.textContent.trim() || "";
-      const cells = [name, day, daysLeft, score, status].map((v) => `"${v.replace(/"/g, '""')}"`);
-      lines.push(cells.join(","));
-    });
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "probationary_employees.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
-}
+// NOTE: no generic export handler here on purpose. Pages that offer CSV
+// export (dashboard evaluations) own their column-accurate inline handler;
+// a second binding here used to double-fire downloads on one click.
 
 if (rows.length > 0) applyFiltersAndSort();
 
@@ -448,7 +539,7 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     cancelButton.textContent = "Cancel";
     confirmButton.type = "button";
     confirmButton.className = isDanger ? "btn-danger" : "ghost-button";
-    confirmButton.textContent = isDanger ? "Deactivate" : "Continue";
+    confirmButton.textContent = form.dataset.confirmBtn || (isDanger ? "Confirm" : "Continue");
 
     actions.append(cancelButton, confirmButton);
     dialog.append(heading, message, actions);
@@ -474,4 +565,145 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     confirmButton.focus();
   });
 });
+
+/* Palette engine (1:1 Redesign Preview: paper/midnight/dusk/mist/sage).
+   Own IIFE: theme switching must never depend on anything above. */
+(() => {
+  const PAL_KEY = "performa-palette";
+  const PALETTES = ["midnight", "dusk", "paper", "mist", "sage"];
+  const PAL_MODE = { midnight: "dark", dusk: "dark", paper: "light", mist: "light", sage: "light" };
+  const lastPal = { dark: "midnight", light: "paper" };
+  const themeMq = window.matchMedia("(prefers-color-scheme: dark)");
+  let curPal = null;
+
+  function sysPal() {
+    return themeMq.matches ? "midnight" : "paper";
+  }
+
+  function getStoredPal() {
+    try {
+      const v = localStorage.getItem(PAL_KEY);
+      if (v === "system" || PALETTES.indexOf(v) !== -1) return v;
+      const legacy = localStorage.getItem("performa-theme");
+      if (legacy === "dark") return "midnight";
+      if (legacy === "light") return "paper";
+      return "system";
+    } catch (e) {
+      return "system";
+    }
+  }
+
+  function paintPal(n) {
+    const mode = PAL_MODE[n];
+    if (!mode) return;
+    lastPal[mode] = n;
+
+    document.querySelectorAll('.sw[data-p]').forEach((b) => {
+      b.setAttribute("aria-pressed", b.getAttribute("data-p") === n ? "true" : "false");
+    });
+    const palLabel = document.getElementById("palName");
+    if (palLabel) palLabel.textContent = "Palette: " + n.charAt(0).toUpperCase() + n.slice(1);
+
+    document.querySelectorAll("#quick, #sidebarThemeToggle, #mode").forEach((btn) => {
+      btn.setAttribute("aria-label", mode === "dark" ? "Switch to light mode" : "Switch to dark mode");
+      btn.setAttribute("data-tip", mode === "dark" ? "Light mode" : "Dark mode");
+      if (btn.id === "mode") {
+        btn.innerHTML = mode === "dark"
+          ? '<svg class="i" aria-hidden="true"><use href="#i-sun"/></svg>'
+          : '<svg class="i" aria-hidden="true"><use href="#i-moon"/></svg>';
+      }
+    });
+
+    const activeEl = document.getElementById("active");
+    if (activeEl) {
+      const stored = getStoredPal();
+      activeEl.textContent = "Active: " + (mode === "dark" ? "Dark" : "Light") + (stored === "system" ? " (from your device)" : "");
+    }
+
+    document.querySelectorAll("#themeSeg .tab").forEach((b) => {
+      const v = b.getAttribute("data-v");
+      const stored = getStoredPal();
+      const on = v === "system" ? stored === "system" : stored !== "system" && PAL_MODE[stored] === v;
+      b.setAttribute("aria-checked", on ? "true" : "false");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.classList.toggle("is-active", on);
+    });
+  }
+
+  function applyPal(n) {
+    curPal = n;
+    document.documentElement.setAttribute("data-theme", n);
+    paintPal(n);
+  }
+
+  window.__applyTheme = function (pref) {
+    if (PALETTES.indexOf(pref) !== -1) { applyPal(pref); return; }
+    if (pref === "light") { window.__setTheme("paper"); return; }
+    if (pref === "dark") { window.__setTheme("midnight"); return; }
+    applyPal(sysPal());
+  };
+
+  window.__setTheme = function (pref) {
+    if (pref !== "system" && PALETTES.indexOf(pref) === -1) {
+      pref = pref === "dark" ? "midnight" : pref === "light" ? "paper" : "system";
+    }
+    try {
+      localStorage.setItem(PAL_KEY, pref);
+      localStorage.removeItem("performa-theme");
+    } catch (e) {}
+    window.__applyTheme(pref);
+  };
+
+  window.__setPalette = function (p) {
+    if (PALETTES.indexOf(p) !== -1) window.__setTheme(p);
+  };
+
+  function onModeToggle() {
+    const m = PAL_MODE[curPal] === "dark" ? "light" : "dark";
+    window.__setTheme(lastPal[m]);
+  }
+
+  function onSegTab(btn) {
+    const v = btn.getAttribute("data-v");
+    if (!v) return;
+    window.__setTheme(v === "system" ? "system" : lastPal[v]);
+  }
+
+  function onSwatch(btn) {
+    const p = btn.getAttribute("data-p");
+    if (p) window.__setTheme(p);
+  }
+
+  /* Direct bindings for the idempotent controls (seg tabs + swatches
+     stay correct even if both paths fire). The mode toggle is
+     delegation-only: binding it twice would toggle twice = no-op. */
+  function bindControls() {
+    document.querySelectorAll("#themeSeg .tab").forEach((btn) => {
+      btn.addEventListener("click", () => onSegTab(btn));
+    });
+    document.querySelectorAll('.sw[data-p]').forEach((btn) => {
+      btn.addEventListener("click", () => onSwatch(btn));
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target && e.target.closest ? e.target.closest("#quick, #sidebarThemeToggle, #mode") : null;
+    if (t) { onModeToggle(); return; }
+    const s = e.target && e.target.closest ? e.target.closest("#themeSeg .tab") : null;
+    if (s) { onSegTab(s); return; }
+    const w = e.target && e.target.closest ? e.target.closest(".sw[data-p]") : null;
+    if (w) { onSwatch(w); }
+  });
+
+  if (typeof themeMq.addEventListener === "function") {
+    themeMq.addEventListener("change", () => {
+      if (getStoredPal() === "system") {
+        window.__applyTheme("system");
+      }
+    });
+  }
+
+  bindControls();
+  window.__applyTheme(getStoredPal());
+})();
 })();

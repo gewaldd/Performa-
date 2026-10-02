@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
@@ -255,12 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedEmployee) {
 <body>
   <div class="app-shell">
     <?php employer_render_shell('KPIs'); ?>
-    <main class="main content-narrow">
+    <main class="main content-narrow pf-rate-page">
       <?php
       employer_page_header(
         'rateTitle',
         'Weekly Performance Rating',
-        '<a href="kpis.php" class="ghost-button back-link">&larr; Back to KPIs</a>'
+        '<a href="kpis.php" class="ghost-button back-link"><svg class="i"><use href="#i-back"/></svg>KPIs</a>'
           . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>KPIs</span>'
           . '<span aria-hidden="true">/</span><span>Rate</span></nav>',
         'Score this week\'s KPIs for a probationary employee. Use the slider or type a value from 1.0 to 5.0.',

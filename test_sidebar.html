@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+:root {
+  --side: #11141c;
+  --bg: #0b0d12;
+  --line: rgba(255,255,255,.08);
+  --shadow: 6px 0 24px rgba(0,0,0,.45);
+}
+body { margin:0; background: var(--bg); display: flex; gap: 50px; padding: 20px; }
+.case1 {
+  width: 248px; height: 300px; background: var(--side);
+  box-shadow: var(--shadow), inset -1px 0 0 var(--line);
+}
+.case2 {
+  width: 248px; height: 300px; background: var(--side);
+  border-right: 1px solid var(--line);
+  box-shadow: var(--shadow), inset -1px 0 0 var(--line);
+  box-sizing: border-box;
+}
+.case3 {
+  width: 248px; height: 300px; background: var(--side);
+  border-right: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body>
+  <div class="case1"></div>
+  <div class="case2"></div>
+  <div class="case3"></div>
+</body>
+</html>

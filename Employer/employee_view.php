@@ -186,7 +186,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
@@ -211,7 +211,7 @@ $statusLabel = ($profile['status'] ?? 'Active') === 'Disabled' ? 'Disabled' : 'A
       employer_page_header(
         'employeeViewTitle',
         $profile['name'] ?? 'Employee',
-        '<a href="employees.php" class="ghost-button back-link">&larr; Back to Employees</a>'
+        '<a href="employees.php" class="ghost-button back-link"><svg class="i"><use href="#i-back"/></svg>Employees</a>'
           . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Employees</span>'
           . '<span aria-hidden="true">/</span><span>' . $viewCrumbName . '</span></nav>',
         htmlspecialchars(ucwords(str_replace('_', ' ', $profile['role'] ?? '')), ENT_QUOTES) . ' &middot; ' . $viewStatusHtml,

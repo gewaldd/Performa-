@@ -53,7 +53,7 @@ if ($report && (string) ($report['fileSha256'] ?? '') !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(employer_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
@@ -74,7 +74,7 @@ if ($report && (string) ($report['fileSha256'] ?? '') !== '') {
       employer_page_header(
         'reportTitle',
         'Report',
-        '<a href="reports.php" class="ghost-button back-link">&larr; Back to Reports</a>'
+        '<a href="reports.php" class="ghost-button back-link"><svg class="i"><use href="#i-back"/></svg>Reports</a>'
           . '<nav class="ph-crumb" aria-label="Breadcrumb"><span>Reports</span>'
           . '<span aria-hidden="true">/</span><span>View</span></nav>',
         'Review scores, targets, and documentation details. Download the archived PDF or print it.',
@@ -92,7 +92,7 @@ if ($report && (string) ($report['fileSha256'] ?? '') !== '') {
         </div>
       <?php else: ?>
         <div class="settings-panel report-view-panel">
-          <h1><?php echo htmlspecialchars($report['employeeName'] ?? 'Unknown', ENT_QUOTES); ?></h1>
+          <h2 style="font-size: 20px; font-weight: 600; margin: 0 0 6px;"><?php echo htmlspecialchars($report['employeeName'] ?? 'Unknown', ENT_QUOTES); ?></h2>
             <p class="microcopy">
               <?php echo htmlspecialchars($report['reportTypeLabel'] ?? '', ENT_QUOTES); ?>
               &middot; Generated

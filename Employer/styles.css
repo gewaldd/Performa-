@@ -2,7 +2,7 @@
   color-scheme: light;
 
   --font-sans:
-    "IBM Plex Sans",
+    "Geist",
     system-ui,
     -apple-system,
     "Segoe UI",
@@ -132,51 +132,11 @@ body {
 
   line-height: 1.45;
 
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(47, 109, 246, 0.12),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(33, 205, 149, 0.08),
-      transparent 26%
-    ),
-    var(--bg);
+  background: var(--bg);
 }
 
 body::before {
-  content: "";
-
-  position: fixed;
-
-  inset: 0;
-
-  z-index: 0;
-
-  pointer-events: none;
-
-  background-image:
-    linear-gradient(
-      rgba(255, 255, 255, 0.45) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.45) 1px,
-      transparent 1px
-    );
-
-  background-size:
-    64px 64px;
-
-  mask-image:
-    linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.2),
-      transparent 85%
-    );
+  display: none !important;
 }
 
 button,
@@ -266,20 +226,9 @@ a:focus-visible {
     10px
     14px;
 
-  background:
-    linear-gradient(
-      180deg,
-      #10182d 0%,
-      #0d1426 100%
-    );
+  background: var(--ui-sidebar, var(--bg));
 
-  color:
-    rgba(
-      255,
-      255,
-      255,
-      0.86
-    );
+  color: inherit;
 }
 
 .brand {
@@ -6292,34 +6241,26 @@ select:disabled {
    ========================================================= */
 
 .review-page.review-dark {
-  --rv-bg: #0b1226;
-  --rv-card: #131b33;
-  --rv-card-open: #161f3a;
-  --rv-card-hover: #182138;
-  --rv-hairline: #23304f;
-  --rv-ink: #e9eef7;
-  --rv-body: #dfe6f2;
-  --rv-sub: #9aa7c2;
-  --rv-faint: #7b88a3;
-  --rv-accent: #4a87e8;
-  --rv-neg: #f08a8a;
-  color-scheme: dark;
+  --rv-bg: var(--ui-bg);
+  --rv-card: var(--ui-surface);
+  --rv-card-open: var(--ui-soft, #161a24);
+  --rv-card-hover: var(--ui-soft, rgba(255, 255, 255, 0.05));
+  --rv-hairline: var(--ui-border);
+  --rv-ink: var(--ui-text);
+  --rv-body: var(--ui-text);
+  --rv-sub: var(--ui-muted);
+  --rv-faint: var(--ui-muted);
+  --rv-accent: var(--ui-blue, #2f78ee);
+  --rv-neg: var(--ui-red, #ff6b61);
 
-  /* Default ink for anything on the page that only inherits (unclessed
-     spans, <strong>s, stray text): body's light --ui-text would vanish. */
+  /* Default ink for anything on the page that only inherits (unclassed
+     spans, <strong>s, stray text): follows active theme text. */
   color: var(--rv-body);
 }
 
-/* 1. Kill the white backdrop (page scope only). A fixed underlay owned by
-   this page paints the navy canvas edge-to-edge while the .main and
-   .settings-panel shells go transparent. */
+/* 1. Neutralize fixed midnight navy underlay: canvas adopts root background dynamically */
 .review-page.review-dark::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--rv-bg);
-  pointer-events: none;
+  display: none !important;
 }
 
 .review-page.review-dark.main,
@@ -6357,7 +6298,7 @@ select:disabled {
 }
 
 .review-page.review-dark .page-header .ph-crumb span:last-child {
-  color: #fff;
+  color: var(--rv-ink);
 }
 
 /* The Back link is a ghost-button pill in light mode; on navy it drops the
@@ -6378,7 +6319,7 @@ select:disabled {
 .review-page.review-dark .page-header .ghost-button.back-link:hover {
   background: transparent !important;
   border: 0 !important;
-  color: #fff !important;
+  color: var(--rv-ink) !important;
   transform: none;
 }
 
@@ -6416,15 +6357,15 @@ select:disabled {
 
 .review-page.review-dark .review-tab.is-active {
   border-bottom-color: var(--rv-accent);
-  color: #fff;
+  color: var(--rv-ink);
 }
 
 .review-page.review-dark .review-tab-count {
-  color: #8b96ad;
+  color: var(--rv-sub);
 }
 
 .review-page.review-dark .review-tab.is-active .review-tab-count {
-  color: #fff;
+  color: var(--rv-accent);
 }
 
 /* 4a. Cards: flat navy surface + hairline edge (mockup card). */
@@ -6451,19 +6392,19 @@ select:disabled {
   background: transparent;
 }
 
-/* 4b. Row-head cells: tile avatar, white name, muted area/delta, red delta. */
+/* 4b. Row-head cells: tile avatar, theme name, muted area/delta, red delta. */
 .review-page.review-dark .review-plan-avatar {
-  border-color: #2c3d68;
-  background: #22325c;
-  color: #c9d6f2;
+  border-color: var(--rv-hairline);
+  background: var(--rv-card-open);
+  color: var(--rv-accent);
 }
 
 .review-page.review-dark .review-plan-name {
-  color: #fff;
+  color: var(--rv-ink);
 }
 
 .review-page.review-dark .review-plan-area {
-  color: #93a0b8;
+  color: var(--rv-sub);
 }
 
 .review-page.review-dark .review-plan-delta {
@@ -6482,20 +6423,20 @@ select:disabled {
   color: var(--rv-faint);
 }
 
-/* 4c. Expanded body: hairline divider, white gauge value, pearl track/tick,
+/* 4c. Expanded body: hairline divider, theme gauge value, pearl track/tick,
    dark-tinted severity badges that keep their glyph cues. */
 .review-page.review-dark .review-plan-body {
   border-top-color: var(--rv-hairline);
 }
 
 .review-page.review-dark .review-gauge .pf-score-value {
-  color: #fff;
+  color: var(--rv-ink);
 }
 
 .review-page.review-dark .review-gauge .pf-score-scale,
 .review-page.review-dark .review-gauge-target,
 .review-page.review-dark .review-gauge-none {
-  color: #93a0b8;
+  color: var(--rv-sub);
 }
 
 .review-page.review-dark .review-plan-meter {
@@ -6581,7 +6522,7 @@ select:disabled {
 }
 
 .review-page.review-dark .review-check-desc {
-  color: #e4eaf4;
+  color: var(--rv-body);
 }
 
 .review-page.review-dark .review-check.is-off .review-check-row {
@@ -8027,9 +7968,9 @@ select:disabled {
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
-  border: 1px solid #bfe3cf;
-  background: var(--ui-green-bg, #e6f4ec);
-  color: #0e5c38;
+  border: 1px solid rgba(46, 160, 67, 0.3);
+  background: var(--ui-green-bg, rgba(46, 160, 67, 0.12));
+  color: var(--good, #0e5c38);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;

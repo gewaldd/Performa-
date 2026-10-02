@@ -87,7 +87,7 @@ function supervisor_brand_head(string $pageTitle = 'Performa | Supervisor'): voi
   <title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES); ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(supervisor_asset('../Employer/styles.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(supervisor_asset('../ui-refresh.css'), ENT_QUOTES); ?>" />
   <link rel="stylesheet" href="<?php echo htmlspecialchars(supervisor_asset('styles.css'), ENT_QUOTES); ?>" />
